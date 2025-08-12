@@ -159,6 +159,22 @@ document.addEventListener('DOMContentLoaded', () => {
             // Combat state
             this.combat = { inCombat: false, enemy: null, lastPlayerAttack: 0, lastEnemyAttack: 0, playerAttackSpeedMs: 1600 };
 
+            // Workers system
+            this.workers = {
+                // Hired workers array
+                roster: [], // [{ id, name, role, level, assignedSkillId, assignedActionId, progressMs, speedMultiplier }]
+                // Base hiring costs and upkeep
+                config: {
+                    baseHireCost: 250,
+                    hireGrowth: 1.8, // exponential growth per hire
+                    baseFoodUpkeepPerMinute: 1, // consumes generic food per minute from bank (shrimp/sardine raw or cooked, fallback to gold)
+                    goldUpkeepPerMinute: 2, // if no food, pay gold
+                    maxWorkers: 12,
+                },
+                // Resources dedicated to housing affects max workers and upkeep efficiency
+                housingLevel: 0, // each level +1 max worker and -3% upkeep
+            };
+
             // Clicker state
             this.clicker = { goldPerClick: 1, autoClickers: 0, autoRateMs: 1000, lastAutoTick: Date.now(), upgrades: { clickPowerLevel: 0, autoClickerLevel: 0, multiplierLevel: 0 } };
 
@@ -196,6 +212,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (now >= action.endTime) { this.stopAction(); }
             }
 
+            // Workers loop: run independent of activeAction; workers do not consume player stamina
+            if (this.state.workers && Array.isArray(this.state.workers.roster) && this.state.workers.roster.length > 0) {
+                // Upkeep tick per minute (scaled by delta)
+                const upkeepPerMsFood = this.getWorkerFoodUpkeepPerMinute() / 60000;
+                const upkeepPerMsGold = this.getWorkerGoldUpkeepPerMinute() / 60000;
+                let msRemaining = delta;
+                // Process progress and upkeep proportionally to delta without tight loops
+                for (const worker of this.state.workers.roster) {
+                    if (!worker.assignedSkillId || !worker.assignedActionId) continue;
+                    const actionData = (GAME_DATA.ACTIONS[worker.assignedSkillId] || []).find(a => a.id === worker.assignedActionId);
+                    if (!actionData) continue;
+                    const effectiveTime = this.calculateActionTimeForWorker(worker, actionData);
+                    worker.progressMs = (worker.progressMs || 0) + delta;
+                    if (worker.progressMs >= effectiveTime) {
+                        const loops = Math.floor(worker.progressMs / effectiveTime);
+                        this.gainActionRewardsForWorker(worker, actionData, loops);
+                        worker.progressMs = worker.progressMs % effectiveTime;
+                    }
+                }
+                // Upkeep after progress
+                // Consume food or gold proportional to delta for each assigned worker
+                const assignedCount = this.state.workers.roster.filter(w => w.assignedSkillId && w.assignedActionId).length;
+                if (assignedCount > 0) {
+                    const foodCost = upkeepPerMsFood * delta * assignedCount * (1 - this.getHousingUpkeepReduction());
+                    const goldCost = upkeepPerMsGold * delta * assignedCount * (1 - this.getHousingUpkeepReduction());
+                    this.payWorkerUpkeep(foodCost, goldCost);
+                }
+            }
+
             // Combat loop
             if (this.state.combat.inCombat && this.state.combat.enemy) {
                 const e = this.state.combat.enemy;
@@ -221,6 +266,96 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             this.uiManager.updateDynamicElements();
+        }
+
+        // Worker helpers
+        nextWorkerId() { const ids = this.state.workers.roster.map(w => w.id || 0); return (ids.length ? Math.max(...ids) : 0) + 1; }
+        getTotalWorkers() { return this.state.workers.roster.length; }
+        getMaxWorkers() { return this.state.workers.config.maxWorkers + (this.state.workers.housingLevel || 0); } // housing adds slots
+        getHousingUpkeepReduction() { return Math.min(0.5, (this.state.workers.housingLevel || 0) * 0.03); }
+        getHireCost() {
+            const n = this.getTotalWorkers();
+            return Math.floor(this.state.workers.config.baseHireCost * Math.pow(this.state.workers.config.hireGrowth, n));
+        }
+        getWorkerFoodUpkeepPerMinute() { return this.state.workers.config.baseFoodUpkeepPerMinute; }
+        getWorkerGoldUpkeepPerMinute() { return this.state.workers.config.goldUpkeepPerMinute; }
+        payWorkerUpkeep(foodUnits, goldUnits) {
+            // Consume edible items first (shrimp, sardine) cooked then raw; 1 unit = 1 item if available; else pay gold fallback
+            const ediblePriority = ['sardine', 'shrimp', 'raw_sardine', 'raw_shrimp']; // prioritize cooked food first
+            let remainingFood = foodUnits;
+            for (const itemId of ediblePriority) {
+                if (remainingFood <= 0) break;
+                const have = this.state.bank[itemId] || 0;
+                if (have <= 0) continue;
+                const take = Math.min(have, Math.floor(remainingFood));
+                if (take > 0) { this.removeFromBank(itemId, take); remainingFood -= take; }
+            }
+            // Convert any fractional remainder to gold at 5 gold per unit
+            const foodToGold = Math.ceil(Math.max(0, remainingFood) * 5);
+            const totalGold = Math.ceil(goldUnits) + foodToGold;
+            if (totalGold > 0) {
+                // If cannot pay, automatically pause all workers
+                if (this.state.player.gold < totalGold) {
+                    this.uiManager.showFloatingText('Workers paused (no upkeep)', 'text-red-400');
+                    this.state.workers.roster.forEach(w => { w.assignedSkillId = null; w.assignedActionId = null; w.progressMs = 0; });
+                    return;
+                }
+                this.spendGold(totalGold);
+            }
+        }
+        calculateActionTimeForWorker(worker, actionData) {
+            const base = actionData.baseTime;
+            const stewardshipBonus = 1 - (this.state.player.meta_skills[META_SKILLS.STEWARDSHIP].level - 1) * 0.005; // workers benefit half as much
+            const mastery = this.getMastery('woodcutting', actionData.id); // apply player's woodcutting mastery slightly to worker speed
+            const masteryBonus = 1 - (mastery.level * 0.001);
+            const speed = worker.speedMultiplier || 1; // e.g., foreman faster
+            return base * stewardshipBonus * masteryBonus / speed;
+        }
+        gainActionRewardsForWorker(worker, actionData, loops) {
+            // Workers do not grant player skill XP; only resources. They do increase Mastery slowly.
+            const mastery = this.getMastery('woodcutting', actionData.id); mastery.addXP((actionData.baseTime / 1000) * 0.3 * loops);
+            if (actionData.output && actionData.output.itemId) {
+                this.addToBank(actionData.output.itemId, actionData.output.quantity * loops);
+                this.uiManager.showFloatingText(`${worker.name}: +${actionData.output.quantity * loops} ${GAME_DATA.ITEMS[actionData.output.itemId].name}`, 'text-yellow-300');
+            }
+            if (actionData.rareDrop) {
+                for (let i = 0; i < loops; i++) {
+                    if (Math.random() * 100 < actionData.rareDrop.chance * 0.5) { // workers lower rare rate
+                        this.addToBank(actionData.rareDrop.itemId, 1);
+                        this.uiManager.showFloatingText(`${worker.name}: +1 ${GAME_DATA.ITEMS[actionData.rareDrop.itemId].name}`, 'text-yellow-400');
+                    }
+                }
+            }
+        }
+        hireWorker(role = 'Woodcutter') {
+            if (this.getTotalWorkers() >= this.getMaxWorkers()) { this.uiManager.showModal('No Housing', '<p>You need more housing to hire additional workers.</p>'); return; }
+            const cost = this.getHireCost(); if (!this.spendGold(cost)) { this.uiManager.showModal('Not Enough Gold', '<p>You cannot afford to hire a new worker.</p>'); return; }
+            const id = this.nextWorkerId();
+            const names = ['Forger', 'Axeman', 'Lumberjack', 'Woodsman', 'Hewer', 'Sawyer', 'Feller', 'Forester', 'Rover', 'Shiv'];
+            const name = names[Math.floor(Math.random() * names.length)] + ' #' + id;
+            const worker = { id, name, role, level: 1, assignedSkillId: null, assignedActionId: null, progressMs: 0, speedMultiplier: 1 };
+            this.state.workers.roster.push(worker);
+            this.uiManager.renderView();
+        }
+        assignWorker(workerId, skillId, actionId) {
+            const worker = this.state.workers.roster.find(w => w.id === workerId); if (!worker) return;
+            // For now, limit to woodcutting-only per request
+            if (skillId !== 'woodcutting') return;
+            const action = (GAME_DATA.ACTIONS[skillId] || []).find(a => a.id === actionId); if (!action) return;
+            // Require the player's skill level to meet the action requirement
+            const playerSkillLvl = this.state.player.skills[skillId]?.level || 1;
+            if (playerSkillLvl < action.level) { this.uiManager.showModal('Level too low', `<p>You need Woodcutting level ${action.level} to assign workers to ${action.name}.</p>`); return; }
+            worker.assignedSkillId = skillId; worker.assignedActionId = actionId; worker.progressMs = 0;
+            this.uiManager.renderView();
+        }
+        stopWorker(workerId) {
+            const worker = this.state.workers.roster.find(w => w.id === workerId); if (!worker) return;
+            worker.assignedSkillId = null; worker.assignedActionId = null; worker.progressMs = 0; this.uiManager.renderView();
+        }
+        upgradeHousing() {
+            const lvl = this.state.workers.housingLevel || 0; const cost = Math.floor(500 * Math.pow(2, lvl));
+            if (!this.spendGold(cost)) { this.uiManager.showModal('Not Enough Gold', '<p>You cannot afford to upgrade housing.</p>'); return; }
+            this.state.workers.housingLevel = lvl + 1; this.uiManager.renderView();
         }
 
         calculateActionTime(action) {
@@ -395,6 +530,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (!this.state.player.mastery[skillId]) this.state.player.mastery[skillId] = {};
                         Object.keys(parsedData.player.mastery[skillId]).forEach(actionId => { const mastery = new Mastery(); Object.assign(mastery, parsedData.player.mastery[skillId][actionId]); this.state.player.mastery[skillId][actionId] = mastery; });
                     });
+                    // Ensure workers state exists and is sane
+                    if (!this.state.workers) this.state.workers = new GameState().workers;
+                    if (!Array.isArray(this.state.workers.roster)) this.state.workers.roster = [];
+                    if (!this.state.workers.config) this.state.workers.config = new GameState().workers.config;
+                    if (typeof this.state.workers.housingLevel !== 'number') this.state.workers.housingLevel = 0;
                     this.state.lastUpdate = Date.now();
                 } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
             }
@@ -456,6 +596,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'clicker': html = this.renderClickerView(); break;
                     case 'spellbook': html = this.renderSpellbookView(); break;
                     case 'shop': html = this.renderShopView(); break;
+                    case 'lumberyard': html = this.renderLumberyardView(); break;
                 }
             }
             this.mainContent.innerHTML = html; this.attachViewEventListeners();
@@ -645,6 +786,53 @@ document.addEventListener('DOMContentLoaded', () => {
             return `<h1 class="text-2xl font-semibold text-white mb-4">Shop</h1><div class="grid grid-cols-1 md:grid-cols-3 gap-4">${chestCards}</div>`;
         }
 
+        renderLumberyardView() {
+            const max = this.game.getMaxWorkers();
+            const count = this.game.getTotalWorkers();
+            const hireCost = this.game.getHireCost();
+            const upkeepFood = this.game.getWorkerFoodUpkeepPerMinute();
+            const upkeepGold = this.game.getWorkerGoldUpkeepPerMinute();
+            const upkeepReduction = Math.round(this.game.getHousingUpkeepReduction() * 100);
+            const workers = this.game.state.workers.roster;
+            const actions = (GAME_DATA.ACTIONS.woodcutting || []);
+            const actionOptions = actions.map(a => `<option value="${a.id}">${a.name} (Lvl ${a.level})</option>`).join('');
+            const cards = workers.map(w => `
+                <div class="block p-4 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-white">${w.name} <span class="text-secondary text-xs">(${w.role})</span></h3>
+                        <p class="text-secondary text-xs">Speed: x${(w.speedMultiplier || 1).toFixed(2)}</p>
+                        <p class="text-secondary text-xs">Assigned: ${w.assignedActionId ? actions.find(a => a.id === w.assignedActionId)?.name : 'Idle'}</p>
+                        <div class="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2">
+                            <select class="assign-action-select p-2 bg-primary border border-border-color rounded-md" data-worker-id="${w.id}">
+                                <option value="">Choose trees...</option>
+                                ${actionOptions}
+                            </select>
+                            <button class="assign-worker-btn chimera-button px-3 py-2 rounded-md" data-worker-id="${w.id}">Assign</button>
+                            <button class="stop-worker-btn chimera-button px-3 py-2 rounded-md" data-worker-id="${w.id}" ${w.assignedActionId ? '' : 'disabled'}>Stop</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            return `
+                <h1 class="text-2xl font-semibold text-white mb-4">Lumberyard</h1>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="block p-4">
+                        <h2 class="text-lg font-bold text-white">Workforce</h2>
+                        <p class="text-secondary text-sm">Workers: <span class="text-white font-bold">${count}</span> / ${max}</p>
+                        <p class="text-secondary text-sm">Upkeep per active worker: ${upkeepFood} food/min or ${upkeepGold} gold/min (${upkeepReduction}% reduction from housing)</p>
+                        <div class="mt-3 space-y-2">
+                            <button id="hire-worker-btn" class="chimera-button px-3 py-2 rounded-md w-full">Hire Worker — Cost: ${hireCost} gold</button>
+                            <button id="upgrade-housing-btn" class="chimera-button px-3 py-2 rounded-md w-full">Upgrade Housing (Lvl ${this.game.state.workers.housingLevel || 0}) — Cost: ${Math.floor(500 * Math.pow(2, this.game.state.workers.housingLevel || 0))} gold</button>
+                        </div>
+                    </div>
+                    <div class="block p-4 md:col-span-2">
+                        <h2 class="text-lg font-bold text-white">Crew</h2>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">${cards || '<p class="text-secondary">No workers hired. Hire someone to begin automated woodcutting.</p>'}</div>
+                    </div>
+                </div>
+            `;
+        }
+
         attachViewEventListeners() {
             const addTaskBtn = document.getElementById('add-task-btn'); if (addTaskBtn) { addTaskBtn.addEventListener('click', () => { const category = document.getElementById('task-category-select').value; const difficulty = document.getElementById('task-difficulty-select').value; this.game.completeRealLifeTask(category, difficulty); const n = document.getElementById('task-name-input'); if (n) n.value = ''; }); }
             document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => { const duration = parseInt(prompt('Enter duration in minutes:', '15'), 10); if (isNaN(duration) || duration <= 0) return; this.game.startAction(btn.dataset.skillId, btn.dataset.actionId, duration); }); });
@@ -682,6 +870,19 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.cast-spell-btn').forEach(btn => { btn.addEventListener('click', () => this.game.castSpell(btn.dataset.spellId)); });
             // Shop
             document.querySelectorAll('.buy-chest-btn').forEach(btn => { btn.addEventListener('click', () => this.game.buyChest(btn.dataset.chestId)); });
+
+            // Lumberyard
+            const hireBtn = document.getElementById('hire-worker-btn'); if (hireBtn) hireBtn.addEventListener('click', () => this.game.hireWorker('Lumberjack'));
+            const houseBtn = document.getElementById('upgrade-housing-btn'); if (houseBtn) houseBtn.addEventListener('click', () => this.game.upgradeHousing());
+            document.querySelectorAll('.assign-worker-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const workerId = parseInt(btn.dataset.workerId, 10);
+                    const select = this.mainContent.querySelector(`.assign-action-select[data-worker-id="${workerId}"]`);
+                    const actionId = select && select.value ? select.value : null; if (!actionId) return;
+                    this.game.assignWorker(workerId, 'woodcutting', actionId);
+                });
+            });
+            document.querySelectorAll('.stop-worker-btn').forEach(btn => { btn.addEventListener('click', () => this.game.stopWorker(parseInt(btn.dataset.workerId, 10))); });
         }
 
         showModal(title, content) {
