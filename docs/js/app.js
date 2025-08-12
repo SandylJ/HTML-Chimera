@@ -167,6 +167,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.player.mastery[id] = {};
             });
             Object.values(META_SKILLS).forEach(name => { this.player.meta_skills[name] = new Skill(name, name); });
+
+            // Worker systems: Mining Overseer and Fishing Harbor
+            this.workers = {
+                mining: {
+                    total: 0,
+                    upgrades: { speedLevel: 0, yieldLevel: 0, depthLevel: 0, cartLevel: 0 },
+                    assigned: {},
+                    progress: {}
+                },
+                fishing: {
+                    total: 0,
+                    boats: 0,
+                    upgrades: { netLevel: 0, baitLevel: 0, boatLevel: 0 },
+                    assigned: {},
+                    progress: {}
+                }
+            };
+            // Seed worker action keys
+            (GAME_DATA.ACTIONS.mining || []).forEach(a => { this.workers.mining.assigned[a.id] = 0; this.workers.mining.progress[a.id] = 0; });
+            (GAME_DATA.ACTIONS.fishing || []).forEach(a => { this.workers.fishing.assigned[a.id] = 0; this.workers.fishing.progress[a.id] = 0; });
         }
     }
 
@@ -219,6 +239,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const gps = this.state.clicker.autoClickers * this.state.clicker.goldPerClick;
                 if (gps > 0) this.addGold(gps);
             }
+
+            // Passive workers
+            this.processWorkers(delta);
 
             this.uiManager.updateDynamicElements();
         }
@@ -292,6 +315,157 @@ document.addEventListener('DOMContentLoaded', () => {
 
         addToBank(itemId, quantity) { this.state.bank[itemId] = (this.state.bank[itemId] || 0) + quantity; }
         removeFromBank(itemId, quantity) { this.state.bank[itemId] -= quantity; if (this.state.bank[itemId] <= 0) { delete this.state.bank[itemId]; } }
+
+        // Worker systems
+        ensureWorkerState() {
+            if (!this.state.workers) {
+                this.state.workers = {
+                    mining: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0, depthLevel: 0, cartLevel: 0 }, assigned: {}, progress: {} },
+                    fishing: { total: 0, boats: 0, upgrades: { netLevel: 0, baitLevel: 0, boatLevel: 0 }, assigned: {}, progress: {} }
+                };
+            }
+            if (!this.state.workers.mining) this.state.workers.mining = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0, depthLevel: 0, cartLevel: 0 }, assigned: {}, progress: {} };
+            if (!this.state.workers.fishing) this.state.workers.fishing = { total: 0, boats: 0, upgrades: { netLevel: 0, baitLevel: 0, boatLevel: 0 }, assigned: {}, progress: {} };
+            (GAME_DATA.ACTIONS.mining || []).forEach(a => {
+                if (typeof this.state.workers.mining.assigned[a.id] !== 'number') this.state.workers.mining.assigned[a.id] = 0;
+                if (typeof this.state.workers.mining.progress[a.id] !== 'number') this.state.workers.mining.progress[a.id] = 0;
+            });
+            (GAME_DATA.ACTIONS.fishing || []).forEach(a => {
+                if (typeof this.state.workers.fishing.assigned[a.id] !== 'number') this.state.workers.fishing.assigned[a.id] = 0;
+                if (typeof this.state.workers.fishing.progress[a.id] !== 'number') this.state.workers.fishing.progress[a.id] = 0;
+            });
+        }
+
+        getHireCost(skillId) {
+            if (skillId === 'mining') {
+                const base = 200; const growth = 1.25; const owned = this.state.workers.mining.total || 0; return Math.floor(base * Math.pow(growth, owned));
+            }
+            if (skillId === 'fishing') {
+                const base = 150; const growth = 1.22; const owned = this.state.workers.fishing.total || 0; return Math.floor(base * Math.pow(growth, owned));
+            }
+            return 0;
+        }
+        getUpgradeCost(skillId, type) {
+            if (skillId === 'mining') {
+                const w = this.state.workers.mining;
+                const level = type === 'speed' ? (w.upgrades.speedLevel || 0) : type === 'yield' ? (w.upgrades.yieldLevel || 0) : type === 'depth' ? (w.upgrades.depthLevel || 0) : (w.upgrades.cartLevel || 0);
+                const base = type === 'speed' ? 250 : type === 'yield' ? 250 : type === 'depth' ? 400 : 300;
+                const growth = 1.45; return Math.floor(base * Math.pow(growth, level));
+            }
+            if (skillId === 'fishing') {
+                const w = this.state.workers.fishing;
+                const level = type === 'net' ? (w.upgrades.netLevel || 0) : type === 'bait' ? (w.upgrades.baitLevel || 0) : (w.upgrades.boatLevel || 0);
+                const base = type === 'net' ? 180 : type === 'bait' ? 220 : 260; const growth = 1.4; return Math.floor(base * Math.pow(growth, level));
+            }
+            return 0;
+        }
+        getBoatCost() {
+            const owned = this.state.workers.fishing.boats || 0; return Math.floor(400 * Math.pow(1.35, owned));
+        }
+        hireWorker(skillId) {
+            const cost = this.getHireCost(skillId); if (!this.spendGold(cost)) { this.uiManager.showModal('Not Enough Gold', `<p>You need ${cost} gold to hire.</p>`); return; }
+            if (skillId === 'mining') { this.state.workers.mining.total += 1; this.uiManager.showFloatingText('+1 Miner Hired', 'text-green-400'); }
+            if (skillId === 'fishing') { this.state.workers.fishing.total += 1; this.uiManager.showFloatingText('+1 Angler Hired', 'text-green-400'); }
+            this.uiManager.renderView();
+        }
+        buyBoat() {
+            const cost = this.getBoatCost(); if (!this.spendGold(cost)) { this.uiManager.showModal('Not Enough Gold', `<p>You need ${cost} gold to buy a boat.</p>`); return; }
+            this.state.workers.fishing.boats += 1; this.uiManager.showFloatingText('+1 Boat Purchased', 'text-blue-300'); this.uiManager.renderView();
+        }
+        upgradeWorkers(skillId, type) {
+            const cost = this.getUpgradeCost(skillId, type); if (!this.spendGold(cost)) { this.uiManager.showModal('Not Enough Gold', `<p>You need ${cost} gold to upgrade.</p>`); return; }
+            if (skillId === 'mining') {
+                if (type === 'speed') this.state.workers.mining.upgrades.speedLevel += 1;
+                if (type === 'yield') this.state.workers.mining.upgrades.yieldLevel += 1;
+                if (type === 'depth') this.state.workers.mining.upgrades.depthLevel += 1;
+                if (type === 'cart') this.state.workers.mining.upgrades.cartLevel += 1;
+                this.uiManager.showFloatingText('Mine Upgraded!', 'text-yellow-300');
+            }
+            if (skillId === 'fishing') {
+                if (type === 'net') this.state.workers.fishing.upgrades.netLevel += 1;
+                if (type === 'bait') this.state.workers.fishing.upgrades.baitLevel += 1;
+                if (type === 'boat') this.state.workers.fishing.upgrades.boatLevel += 1;
+                this.uiManager.showFloatingText('Harbor Upgraded!', 'text-yellow-300');
+            }
+            this.uiManager.renderView();
+        }
+        getWorkerSpeedMultiplier(skillId, action) {
+            if (skillId === 'mining') {
+                const s = this.state.workers.mining.upgrades.speedLevel || 0; const d = this.state.workers.mining.upgrades.depthLevel || 0;
+                const timeMult = 1 / (1 + s * 0.12 + d * 0.05);
+                return Math.max(0.4, timeMult);
+            }
+            if (skillId === 'fishing') {
+                const s = this.state.workers.fishing.upgrades.boatLevel || 0; const boats = this.state.workers.fishing.boats || 0;
+                const tide = this.getTideSpeedModifier();
+                const timeMult = 1 / (1 + s * 0.1 + boats * 0.04);
+                return Math.max(0.5, timeMult * tide);
+            }
+            return 1;
+        }
+        getWorkerYieldMultiplier(skillId, action) {
+            if (skillId === 'mining') {
+                const y = this.state.workers.mining.upgrades.yieldLevel || 0; const cart = this.state.workers.mining.upgrades.cartLevel || 0;
+                return 1 + y * 0.15 + cart * 0.08;
+            }
+            if (skillId === 'fishing') {
+                const net = this.state.workers.fishing.upgrades.netLevel || 0; const bait = this.state.workers.fishing.upgrades.baitLevel || 0;
+                return 1 + net * 0.12 + bait * 0.06;
+            }
+            return 1;
+        }
+        getTideSpeedModifier() {
+            const periodMs = 60 * 1000; // 1-minute tide cycle
+            const phase = (Date.now() % periodMs) / periodMs; // 0..1
+            const wave = Math.sin(phase * Math.PI * 2); // -1..1
+            return 1 - wave * 0.08; // 0.92..1.08 inverted so low time mult at high tide
+        }
+        processWorkers(deltaMs) {
+            // Mining
+            const wm = this.state.workers?.mining; if (wm) {
+                (GAME_DATA.ACTIONS.mining || []).forEach(action => {
+                    const assigned = wm.assigned[action.id] || 0; if (assigned <= 0) return;
+                    const perCycleTime = this.calculateActionTime({ ...action, skillId: 'mining' }) * this.getWorkerSpeedMultiplier('mining', action);
+                    wm.progress[action.id] = (wm.progress[action.id] || 0) + deltaMs * assigned;
+                    if (wm.progress[action.id] >= perCycleTime) {
+                        const cycles = Math.floor(wm.progress[action.id] / perCycleTime);
+                        wm.progress[action.id] %= perCycleTime;
+                        const totalQty = (action.output?.quantity || 0) * cycles * this.getWorkerYieldMultiplier('mining', action);
+                        const qty = Math.max(0, Math.floor(totalQty)); if (qty > 0) {
+                            this.addToBank(action.output.itemId, qty);
+                            this.state.player.skills.mining.addXP(action.xp * cycles * 0.5, this);
+                        }
+                        // Rare cart haul: small chance to add extra ores
+                        const extraChance = 2 + (this.state.workers.mining.upgrades.depthLevel || 0) * 0.5;
+                        for (let i = 0; i < cycles; i++) {
+                            if (Math.random() * 100 < extraChance) this.addToBank(action.output.itemId, 1);
+                        }
+                    }
+                });
+            }
+            // Fishing
+            const wf = this.state.workers?.fishing; if (wf) {
+                (GAME_DATA.ACTIONS.fishing || []).forEach(action => {
+                    const assigned = wf.assigned[action.id] || 0; if (assigned <= 0) return;
+                    const perCycleTime = this.calculateActionTime({ ...action, skillId: 'fishing' }) * this.getWorkerSpeedMultiplier('fishing', action);
+                    wf.progress[action.id] = (wf.progress[action.id] || 0) + deltaMs * assigned;
+                    if (wf.progress[action.id] >= perCycleTime) {
+                        const cycles = Math.floor(wf.progress[action.id] / perCycleTime);
+                        wf.progress[action.id] %= perCycleTime;
+                        const totalQty = (action.output?.quantity || 0) * cycles * this.getWorkerYieldMultiplier('fishing', action);
+                        const qty = Math.max(0, Math.floor(totalQty)); if (qty > 0) {
+                            this.addToBank(action.output.itemId, qty);
+                            this.state.player.skills.fishing.addXP(action.xp * cycles * 0.5, this);
+                        }
+                        // Bait bonus: tiny chance at +1 extra
+                        const extraChance = 1 + (this.state.workers.fishing.upgrades.baitLevel || 0) * 0.6;
+                        for (let i = 0; i < cycles; i++) {
+                            if (Math.random() * 100 < extraChance) this.addToBank(action.output.itemId, 1);
+                        }
+                    }
+                });
+            }
+        }
 
         // Rune helpers
         getRuneItemIds() { return Object.keys(GAME_DATA.ITEMS).filter(id => id.endsWith('_rune')); }
@@ -395,6 +569,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (!this.state.player.mastery[skillId]) this.state.player.mastery[skillId] = {};
                         Object.keys(parsedData.player.mastery[skillId]).forEach(actionId => { const mastery = new Mastery(); Object.assign(mastery, parsedData.player.mastery[skillId][actionId]); this.state.player.mastery[skillId][actionId] = mastery; });
                     });
+                    // Ensure worker structures exist
+                    this.ensureWorkerState();
                     this.state.lastUpdate = Date.now();
                 } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
             }
@@ -501,7 +677,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 actionType = 'Craft'; if (skillId === 'firemaking') { contentHtml = this.renderFiremakingView(); }
                 else { contentHtml = GAME_DATA.RECIPES[skillId].map(recipe => this.renderActionCard(skillId, recipe, actionType)).join(''); }
             }
-            return `<h1 class="text-2xl font-semibold text-white mb-4">${skillData.name} <span class="text-base text-secondary">(Level ${playerSkill.level})</span></h1><div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">${contentHtml}</div>`;
+            const managerPanel = skillId === 'mining' ? this.renderMiningPanel() : (skillId === 'fishing' ? this.renderFishingPanel() : '');
+            return `<h1 class="text-2xl font-semibold text-white mb-4">${skillData.name} <span class="text-base text-secondary">(Level ${playerSkill.level})</span></h1>${managerPanel}<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">${contentHtml}</div>`;
         }
 
         renderActionCard(skillId, action, actionType) {
@@ -524,8 +701,92 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="w-full xp-bar-bg rounded-full h-2 my-1"><div class="mastery-bar-fill h-2 rounded-full" style="width:${(mastery.currentXP / mastery.xpToNextLevel) * 100}%"></div></div>
                             <p class="text-xs text-secondary text-right">${Math.floor(mastery.currentXP)} / ${mastery.xpToNextLevel} XP</p>
                         </div>
+                        ${skillId === 'mining' ? this.renderMiningAssign(action) : ''}
+                        ${skillId === 'fishing' ? this.renderFishingAssign(action) : ''}
                     </div>
                     <button class="${actionType.toLowerCase()}-action-btn chimera-button px-4 py-2 rounded-md mt-4" data-skill-id="${skillId}" data-action-id="${action.id}" ${!hasLevel || !canAfford || this.game.state.activeAction ? 'disabled' : ''}>${actionType}</button>
+                </div>
+            `;
+        }
+
+        renderMiningPanel() {
+            const wm = this.game.state.workers.mining; const hireCost = this.game.getHireCost('mining');
+            const speedCost = this.game.getUpgradeCost('mining', 'speed'); const yieldCost = this.game.getUpgradeCost('mining', 'yield');
+            const depthCost = this.game.getUpgradeCost('mining', 'depth'); const cartCost = this.game.getUpgradeCost('mining', 'cart');
+            return `
+                <div class="block p-4 mb-4 border border-mining">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <div>
+                            <h2 class="text-lg font-bold">Mine Overseer</h2>
+                            <p class="text-secondary text-sm">Assign Miners to rock veins. Upgrade depth, carts and tools for efficiency.</p>
+                            <p class="text-white text-sm mt-1">Miners: <span class="font-bold">${wm.total}</span></p>
+                            <p class="text-secondary text-xs">Depth L${wm.upgrades.depthLevel} • Carts L${wm.upgrades.cartLevel}</p>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <button id="hire-miner" class="chimera-button px-3 py-2 rounded-md">Hire Miner — Cost: ${hireCost} gold</button>
+                            <button id="upgrade-mining-speed" class="chimera-button px-3 py-2 rounded-md">Sharper Picks (Speed L${wm.upgrades.speedLevel}) — Cost: ${speedCost} gold</button>
+                            <button id="upgrade-mining-yield" class="chimera-button px-3 py-2 rounded-md">Ore Sacks (Yield L${wm.upgrades.yieldLevel}) — Cost: ${yieldCost} gold</button>
+                            <button id="upgrade-mining-depth" class="chimera-button px-3 py-2 rounded-md">Deeper Shafts (L${wm.upgrades.depthLevel}) — Cost: ${depthCost} gold</button>
+                            <button id="upgrade-mining-cart" class="chimera-button px-3 py-2 rounded-md">Mine Carts (L${wm.upgrades.cartLevel}) — Cost: ${cartCost} gold</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        renderMiningAssign(action) {
+            const wm = this.game.state.workers.mining; const assigned = wm.assigned[action.id] || 0; const total = wm.total; const sumAssigned = Object.values(wm.assigned).reduce((a,b)=>a+b,0); const free = Math.max(0, total - sumAssigned);
+            const speedMult = this.game.getWorkerSpeedMultiplier('mining', action); const yieldMult = this.game.getWorkerYieldMultiplier('mining', action);
+            return `
+                <div class="mt-3 p-2 rounded-md bg-black/30 border border-border-color">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-secondary">Miners Assigned: <span class="text-white font-mono">${assigned}</span> / Free: <span class="text-white font-mono">${free}</span></span>
+                        <div class="space-x-1">
+                            <button class="assign-mining-worker-btn chimera-button px-2 py-1 rounded" data-action-id="${action.id}" data-dir="-1">-</button>
+                            <button class="assign-mining-worker-btn chimera-button px-2 py-1 rounded" data-action-id="${action.id}" data-dir="+1">+</button>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-secondary mt-1">Eff: x${yieldMult.toFixed(2)} yield, ${Math.round(100 - speedMult*100)}% faster</p>
+                </div>
+            `;
+        }
+
+        renderFishingPanel() {
+            const wf = this.game.state.workers.fishing; const hireCost = this.game.getHireCost('fishing'); const boatCost = this.game.getBoatCost();
+            const netCost = this.game.getUpgradeCost('fishing', 'net'); const baitCost = this.game.getUpgradeCost('fishing', 'bait'); const boatUpCost = this.game.getUpgradeCost('fishing', 'boat');
+            const tideMult = this.game.getTideSpeedModifier(); const tidePct = Math.round((1 / tideMult) * 100) - 100; // higher is better (faster)
+            return `
+                <div class="block p-4 mb-4 border border-fishing">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <div>
+                            <h2 class="text-lg font-bold">Harbor & Fleet</h2>
+                            <p class="text-secondary text-sm">Manage Anglers and Boats. Nets and bait boost your catches. Tides affect speed.</p>
+                            <p class="text-white text-sm mt-1">Anglers: <span class="font-bold">${wf.total}</span> • Boats: <span class="font-bold">${wf.boats}</span></p>
+                            <p class="text-blue-300 text-xs">Tide bonus: ${tidePct >= 0 ? '+' : ''}${tidePct}% speed</p>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <button id="hire-angler" class="chimera-button px-3 py-2 rounded-md">Hire Angler — Cost: ${hireCost} gold</button>
+                            <button id="buy-fishing-boat" class="chimera-button px-3 py-2 rounded-md">Buy Boat — Cost: ${boatCost} gold</button>
+                            <button id="upgrade-fishing-net" class="chimera-button px-3 py-2 rounded-md">Reinforced Nets (L${wf.upgrades.netLevel}) — Cost: ${netCost} gold</button>
+                            <button id="upgrade-fishing-bait" class="chimera-button px-3 py-2 rounded-md">Premium Bait (L${wf.upgrades.baitLevel}) — Cost: ${baitCost} gold</button>
+                            <button id="upgrade-fishing-boat" class="chimera-button px-3 py-2 rounded-md">Boat Fittings (L${wf.upgrades.boatLevel}) — Cost: ${boatUpCost} gold</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        renderFishingAssign(action) {
+            const wf = this.game.state.workers.fishing; const assigned = wf.assigned[action.id] || 0; const total = wf.total; const sumAssigned = Object.values(wf.assigned).reduce((a,b)=>a+b,0); const free = Math.max(0, total - sumAssigned);
+            const speedMult = this.game.getWorkerSpeedMultiplier('fishing', action); const yieldMult = this.game.getWorkerYieldMultiplier('fishing', action);
+            return `
+                <div class="mt-3 p-2 rounded-md bg-black/30 border border-border-color">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-secondary">Anglers Assigned: <span class="text-white font-mono">${assigned}</span> / Free: <span class="text-white font-mono">${free}</span></span>
+                        <div class="space-x-1">
+                            <button class="assign-fishing-worker-btn chimera-button px-2 py-1 rounded" data-action-id="${action.id}" data-dir="-1">-</button>
+                            <button class="assign-fishing-worker-btn chimera-button px-2 py-1 rounded" data-action-id="${action.id}" data-dir="+1">+</button>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-secondary mt-1">Eff: x${yieldMult.toFixed(2)} yield, ${Math.round(100 - speedMult*100)}% faster</p>
                 </div>
             `;
         }
@@ -682,6 +943,40 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.cast-spell-btn').forEach(btn => { btn.addEventListener('click', () => this.game.castSpell(btn.dataset.spellId)); });
             // Shop
             document.querySelectorAll('.buy-chest-btn').forEach(btn => { btn.addEventListener('click', () => this.game.buyChest(btn.dataset.chestId)); });
+
+            // Mining manager
+            const hireMiner = document.getElementById('hire-miner'); if (hireMiner) hireMiner.addEventListener('click', () => this.game.hireWorker('mining'));
+            const upMS = document.getElementById('upgrade-mining-speed'); if (upMS) upMS.addEventListener('click', () => this.game.upgradeWorkers('mining', 'speed'));
+            const upMY = document.getElementById('upgrade-mining-yield'); if (upMY) upMY.addEventListener('click', () => this.game.upgradeWorkers('mining', 'yield'));
+            const upMD = document.getElementById('upgrade-mining-depth'); if (upMD) upMD.addEventListener('click', () => this.game.upgradeWorkers('mining', 'depth'));
+            const upMC = document.getElementById('upgrade-mining-cart'); if (upMC) upMC.addEventListener('click', () => this.game.upgradeWorkers('mining', 'cart'));
+            document.querySelectorAll('.assign-mining-worker-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.dataset.actionId; const dir = btn.dataset.dir === '+1' ? 1 : -1; const wm = this.game.state.workers.mining;
+                    const sumAssigned = Object.values(wm.assigned).reduce((a,b)=>a+b,0);
+                    const free = Math.max(0, wm.total - sumAssigned);
+                    if (dir === 1 && free <= 0) return; if (dir === -1 && (wm.assigned[id] || 0) <= 0) return;
+                    wm.assigned[id] = Math.max(0, (wm.assigned[id] || 0) + dir);
+                    this.renderView();
+                });
+            });
+
+            // Fishing harbor
+            const hireAngler = document.getElementById('hire-angler'); if (hireAngler) hireAngler.addEventListener('click', () => this.game.hireWorker('fishing'));
+            const buyBoat = document.getElementById('buy-fishing-boat'); if (buyBoat) buyBoat.addEventListener('click', () => this.game.buyBoat());
+            const upFN = document.getElementById('upgrade-fishing-net'); if (upFN) upFN.addEventListener('click', () => this.game.upgradeWorkers('fishing', 'net'));
+            const upFB = document.getElementById('upgrade-fishing-bait'); if (upFB) upFB.addEventListener('click', () => this.game.upgradeWorkers('fishing', 'bait'));
+            const upFO = document.getElementById('upgrade-fishing-boat'); if (upFO) upFO.addEventListener('click', () => this.game.upgradeWorkers('fishing', 'boat'));
+            document.querySelectorAll('.assign-fishing-worker-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.dataset.actionId; const dir = btn.dataset.dir === '+1' ? 1 : -1; const wf = this.game.state.workers.fishing;
+                    const sumAssigned = Object.values(wf.assigned).reduce((a,b)=>a+b,0);
+                    const free = Math.max(0, wf.total - sumAssigned);
+                    if (dir === 1 && free <= 0) return; if (dir === -1 && (wf.assigned[id] || 0) <= 0) return;
+                    wf.assigned[id] = Math.max(0, (wf.assigned[id] || 0) + dir);
+                    this.renderView();
+                });
+            });
         }
 
         showModal(title, content) {
