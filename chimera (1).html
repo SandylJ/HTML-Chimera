@@ -72,17 +72,26 @@
         .border-cooking { border-color: #d2691e; } .bg-cooking { background-color: #d2691e; }
         .medieval-border { border-image: linear-gradient(45deg, #8b5a2b, #b8860b) 1; border-width: 1px; border-style: solid; }
         .medieval-glow { box-shadow: 0 0 0 1px rgba(255,215,0,0.08) inset, 0 0 24px rgba(255,215,0,0.06); }
-        
-        /* New gathering themes */
-        .border-farming { border-color: #6b8e23; } .bg-farming { background-color: #6b8e23; }
-        .border-hunter { border-color: #556b2f; } .bg-hunter { background-color: #556b2f; }
-        .border-archaeology { border-color: #c2b280; } .bg-archaeology { background-color: #c2b280; }
-        .border-divination { border-color: #7b68ee; } .bg-divination { background-color: #7b68ee; }
+
+        /* Runecrafting Altar UI */
+        .altar-zone { position: relative; height: 260px; border: 1px dashed var(--border-color); background: radial-gradient(120px 80px at 50% 60%, rgba(88,166,255,0.15), transparent 70%); border-radius: 12px; overflow: hidden; }
+        .altar-core { position: absolute; left: 50%; top: 56%; transform: translate(-50%, -50%); width: 140px; height: 140px; border-radius: 9999px; background: radial-gradient(circle at 50% 45%, rgba(88,166,255,0.3), rgba(10,132,255,0.14) 45%, transparent 65%); box-shadow: 0 0 40px rgba(88,166,255,0.18), inset 0 0 24px rgba(88,166,255,0.16); border: 1px solid rgba(88,166,255,0.25); }
+        .altar-sigil { position: absolute; left: 50%; top: 56%; transform: translate(-50%, -50%); font-size: 38px; color: rgba(255,255,255,0.9); text-shadow: 0 0 10px rgba(88,166,255,0.6); }
+        .altar-glow { position: absolute; inset: -20px; background: conic-gradient(from 0deg, rgba(88,166,255,0.08), rgba(255,255,255,0.04), rgba(88,166,255,0.08)); filter: blur(12px); opacity: 0.7; animation: altar-rotate 9s linear infinite; pointer-events: none; }
+        @keyframes altar-rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .rune-spark { position: absolute; width: 6px; height: 6px; border-radius: 9999px; background: rgba(88,166,255,0.95); box-shadow: 0 0 10px rgba(88,166,255,0.7); animation: spark-fly 900ms ease-out forwards; }
+        @keyframes spark-fly { 0% { opacity: 0; transform: translate(var(--sx, 0), var(--sy, 0)) scale(0.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--tx, 0), var(--ty, -140px)) scale(1.1); } }
+        .rc-altar-card { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; background: rgba(2,6,23,0.35); transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease; display: flex; flex-direction: column; gap: 6px; }
+        .rc-altar-card:hover { transform: translateY(-2px); border-color: rgba(88,166,255,0.35); background: rgba(2,6,23,0.55); }
+        .rc-altar-card.rc-selected { border-color: rgba(255,255,255,0.4); box-shadow: 0 0 0 1px rgba(88,166,255,0.25) inset; }
+        .rc-locked { opacity: 0.55; filter: grayscale(0.2); }
+        .rune-essence-token { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-color); background: rgba(2,6,23,0.5); padding: 6px 10px; border-radius: 9999px; cursor: grab; user-select: none; }
+        .rune-output-badge { display:inline-flex; align-items:center; gap:6px; border:1px solid rgba(88,166,255,0.35); background: rgba(2,6,23,0.6); padding: 6px 10px; border-radius: 9999px; }
     </style>
 </head>
 <body class="text-sm">
-    <div id="game-container" class="w-full min-h-[100dvh] flex relative">
-        <nav id="sidebar" class="w-64 bg-secondary flex-shrink-0 flex flex-col border-r border-border-color fixed md:static inset-y-0 left-0 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-200">
+    <div id="game-container" class="w-full h-screen flex">
+        <nav id="sidebar" class="w-64 bg-secondary flex-shrink-0 flex flex-col border-r border-border-color">
             <div class="p-4 text-center border-b border-border-color">
                 <h1 class="text-xl font-bold text-white">Project Chimera</h1>
                 <p class="text-xs text-secondary">Melvor x Runescape x Cookie Clicker</p>
@@ -104,11 +113,9 @@
                 <a href="#" class="sidebar-link flex items-center p-3" data-view="meta_skills"><i class="fas fa-star w-6 text-center"></i><span>Meta Skills</span></a>
             </div>
         </nav>
-        <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
-        <div class="flex-grow flex flex-col md:ml-0">
-            <header class="flex-shrink-0 p-3 bg-secondary border-b border-border-color grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="flex items-center space-x-3">
-                    <button id="mobile-menu-btn" class="md:hidden chimera-button w-9 h-9 rounded-md flex items-center justify-center"><i class="fas fa-bars"></i></button>
+        <div class="flex-grow flex flex-col">
+            <header class="flex-shrink-0 p-3 bg-secondary border-b border-border-color grid grid-cols-2 gap-4">
+                <div class="flex items-center space-x-4">
                     <div class="flex items-center space-x-2"><i class="fas fa-coins text-yellow-400"></i><span id="gold-display">0</span><span id="gps-display" class="text-xs text-secondary ml-2">(+0/s)</span></div>
                     <div class="flex items-center space-x-2"><i class="fas fa-gem text-purple-300"></i><span id="runes-display" class="font-mono">0</span></div>
                     <div class="flex items-center space-x-2 w-full">
@@ -119,20 +126,11 @@
                 </div>
                 <div id="mastery-progress-bar" class="block"></div>
             </header>
-            <main id="main-content" class="flex-grow p-4 overflow-y-auto pb-24 md:pb-4"></main>
-            <nav id="mobile-nav" class="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-secondary border-t border-border-color">
-                <div class="grid grid-cols-5 text-xs">
-                    <button class="mobile-nav-link flex flex-col items-center justify-center py-2 text-secondary" data-view="dashboard"><i class="fas fa-tachometer-alt"></i><span>Home</span></button>
-                    <button class="mobile-nav-link flex flex-col items-center justify-center py-2 text-secondary" data-view="bank"><i class="fas fa-box"></i><span>Bank</span></button>
-                    <button class="mobile-nav-link flex flex-col items-center justify-center py-2 text-secondary" data-view="clicker"><i class="fas fa-chess-rook"></i><span>Empire</span></button>
-                    <button class="mobile-nav-link flex flex-col items-center justify-center py-2 text-secondary" data-view="combat"><i class="fas fa-skull"></i><span>Combat</span></button>
-                    <button class="mobile-nav-link flex flex-col items-center justify-center py-2 text-secondary" data-view="shop"><i class="fas fa-store"></i><span>Shop</span></button>
-                </div>
-            </nav>
+            <main id="main-content" class="flex-grow p-4 overflow-y-auto"></main>
         </div>
     </div>
- 
-    <div id="modal-backdrop" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden">
+
+    <div id="modal-backdrop" class="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden">
         <div id="modal-content" class="block p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"></div>
     </div>
     <div id="floating-text-container" class="absolute inset-0 pointer-events-none"></div>
@@ -147,13 +145,6 @@
                 woodcutting: { name: 'Woodcutting', type: 'gathering', icon: 'fa-tree', theme: 'woodcutting' },
                 mining: { name: 'Mining', type: 'gathering', icon: 'fa-gem', theme: 'mining' },
                 fishing: { name: 'Fishing', type: 'gathering', icon: 'fa-fish', theme: 'fishing' },
-                
-                // New gathering skills
-                farming: { name: 'Farming', type: 'gathering', icon: 'fa-seedling', theme: 'farming' },
-                hunter: { name: 'Hunter', type: 'gathering', icon: 'fa-paw', theme: 'hunter' },
-                archaeology: { name: 'Archaeology', type: 'gathering', icon: 'fa-brush', theme: 'archaeology' },
-                divination: { name: 'Divination', type: 'gathering', icon: 'fa-sparkles', theme: 'divination' },
-
                 firemaking: { name: 'Firemaking', type: 'artisan', icon: 'fa-fire', theme: 'firemaking' },
                 smithing: { name: 'Smithing', type: 'artisan', icon: 'fa-hammer', theme: 'smithing' },
                 cooking: { name: 'Cooking', type: 'artisan', icon: 'fa-utensils', theme: 'cooking' },
@@ -186,27 +177,15 @@
                 air_rune: { name: 'Air Rune', icon: '🌀' },
                 mind_rune: { name: 'Mind Rune', icon: '🧠' },
                 water_rune: { name: 'Water Rune', icon: '💧' },
-                earth_rune: { name: 'Earth Rune', icon: '🌱' },
+                earth_rune: { name: 'Earth Rune', icon: '🪨' },
                 fire_rune: { name: 'Fire Rune', icon: '🔥' },
-                body_rune: { name: 'Body Rune', icon: '🫀' },
-                chaos_rune: { name: 'Chaos Rune', icon: '🧿' },
+                body_rune: { name: 'Body Rune', icon: '🏋️' },
+                cosmic_rune: { name: 'Cosmic Rune', icon: '🌌' },
+                chaos_rune: { name: 'Chaos Rune', icon: '☄️' },
                 nature_rune: { name: 'Nature Rune', icon: '🍃' },
                 law_rune: { name: 'Law Rune', icon: '⚖️' },
-                                blood_rune: { name: 'Blood Rune', icon: '🩸' },
-                cosmic_rune: { name: 'Cosmic Rune', icon: '🌌' },
                 death_rune: { name: 'Death Rune', icon: '💀' },
-                
-                // New gathering outputs
-                potato: { name: 'Potato', icon: '🥔' },
-                wheat: { name: 'Wheat', icon: '🌾' },
-                flax: { name: 'Flax', icon: '🪢' },
-                raw_bird_meat: { name: 'Raw Bird Meat', icon: '🍖' },
-                animal_pelt: { name: 'Animal Pelt', icon: '🦫' },
-                artifact_fragment: { name: 'Artifact Fragment', icon: '🗿' },
-                ancient_relic: { name: 'Ancient Relic', icon: '🏺' },
-                pale_energy: { name: 'Pale Energy', icon: '✨' },
-                flickering_energy: { name: 'Flickering Energy', icon: '🔮' },
-                feather: { name: 'Feather', icon: '🪶' },
+                blood_rune: { name: 'Blood Rune', icon: '🩸' },
             },
             ACTIONS: {
                 woodcutting: [
@@ -221,25 +200,6 @@
                 fishing: [
                     { id: 'shrimp_spot', name: 'Shrimp Spot', level: 1, xp: 8, output: { itemId: 'raw_shrimp', quantity: 1 }, baseTime: 4000 },
                     { id: 'sardine_spot', name: 'Sardine Spot', level: 5, xp: 15, output: { itemId: 'raw_sardine', quantity: 1 }, baseTime: 4500 },
-                ],
-
-                // New gathering actions
-                farming: [
-                    { id: 'potato_patch', name: 'Potato Patch', level: 1, xp: 7, output: { itemId: 'potato', quantity: 1 }, baseTime: 4500 },
-                    { id: 'wheat_field', name: 'Wheat Field', level: 5, xp: 10, output: { itemId: 'wheat', quantity: 1 }, baseTime: 5000 },
-                    { id: 'flax_field', name: 'Flax Field', level: 10, xp: 14, output: { itemId: 'flax', quantity: 1 }, baseTime: 5200 },
-                ],
-                hunter: [
-                    { id: 'bird_snare', name: 'Bird Snaring', level: 1, xp: 9, output: { itemId: 'raw_bird_meat', quantity: 1 }, baseTime: 4200, rareDrop: { itemId: 'feather', chance: 5 } },
-                    { id: 'rabbit_trap', name: 'Rabbit Trapping', level: 7, xp: 14, output: { itemId: 'animal_pelt', quantity: 1 }, baseTime: 5200 },
-                ],
-                archaeology: [
-                    { id: 'surface_excavation', name: 'Surface Excavation', level: 1, xp: 6, output: { itemId: 'artifact_fragment', quantity: 1 }, baseTime: 4800 },
-                    { id: 'ancient_digsite', name: 'Ancient Digsite', level: 20, xp: 18, output: { itemId: 'ancient_relic', quantity: 1 }, baseTime: 8000 },
-                ],
-                divination: [
-                    { id: 'pale_wisp', name: 'Pale Wisp', level: 1, xp: 5, output: { itemId: 'pale_energy', quantity: 1 }, baseTime: 3000 },
-                    { id: 'flickering_wisp', name: 'Flickering Wisp', level: 10, xp: 8, output: { itemId: 'flickering_energy', quantity: 1 }, baseTime: 3600 },
                 ],
             },
             RECIPES: {
@@ -377,14 +337,13 @@
                 Object.keys(GAME_DATA.SKILLS).forEach(id => { this.player.skills[id] = new Skill(id, GAME_DATA.SKILLS[id].name); this.player.mastery[id] = {}; });
                 Object.values(META_SKILLS).forEach(name => { this.player.meta_skills[name] = new Skill(name, name); });
                 
-                // Worker systems for all gathering skills
-                this.workers = {};
-                Object.keys(GAME_DATA.SKILLS)
-                    .filter(id => GAME_DATA.SKILLS[id].type === 'gathering')
-                    .forEach(skillId => {
-                        this.workers[skillId] = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} };
-                        (GAME_DATA.ACTIONS[skillId] || []).forEach(a => { this.workers[skillId].assigned[a.id] = 0; this.workers[skillId].progress[a.id] = 0; });
-                    });
+                // Worker systems (Timber Camp for Woodcutting)
+                this.workers = {
+                    woodcutting: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} },
+                    mining: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} }
+                };
+                (GAME_DATA.ACTIONS.woodcutting || []).forEach(a => { this.workers.woodcutting.assigned[a.id] = 0; this.workers.woodcutting.progress[a.id] = 0; });
+                (GAME_DATA.ACTIONS.mining || []).forEach(a => { this.workers.mining.assigned[a.id] = 0; this.workers.mining.progress[a.id] = 0; });
             }
         }
 
@@ -500,14 +459,16 @@
             
             // Worker helpers
             getWorkerSpeedMultiplier(skillId, action) {
-                const ws = this.state.workers?.[skillId]; if (!ws) return 1;
-                const speedLevel = ws.upgrades.speedLevel || 0;
+                const workersForSkill = this.state.workers?.[skillId];
+                if (!workersForSkill) return 1;
+                const speedLevel = workersForSkill.upgrades?.speedLevel || 0;
                 // 8% faster per level multiplicative
                 return Math.pow(0.92, speedLevel);
             }
             getWorkerYieldMultiplier(skillId, action) {
-                const ws = this.state.workers?.[skillId]; if (!ws) return 1;
-                const yieldLevel = ws.upgrades.yieldLevel || 0;
+                const workersForSkill = this.state.workers?.[skillId];
+                if (!workersForSkill) return 1;
+                const yieldLevel = workersForSkill.upgrades?.yieldLevel || 0;
                 // 10% more per level
                 return 1 + (0.10 * yieldLevel);
             }
@@ -515,7 +476,7 @@
             processWorkers(deltaMs) {
                 const workerSkills = Object.keys(this.state.workers || {});
                 for (const skillId of workerSkills) {
-                    const ws = this.state.workers[skillId];
+                    const ws = this.state.workers[skillId]; if (!ws) continue;
                     const actions = GAME_DATA.ACTIONS[skillId] || [];
                     for (const action of actions) {
                         const assigned = ws.assigned[action.id] || 0; if (assigned <= 0) continue;
@@ -533,9 +494,10 @@
                             }
                             // Rare drops (each cycle independently, reduced chance)
                             if (action.rareDrop) {
-                                const chance = action.rareDrop.chance || 0; // as percent
                                 for (let i = 0; i < cycles; i++) {
-                                    if (Math.random() * 100 < chance * 0.5) { this.addToBank(action.rareDrop.itemId, 1); }
+                                    if (Math.random() * 100 < (action.rareDrop.chance * 0.6)) {
+                                        this.addToBank(action.rareDrop.itemId, 1);
+                                    }
                                 }
                             }
                         }
@@ -633,11 +595,14 @@
             // Worker economy
             getHireCost(skillId) {
                 const ws = this.state.workers?.[skillId]; if (!ws) return Infinity;
-                const base = 150; const owned = ws.total || 0; return Math.floor(base * Math.pow(1.35, owned));
+                const base = 150; // same base for now across skills
+                const owned = ws.total || 0;
+                return Math.floor(base * Math.pow(1.35, owned));
             }
             getUpgradeCost(skillId, type) {
                 const ws = this.state.workers?.[skillId]; if (!ws) return Infinity;
-                const base = type === 'speed' ? 250 : 300; const level = type === 'speed' ? (ws.upgrades.speedLevel || 0) : (ws.upgrades.yieldLevel || 0);
+                const base = type === 'speed' ? 250 : 300;
+                const level = type === 'speed' ? (ws.upgrades.speedLevel || 0) : (ws.upgrades.yieldLevel || 0);
                 return Math.floor(base * Math.pow(1.55, level));
             }
             hireWorker(skillId) {
@@ -645,7 +610,8 @@
                 const cost = this.getHireCost(skillId);
                 if (!this.spendGold(cost)) { this.uiManager.showModal('Not Enough Gold', `<p>You need ${cost} gold to hire a worker.</p>`); return; }
                 ws.total += 1;
-                this.uiManager.showFloatingText(`+1 Worker Hired`, 'text-green-400');
+                const name = skillId === 'woodcutting' ? 'Timberhand' : (skillId === 'mining' ? 'Miner' : 'Worker');
+                this.uiManager.showFloatingText(`+1 ${name} Hired`, 'text-green-400');
                 this.uiManager.renderView();
             }
             upgradeWorkers(skillId, type) {
@@ -654,7 +620,8 @@
                 if (!this.spendGold(cost)) { this.uiManager.showModal('Not Enough Gold', `<p>You need ${cost} gold to upgrade.</p>`); return; }
                 if (type === 'speed') ws.upgrades.speedLevel += 1;
                 if (type === 'yield') ws.upgrades.yieldLevel += 1;
-                this.uiManager.showFloatingText('Work Camp Upgraded!', 'text-yellow-300');
+                const place = skillId === 'woodcutting' ? 'Timber Lodge' : (skillId === 'mining' ? 'Mining Camp' : 'Workshop');
+                this.uiManager.showFloatingText(`${place} Upgraded!`, 'text-yellow-300');
                 this.uiManager.renderView();
             }
 
@@ -764,21 +731,25 @@
                             Object.keys(parsedData.player.mastery[skillId]).forEach(actionId => { const mastery = new Mastery(); Object.assign(mastery, parsedData.player.mastery[skillId][actionId]); this.state.player.mastery[skillId][actionId] = mastery; });
                         });
                         this.state.lastUpdate = Date.now();
-                        // Backfill worker system defaults if missing
+                        // Backfill worker system defaults if missing (woodcutting, mining)
                         if (!this.state.workers) {
-                            this.state.workers = {};
+                            this.state.workers = {
+                                woodcutting: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} },
+                                mining: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} }
+                            };
                         }
-                        Object.keys(GAME_DATA.SKILLS)
-                            .filter(id => GAME_DATA.SKILLS[id].type === 'gathering')
-                            .forEach(skillId => {
-                                if (!this.state.workers[skillId]) { this.state.workers[skillId] = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} }; }
-                                (GAME_DATA.ACTIONS[skillId] || []).forEach(a => {
-                                    if (typeof this.state.workers[skillId].assigned[a.id] !== 'number') this.state.workers[skillId].assigned[a.id] = 0;
-                                    if (typeof this.state.workers[skillId].progress[a.id] !== 'number') this.state.workers[skillId].progress[a.id] = 0;
-                                });
-                            });
-                        // Backfill empire system defaults if missing
-                        if (!this.state.empire) { this.state.empire = { units: {}, lastTick: Date.now(), production: { goldPerSec: 0, runesPerSec: 0, essencePerSec: 0 }, buffers: { gold: 0, runes: 0, essence: 0 } }; }
+                        if (!this.state.workers.woodcutting) { this.state.workers.woodcutting = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} }; }
+                        if (!this.state.workers.mining) { this.state.workers.mining = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} }; }
+                        (GAME_DATA.ACTIONS.woodcutting || []).forEach(a => {
+                            if (typeof this.state.workers.woodcutting.assigned[a.id] !== 'number') this.state.workers.woodcutting.assigned[a.id] = 0;
+                            if (typeof this.state.workers.woodcutting.progress[a.id] !== 'number') this.state.workers.woodcutting.progress[a.id] = 0;
+                        });
+                        (GAME_DATA.ACTIONS.mining || []).forEach(a => {
+                            if (typeof this.state.workers.mining.assigned[a.id] !== 'number') this.state.workers.mining.assigned[a.id] = 0;
+                            if (typeof this.state.workers.mining.progress[a.id] !== 'number') this.state.workers.mining.progress[a.id] = 0;
+                        });
+                         // Backfill empire system defaults if missing
+                         if (!this.state.empire) { this.state.empire = { units: {}, lastTick: Date.now(), production: { goldPerSec: 0, runesPerSec: 0, essencePerSec: 0 }, buffers: { gold: 0, runes: 0, essence: 0 } }; }
                         if (!this.state.empire.units) this.state.empire.units = {};
                         Object.keys(GAME_DATA.UNITS).forEach(id => { if (typeof this.state.empire.units[id] !== 'number') this.state.empire.units[id] = 0; });
                         // Backfill army system defaults if missing
@@ -843,13 +814,13 @@
             constructor(game) {
                 this.game = game; this.mainContent = document.getElementById('main-content'); this.modalBackdrop = document.getElementById('modal-backdrop'); this.modalContent = document.getElementById('modal-content'); this.floatingTextContainer = document.getElementById('floating-text-container'); this.currentView = 'dashboard';
             }
-            init() { this.renderSidebar(); this.attachSidebarEventListeners(); this.attachMobileChromeListeners(); this.render(); }
+            init() { this.renderSidebar(); this.attachSidebarEventListeners(); this.render(); }
             renderSidebar() {
                 const createLink = (skillId, skill) => `<a href="#" class="sidebar-link flex items-center p-3" data-view="${skillId}"><i class="fas ${skill.icon} w-6 text-center"></i><div class="flex-grow"><span>${skill.name}</span><div class="w-full xp-bar-bg rounded-full h-1.5 mt-1"><div id="sidebar-xp-${skillId}" class="xp-bar-fill h-1.5 rounded-full"></div></div></div></a>`;
                 const gatheringHtml = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'gathering').map(id => createLink(id, GAME_DATA.SKILLS[id])).join(''); document.getElementById('gathering-skills-nav').innerHTML = gatheringHtml;
                 const artisanHtml = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'artisan').map(id => createLink(id, GAME_DATA.SKILLS[id])).join(''); document.getElementById('artisan-skills-nav').innerHTML = artisanHtml;
             }
-            attachSidebarEventListeners() { document.querySelectorAll('.sidebar-link, .mobile-nav-link').forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); this.currentView = link.dataset.view; this.render(); if (this._closeMobileSidebar) this._closeMobileSidebar(); }); }); }
+            attachSidebarEventListeners() { document.querySelectorAll('.sidebar-link').forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); this.currentView = link.dataset.view; this.render(); }); }); }
             render() { this.updateSidebarActive(); this.renderView(); }
 
             updateDynamicElements() {
@@ -866,7 +837,7 @@
                 // If in combat, update view footer elements
                 if (this.currentView === 'combat') this.renderCombatFooter();
             }
-            updateSidebarActive() { document.querySelectorAll('.sidebar-link').forEach(link => { link.classList.toggle('active', link.dataset.view === this.currentView); }); document.querySelectorAll('.mobile-nav-link').forEach(link => { const isActive = link.dataset.view === this.currentView; link.classList.toggle('text-blue-400', isActive); link.classList.toggle('text-secondary', !isActive); }); }
+            updateSidebarActive() { document.querySelectorAll('.sidebar-link').forEach(link => { link.classList.toggle('active', link.dataset.view === this.currentView); }); }
 
             updateMasteryBar() {
                 const container = document.getElementById('mastery-progress-bar'); const action = this.game.state.activeAction; const inCombat = this.game.state.combat.inCombat; if (!action && !inCombat) { container.innerHTML = ''; return; }
@@ -914,6 +885,8 @@
                 }).join('');
                 const wc = this.game.state.workers.woodcutting;
                 const wcAssigned = Object.values(wc.assigned || {}).reduce((a,b)=>a+b,0);
+                const mn = this.game.state.workers.mining;
+                const mnAssigned = Object.values(mn.assigned || {}).reduce((a,b)=>a+b,0);
                 return `
                     <div class="block p-6 mb-4 bg-gradient-to-r from-black/40 to-black/20 border border-border-color">
                         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -950,6 +923,7 @@
                             <h2 class="text-lg font-bold">Workforce</h2>
                             <p class="text-secondary">Empire Units & Camps</p>
                             <p class="text-sm">Timberhands: <span class="font-mono text-white">${wc.total}</span> • Assigned: <span class="font-mono text-white">${wcAssigned}</span></p>
+                            <p class="text-sm">Miners: <span class="font-mono text-white">${mn.total}</span> • Assigned: <span class="font-mono text-white">${mnAssigned}</span></p>
                             <div class="mt-2 space-y-1">${unitList || '<p class="text-secondary">No units hired yet.</p>'}</div>
                         </div>
                         <div class="block p-4">
@@ -977,10 +951,16 @@
                 const skillData = GAME_DATA.SKILLS[skillId]; const playerSkill = this.game.state.player.skills[skillId]; let contentHtml = ''; let actionType = '';
                 if (skillData.type === 'gathering') { actionType = 'Start'; contentHtml = GAME_DATA.ACTIONS[skillId].map(action => this.renderActionCard(skillId, action, actionType)).join(''); }
                 else if (skillData.type === 'artisan') {
-                    actionType = 'Craft'; if (skillId === 'firemaking') { contentHtml = this.renderFiremakingView(); }
-                    else { contentHtml = GAME_DATA.RECIPES[skillId].map(recipe => this.renderActionCard(skillId, recipe, actionType)).join(''); }
+                    actionType = 'Craft';
+                    if (skillId === 'firemaking') {
+                        contentHtml = this.renderFiremakingView();
+                    } else if (skillId === 'runecrafting') {
+                        contentHtml = this.renderRunecraftingView();
+                    } else {
+                        contentHtml = GAME_DATA.RECIPES[skillId].map(recipe => this.renderActionCard(skillId, recipe, actionType)).join('');
+                    }
                 }
-                const workerPanel = (skillData.type === 'gathering' && this.game.state.workers[skillId]) ? this.renderWorkerPanel(skillId) : '';
+                const workerPanel = this.renderWorkerPanelForSkill(skillId);
                 return `<h1 class="text-2xl font-semibold text-white mb-4">${skillData.name} <span class="text-base text-secondary">(Level ${playerSkill.level})</span></h1>${workerPanel}<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">${contentHtml}</div>`;
             }
 
@@ -995,7 +975,7 @@
                 return `
                     <div class="block p-4 flex flex-col justify-between ${!hasLevel ? 'opacity-50' : ''}">
                         <div>
-                            <h3 class="text-lg font-bold">${action.name}</h3>
+                            <h3 class="text-lg font-bold text-white">${action.name}</h3>
                             <p class="text-secondary text-xs">Requires Level: ${action.level}</p>
                             <p class="text-secondary text-xs">XP: ${action.xp}</p>
                             ${action.input ? `<p class="text-secondary text-xs mt-1">Requires: ${inputList}</p>`: ''}
@@ -1009,9 +989,10 @@
                             </div>
                             ${workerAssign}
                         </div>
-                        <div class="mt-4 flex gap-2">
-                            <button class="${actionType.toLowerCase()}-action-btn chimera-button px-4 py-2 rounded-md" data-skill-id="${skillId}" data-action-id="${action.id}" ${!hasLevel || !canAfford || this.game.state.activeAction ? 'disabled' : ''}>${actionType}</button>
-                        </div>
+                                                    <div class="mt-4 flex gap-2">
+                                <button class="${actionType.toLowerCase()}-action-btn chimera-button px-4 py-2 rounded-md" data-skill-id="${skillId}" data-action-id="${action.id}" ${!hasLevel || !canAfford || this.game.state.activeAction ? 'disabled' : ''}>${actionType}</button>
+                                ${actionType === 'Start' ? `<button class="stop-action-btn chimera-button px-4 py-2 rounded-md" data-skill-id="${skillId}" data-action-id="${action.id}" ${(this.game.state.activeAction && this.game.state.activeAction.skillId === skillId && this.game.state.activeAction.id === action.id) ? '' : 'disabled'}>Stop</button>` : ''}
+                            </div>
                     </div>
                 `;
             }
@@ -1169,6 +1150,24 @@
                     }
                 }); });
 
+                // Runecrafting interactive altar handlers
+                const altar = document.getElementById('altar-dropzone');
+                const essenceToken = document.getElementById('essence-token');
+                const qtyInput = document.getElementById('rc-qty');
+                const btnMinus = document.getElementById('rc-minus');
+                const btnPlus = document.getElementById('rc-plus');
+                const craftBtn = document.getElementById('rc-craft-btn');
+                const haveEss = (this.game.state.bank['rune_essence'] || 0);
+                const selectRecipe = (id) => { document.querySelectorAll('.rc-altar-card').forEach(c => c.classList.toggle('rc-selected', c.dataset.rcRecipeId === id)); if (craftBtn) { craftBtn.dataset.recipeId = id || ''; craftBtn.disabled = !id; } };
+                document.querySelectorAll('.rc-altar-card').forEach(card => { card.addEventListener('click', () => selectRecipe(card.dataset.rcRecipeId)); });
+                document.querySelectorAll('.quick-craft-btn').forEach(btn => { btn.addEventListener('click', (e) => { e.stopPropagation(); const id = btn.dataset.recipeId; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const maxQty = Math.floor((this.game.state.bank['rune_essence'] || 0) / per); if (maxQty <= 0) return; this.game.craftItem('runecrafting', id, Math.min(1, maxQty)); this.render(); }); });
+                if (btnMinus) btnMinus.addEventListener('click', () => { const v = Math.max(1, (parseInt(qtyInput.value || '1', 10) - 10)); qtyInput.value = v; });
+                if (btnPlus) btnPlus.addEventListener('click', () => { const v = Math.min(haveEss, (parseInt(qtyInput.value || '1', 10) + 10)); qtyInput.value = v; });
+                if (qtyInput) qtyInput.addEventListener('change', () => { let v = parseInt(qtyInput.value || '1', 10); if (isNaN(v) || v <= 0) v = 1; v = Math.min(v, haveEss); qtyInput.value = v; });
+                if (craftBtn) craftBtn.addEventListener('click', () => { const id = craftBtn.dataset.recipeId; if (!id) return; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const maxQty = Math.floor((this.game.state.bank['rune_essence'] || 0) / per); const want = Math.min(maxQty, Math.max(1, parseInt(qtyInput.value || '1', 10))); if (want <= 0) return; this.game.craftItem('runecrafting', id, want); if (altar) { for (let i = 0; i < Math.min(10, want); i++) { const spark = document.createElement('div'); spark.className = 'rune-spark'; spark.style.setProperty('--sx', `${(Math.random() - 0.5) * 120}px`); spark.style.setProperty('--sy', `${(Math.random() - 0.2) * 40}px`); spark.style.setProperty('--tx', `${(Math.random() - 0.5) * 40}px`); spark.style.setProperty('--ty', `${-140 - Math.random() * 40}px`); altar.appendChild(spark); setTimeout(() => spark.remove(), 950); } } this.render(); });
+                if (altar) { altar.addEventListener('dragover', (e) => { e.preventDefault(); altar.style.borderColor = 'rgba(88,166,255,0.6)'; }); altar.addEventListener('dragleave', () => { altar.style.borderColor = 'var(--border-color)'; }); altar.addEventListener('drop', (e) => { e.preventDefault(); altar.style.borderColor = 'var(--border-color)'; const sel = document.querySelector('.rc-altar-card.rc-selected'); if (!sel) { this.game.uiManager.showFloatingText('Select an altar first', 'text-yellow-300'); return; } const id = sel.dataset.rcRecipeId; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const have = (this.game.state.bank['rune_essence'] || 0); const maxQty = Math.floor(have / per); const want = Math.min(maxQty, Math.max(1, parseInt(qtyInput?.value || '1', 10))); if (want <= 0) return; this.game.craftItem('runecrafting', id, want); for (let i = 0; i < Math.min(10, want); i++) { const spark = document.createElement('div'); spark.className = 'rune-spark'; spark.style.setProperty('--sx', `${(Math.random() - 0.5) * 120}px`); spark.style.setProperty('--sy', `${(Math.random() - 0.2) * 40}px`); spark.style.setProperty('--tx', `${(Math.random() - 0.5) * 40}px`); spark.style.setProperty('--ty', `${-140 - Math.random() * 40}px`); altar.appendChild(spark); setTimeout(() => spark.remove(), 950); } this.render(); }); }
+                if (essenceToken) { essenceToken.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', 'essence'); }); }
+
                 // Combat
                 document.querySelectorAll('.start-combat-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.startCombat(btn.dataset.enemyId); this.currentView = 'combat'; this.render(); }); });
                 const endBtn = document.getElementById('end-combat-btn'); if (endBtn) endBtn.addEventListener('click', () => this.game.endCombat(false));
@@ -1185,19 +1184,19 @@
                 // Army
                 document.querySelectorAll('.hire-army-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireArmyUnit(btn.dataset.unitId)); });
 
-                // Workers - Woodcutting
-                const hire = document.getElementById('hire-wood-worker'); if (hire) hire.addEventListener('click', () => this.game.hireWorker('woodcutting'));
-                const upS = document.getElementById('upgrade-wood-speed'); if (upS) upS.addEventListener('click', () => this.game.upgradeWorkers('woodcutting', 'speed'));
-                const upY = document.getElementById('upgrade-wood-yield'); if (upY) upY.addEventListener('click', () => this.game.upgradeWorkers('woodcutting', 'yield'));
+                // Workers - generic per skill
+                document.querySelectorAll('.hire-worker-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireWorker(btn.dataset.skillId)); });
+                document.querySelectorAll('.upgrade-worker-speed-btn').forEach(btn => { btn.addEventListener('click', () => this.game.upgradeWorkers(btn.dataset.skillId, 'speed')); });
+                document.querySelectorAll('.upgrade-worker-yield-btn').forEach(btn => { btn.addEventListener('click', () => this.game.upgradeWorkers(btn.dataset.skillId, 'yield')); });
                 document.querySelectorAll('.assign-worker-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
-                        const id = btn.dataset.actionId; const dir = btn.dataset.dir;
-                        const wc = this.game.state.workers.woodcutting;
-                        const sumAssigned = Object.values(wc.assigned).reduce((a,b)=>a+b,0);
+                        const skillId = btn.dataset.skillId; const id = btn.dataset.actionId; const dir = btn.dataset.dir;
+                        const ws = this.game.state.workers[skillId];
+                        const sumAssigned = Object.values(ws.assigned).reduce((a,b)=>a+b,0);
                         if (dir === '+1') {
-                            if (sumAssigned < wc.total) { wc.assigned[id] = (wc.assigned[id] || 0) + 1; this.renderView(); }
+                            if (sumAssigned < ws.total) { ws.assigned[id] = (ws.assigned[id] || 0) + 1; this.renderView(); }
                         } else {
-                            if ((wc.assigned[id] || 0) > 0) { wc.assigned[id] -= 1; this.renderView(); }
+                            if ((ws.assigned[id] || 0) > 0) { ws.assigned[id] -= 1; this.renderView(); }
                         }
                     });
                 });
@@ -1243,36 +1242,27 @@
                 setTimeout(() => floatText.remove(), duration);
             }
 
-            renderWorkerPanel(skillId) {
-                const ws = this.game.state.workers[skillId];
+            renderWorkerPanelForSkill(skillId) {
+                const ws = this.game.state.workers[skillId]; if (!ws) return '';
                 const hireCost = this.game.getHireCost(skillId);
                 const speedCost = this.game.getUpgradeCost(skillId, 'speed');
                 const yieldCost = this.game.getUpgradeCost(skillId, 'yield');
-                const speedLvl = ws.upgrades.speedLevel;
-                const yieldLvl = ws.upgrades.yieldLevel;
-                const theme = GAME_DATA.SKILLS[skillId].theme;
-                const NAMES = {
-                    woodcutting: { lodge: 'Timber Lodge', worker: 'Timberhands' },
-                    mining: { lodge: 'Prospector Camp', worker: 'Miners' },
-                    fishing: { lodge: 'Fishing Pier', worker: 'Anglers' },
-                    farming: { lodge: 'Farmstead', worker: 'Farmhands' },
-                    hunter: { lodge: 'Hunter Lodge', worker: 'Trappers' },
-                    archaeology: { lodge: 'Digsite', worker: 'Excavators' },
-                    divination: { lodge: 'Wisp Grove', worker: 'Diviners' },
-                };
-                const name = NAMES[skillId] || { lodge: 'Work Camp', worker: 'Workers' };
+                const speedLvl = ws.upgrades.speedLevel; const yieldLvl = ws.upgrades.yieldLevel;
+                const theme = GAME_DATA.SKILLS[skillId]?.theme || 'woodcutting';
+                const place = skillId === 'woodcutting' ? 'Timber Lodge' : (skillId === 'mining' ? 'Mining Camp' : 'Workshop');
+                const workerName = skillId === 'woodcutting' ? 'Timberhand' : (skillId === 'mining' ? 'Miner' : 'Worker');
                 return `
                     <div class="block p-4 mb-4 border border-${theme}">
                         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                             <div>
-                                <h2 class="text-lg font-bold">${name.lodge}</h2>
-                                <p class="text-secondary text-sm">${name.worker} work in the background. Assign them to specific tasks.</p>
+                                <h2 class="text-lg font-bold">${place}</h2>
+                                <p class="text-secondary text-sm">${workerName}s work in the background. Assign them to specific tasks.</p>
                                 <p class="text-white text-sm mt-1">Workers: <span class="font-bold">${ws.total}</span></p>
                             </div>
                             <div class="flex flex-col sm:flex-row gap-2">
-                                <button class="hire-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}">Hire ${name.worker.slice(0, -1)} — Cost: ${hireCost} gold</button>
-                                <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-type="speed">Upgrade Tools (Speed L${speedLvl}) — Cost: ${speedCost} gold</button>
-                                <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-type="yield">Logistics (Yield L${yieldLvl}) — Cost: ${yieldCost} gold</button>
+                                <button class="hire-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}">Hire ${workerName} — Cost: ${hireCost} gold</button>
+                                <button class="upgrade-worker-speed-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}">Upgrade Tools (Speed L${speedLvl}) — Cost: ${speedCost} gold</button>
+                                <button class="upgrade-worker-yield-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}">Logistics (Yield L${yieldLvl}) — Cost: ${yieldCost} gold</button>
                             </div>
                         </div>
                     </div>
@@ -1285,16 +1275,7 @@
                 const free = Math.max(0, total - sumAssigned);
                 const speedMult = this.game.getWorkerSpeedMultiplier(skillId, action);
                 const yieldMult = this.game.getWorkerYieldMultiplier(skillId, action);
-                const NAMES = {
-                    woodcutting: { worker: 'Timberhands' },
-                    mining: { worker: 'Miners' },
-                    fishing: { worker: 'Anglers' },
-                    farming: { worker: 'Farmhands' },
-                    hunter: { worker: 'Trappers' },
-                    archaeology: { worker: 'Excavators' },
-                    divination: { worker: 'Diviners' },
-                };
-                const workerName = (NAMES[skillId] || { worker: 'Workers' }).worker;
+                const workerName = skillId === 'woodcutting' ? 'Timberhands' : (skillId === 'mining' ? 'Miners' : 'Workers');
                 return `
                     <div class="mt-3 p-2 rounded-md bg-black/30 border border-border-color">
                         <div class="flex items-center justify-between">
@@ -1344,22 +1325,66 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${cards}</div>
                 `;
             }
+
+            renderRunecraftingView() {
+                const playerSkill = this.game.state.player.skills['runecrafting'];
+                const recipes = GAME_DATA.RECIPES['runecrafting'] || [];
+                const essenceId = 'rune_essence';
+                const haveEss = this.game.state.bank[essenceId] || 0;
+                const recipeCards = recipes.map((r, idx) => {
+                    const locked = playerSkill.level < r.level;
+                    const mult = Math.max(1, 1 + Math.floor((playerSkill.level - r.level) / 11));
+                    const canAfford = haveEss >= (r.input?.[0]?.quantity || 1);
+                    return `
+                        <div class="rc-altar-card ${locked ? 'rc-locked' : ''}" data-rc-recipe-id="${r.id}">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-white font-semibold">${r.name}</h3>
+                                    <p class="text-xs text-secondary">Req Lv ${r.level} • XP ${r.xp}</p>
+                                </div>
+                                <span class="rune-output-badge text-xs"><span>${GAME_DATA.ITEMS[r.output.itemId].icon || '✨'}</span> x${(r.output.quantity * mult)}</span>
+                            </div>
+                            <div class="text-xs text-secondary">Yield at Lv ${playerSkill.level}: x${mult} per essence</div>
+                            <button class="chimera-button px-3 py-1 rounded-md w-full mt-2 quick-craft-btn" data-recipe-id="${r.id}" ${locked || !canAfford ? 'disabled' : ''}>Quick Craft</button>
+                        </div>
+                    `;
+                }).join('');
+
+                const altar = `
+                    <div class="block p-4 col-span-1 md:col-span-2">
+                        <h2 class="text-lg font-bold mb-2">Runic Altar</h2>
+                        <div class="altar-zone" id="altar-dropzone">
+                            <div class="altar-glow"></div>
+                            <div class="altar-core"></div>
+                            <div class="altar-sigil">🔷</div>
+                        </div>
+                        <div class="mt-3 flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <div class="rune-essence-token" draggable="true" id="essence-token"><span>✨</span><span class="text-xs">Rune Essence</span><span class="font-mono ml-1">x${haveEss}</span></div>
+                                <div class="flex items-center gap-2 text-xs">
+                                    <button class="chimera-button px-2 py-1 rounded-md" id="rc-minus">-10</button>
+                                    <input id="rc-qty" type="number" min="1" value="${Math.min(25, haveEss)}" class="w-20 p-1 bg-primary border border-border-color rounded-md text-center" />
+                                    <button class="chimera-button px-2 py-1 rounded-md" id="rc-plus">+10</button>
+                                </div>
+                            </div>
+                            <button class="chimera-button px-3 py-2 rounded-md" id="rc-craft-btn" disabled>Channel Altar</button>
+                        </div>
+                    </div>
+                `;
+
+                const recipeList = `
+                    <div class="block p-4">
+                        <h2 class="text-lg font-bold mb-2">Altars</h2>
+                        <div class="grid grid-cols-1 gap-3">${recipeCards}</div>
+                    </div>
+                `;
+
+                return `<div class="grid grid-cols-1 md:grid-cols-3 gap-4">${altar}${recipeList}</div>`;
+            }
         }
 
         const game = new GameManager(); game.init(); window.chimeraGame = game;
     });
     </script>
-<script>
-// Mobile sidebar open/close
-(function(){
-  const btn = document.getElementById('mobile-menu-btn');
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('sidebar-overlay');
-  if (btn && sidebar && overlay) {
-    btn.addEventListener('click', () => { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); });
-    overlay.addEventListener('click', () => { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); });
-  }
-})();
-</script>
 </body>
 </html>

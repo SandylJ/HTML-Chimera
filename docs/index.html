@@ -10,6 +10,22 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="./styles.css" />
+<style>
+/**** Notify stack ****/
+.notify-card { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.25)); border:1px solid rgba(255,255,255,0.08); box-shadow: 0 8px 24px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.04); color: #c9d1d9; transform: translateX(16px); opacity: 0; animation: notify-in 240ms ease-out forwards; backdrop-filter: blur(4px); }
+.notify-card.gold { border-color: rgba(255,215,0,0.25); box-shadow: 0 8px 24px rgba(255,215,0,0.12), inset 0 0 0 1px rgba(255,215,0,0.06); }
+.notify-card.runes { border-color: rgba(168,85,247,0.25); box-shadow: 0 8px 24px rgba(168,85,247,0.12), inset 0 0 0 1px rgba(168,85,247,0.06); }
+.notify-card.stamina { border-color: rgba(34,197,94,0.25); box-shadow: 0 8px 24px rgba(34,197,94,0.12), inset 0 0 0 1px rgba(34,197,94,0.06); }
+.notify-card.item { border-color: rgba(59,130,246,0.25); box-shadow: 0 8px 24px rgba(59,130,246,0.12), inset 0 0 0 1px rgba(59,130,246,0.06); }
+.notify-card .count { font-weight:800; color:#fff; text-shadow: 0 0 12px rgba(255,255,255,0.35); }
+.notify-card .label { font-size: 12px; color: #8b949e; }
+.notify-icon { width:22px; height:22px; display:flex; align-items:center; justify-content:center; border-radius:9999px; background: rgba(255,255,255,0.08); }
+.notify-pulse { animation: notify-pulse 380ms ease-out; }
+.notify-out { animation: notify-out 220ms ease-in forwards; }
+@keyframes notify-in { from { transform: translateX(16px); opacity:0;} to { transform: translateX(0); opacity:1; } }
+@keyframes notify-out { from { transform: translateY(0); opacity:1; } to { transform: translateY(-6px); opacity:0; } }
+@keyframes notify-pulse { 0%{ transform: scale(1);} 50%{ transform: scale(1.05);} 100%{ transform: scale(1);} }
+</style>
 </head>
 <body class="text-sm">
     <div id="game-container" class="w-full min-h-[100dvh] flex relative">
@@ -23,7 +39,8 @@
                 <a href="#" class="sidebar-link active flex items-center p-3" data-view="dashboard"><i class="fas fa-tachometer-alt w-6 text-center"></i><span>Dashboard</span></a>
                 <a href="#" class="sidebar-link flex items-center p-3" data-view="bank"><i class="fas fa-box w-6 text-center"></i><span>Bank</span></a>
                 <a href="#" class="sidebar-link flex items-center p-3" data-view="combat"><i class="fas fa-skull w-6 text-center"></i><span>Combat</span></a>
-                <a href="#" class="sidebar-link flex items-center p-3" data-view="clicker"><i class="fas fa-hand-pointer w-6 text-center"></i><span>Clicker</span></a>
+                <a href="#" class="sidebar-link flex items-center p-3" data-view="army"><i class="fas fa-users w-6 text-center"></i><span>Army</span></a>
+                <a href="#" class="sidebar-link flex items-center p-3" data-view="clicker"><i class="fas fa-chess-rook w-6 text-center"></i><span>Empire</span></a>
                 <a href="#" class="sidebar-link flex items-center p-3" data-view="spellbook"><i class="fas fa-hat-wizard w-6 text-center"></i><span>Spellbook</span></a>
                 <a href="#" class="sidebar-link flex items-center p-3" data-view="shop"><i class="fas fa-store w-6 text-center"></i><span>Shop</span></a>
                 <h2 class="p-2 pt-4 text-xs font-bold tracking-wider uppercase text-secondary">Gathering</h2>
@@ -39,7 +56,7 @@
             <header class="flex-shrink-0 p-3 bg-secondary border-b border-border-color grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="flex items-center space-x-3">
                     <button id="mobile-menu-btn" class="md:hidden chimera-button w-9 h-9 rounded-md flex items-center justify-center"><i class="fas fa-bars"></i></button>
-                    <div class="flex items-center space-x-2"><i class="fas fa-coins text-yellow-400"></i><span id="gold-display">0</span></div>
+                    <div class="flex items-center space-x-2"><i class="fas fa-coins text-yellow-400"></i><span id="gold-display">0</span><span id="gps-display" class="text-xs text-secondary ml-2">(+0/s)</span></div>
                     <div class="flex items-center space-x-2"><i class="fas fa-gem text-purple-300"></i><span id="runes-display" class="font-mono">0</span></div>
                     <div class="flex items-center space-x-2 w-full">
                         <i class="fas fa-bolt text-green-400"></i>
@@ -54,7 +71,10 @@
                         <option value="mobile">Mobile</option>
                     </select>
                 </div>
-                <div id="mastery-progress-bar" class="block md:col-span-2"></div>
+                <div class="relative md:col-span-2">
+                    <div id="mastery-progress-bar" class="block"></div>
+                    <div id="top-notification-stack" class="absolute top-1 right-1 flex flex-col gap-1 items-end pointer-events-none"></div>
+                </div>
             </header>
             <main id="main-content" class="flex-grow p-4 overflow-y-auto pb-24 md:pb-4"></main>
             <nav id="mobile-nav" class="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-secondary border-t border-border-color">
