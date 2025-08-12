@@ -72,6 +72,10 @@ document.addEventListener('DOMContentLoaded', () => {
             dragon_scale: { name: 'Azure Dragon Scale', icon: '🛡️' },
             azure_dragon_eye: { name: 'Azure Dragon Eye', icon: '👁️‍🗨️' },
             legendary_trophy: { name: 'Legendary Trophy', icon: '🏆' },
+            goblin_ear: { name: 'Goblin Ear', icon: '👂' },
+            zombie_tooth: { name: 'Zombie Tooth', icon: '🦷' },
+            giant_bone: { name: 'Giant Bone', icon: '🦴' },
+            dragon_claw: { name: 'Dragon Claw', icon: '🩸' },
         },
         ACTIONS: {
             woodcutting: [
@@ -164,6 +168,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
+    // Mercenaries (for Bounties & Expeditions)
+    GAME_DATA.MERCENARIES = { squad: { id: 'squad', name: 'Mercenary Squad', emoji: '⚔️', description: 'A hardened band ready for contracts.', baseCost: 250, costGrowth: 1.22, power: 5 } };
+    GAME_DATA.BOUNTY_TARGETS = [
+        { id: 'goblins', name: 'Goblin Warrens', icon: '👺', recommendedPower: 5, base: { goldPerMin: 25, items: [ { id: 'goblin_ear', perMin: 0.8, bundle: [1,2] } ] } },
+        { id: 'zombies', name: 'Catacomb Shambles', icon: '🧟', recommendedPower: 12, base: { goldPerMin: 55, items: [ { id: 'zombie_tooth', perMin: 0.7, bundle: [1,1] } ] } },
+        { id: 'giants', name: 'Giant Pass', icon: '🗿', recommendedPower: 24, base: { goldPerMin: 120, items: [ { id: 'giant_bone', perMin: 0.5, bundle: [1,2] } ] } },
+        { id: 'dragons', name: 'Dragon Roost', icon: '🐉', recommendedPower: 40, base: { goldPerMin: 260, items: [ { id: 'dragon_scale', perMin: 0.35, bundle: [1,1] }, { id: 'dragon_claw', perMin: 0.12, bundle: [1,1] } ] } }
+    ];
+    GAME_DATA.EXPEDITIONS = [
+        { id: 'exp_goblin_fort', name: 'Raid: Goblin Fortress', icon: '🏰', durationMs: 45*60*1000, recommendedPower: 10, rewards: [ {type:'gold', min:250, max:500, chance:1}, {type:'item', id:'goblin_ear', min:2, max:5, chance:1} ] },
+        { id: 'exp_catacomb', name: 'Purge: Ancient Catacombs', icon: '🕯️', durationMs: 60*60*1000, recommendedPower: 20, rewards: [ {type:'gold', min:500, max:900, chance:1}, {type:'item', id:'zombie_tooth', min:2, max:4, chance:1} ] },
+        { id: 'exp_giant_king', name: 'Assault: Giant-king Hold', icon: '🪨', durationMs: 90*60*1000, recommendedPower: 30, rewards: [ {type:'gold', min:900, max:1600, chance:1}, {type:'item', id:'giant_bone', min:2, max:4, chance:1} ] },
+        { id: 'exp_dragon_lair', name: 'Legend Raid: Dragon Lair', icon: '🔥', durationMs: 120*60*1000, recommendedPower: 50, rewards: [ {type:'gold', min:1800, max:3200, chance:1}, {type:'item', id:'dragon_scale', min:1, max:2, chance:0.9}, {type:'item', id:'dragon_claw', min:1, max:1, chance:0.25} ] }
+    ];
+
     // Medieval Empire Units dataset
     const EMPIRE_UNITS = {
         gold_miner: { id: 'gold_miner', name: 'Gold Miner', emoji: '⛏️', description: 'Mines gold from the mountain.', baseCost: 100, costGrowth: 1.18, goldPerSec: 1 },
@@ -317,6 +336,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Hunter missions subsystem
             this.hunter = { roster: [], missions: [], nextHunterId: 1 };
+
+            // Mercenaries / Bounties / Expeditions
+            this.mercs = { squads: 0 };
+            this.bounties = { assignments: [] }; // { targetId, squads: n, lastTick, buffers: { gold:0, items:{} } }
+            this.expeditions = { missions: [] }; // { id, defId, squads: n, startMs, durationMs, remainingMs, status }
         }
     }
 
@@ -423,6 +447,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Hunter mission loop
             this.processHunterMissions(delta);
+
+            // Bounties/Expeditions
+            this.processBounties(delta);
+            this.processExpeditions(delta);
 
             this.uiManager.updateDynamicElements();
         }
@@ -871,6 +899,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!this.state.army) { this.state.army = { units: {}, lastTick: Date.now(), production: { dps: 0, hps: 0, hungry: false }, upkeep: { foodBuffer: 0, hungry: false }, fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() }, upgrades: { offenseLevel: 0, supportLevel: 0, logisticsLevel: 0 }, stance: 'balanced' }; }
                     if (!this.state.army.units) this.state.army.units = {};
                     Object.keys(GAME_DATA.ARMY_CLASSES).forEach(id => { if (typeof this.state.army.units[id] !== 'number') this.state.army.units[id] = 0; });
+                    // Backfill new systems
+                    if (!this.state.mercs) this.state.mercs = { squads: 0 };
+                    if (!this.state.bounties) this.state.bounties = { assignments: [] };
+                    if (!this.state.expeditions) this.state.expeditions = { missions: [] };
                  } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
              }
          }
@@ -954,6 +986,102 @@ document.addEventListener('DOMContentLoaded', () => {
             this.state.army.stance = stance;
             this.uiManager.renderView();
         }
+
+        // Mercenaries / Bounties / Expeditions
+        getMercHireCost() { const base = GAME_DATA.MERCENARIES.squad.baseCost; const growth = GAME_DATA.MERCENARIES.squad.costGrowth; const owned = this.state.mercs?.squads || 0; return Math.floor(base * Math.pow(growth, owned)); }
+        hireMercSquad() { const cost = this.getMercHireCost(); if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold to hire a Mercenary Squad.</p>`); return; } this.state.mercs.squads += 1; this.uiManager.playSound('hire'); this.uiManager.showFloatingText('+1 Mercenary Squad', 'text-green-300'); this.uiManager.renderView(); }
+        getAssignedMercs() {
+            const b = (this.state.bounties?.assignments || []).reduce((a,x)=>a+(x.squads||0),0);
+            const e = (this.state.expeditions?.missions || []).filter(m=>m.status==='active').reduce((a,x)=>a+(x.squads||0),0);
+            return { bounties: b, expeditions: e, total: b+e };
+        }
+        getFreeMercs() { const owned = this.state.mercs?.squads || 0; const assigned = this.getAssignedMercs().total; return Math.max(0, owned - assigned); }
+        setBountyAssignment(targetId, squads) {
+            if (!this.state.bounties) this.state.bounties = { assignments: [] };
+            const idx = this.state.bounties.assignments.findIndex(a=>a.targetId===targetId);
+            const curAssignedElsewhere = this.getAssignedMercs().total - (idx>=0 ? (this.state.bounties.assignments[idx].squads||0) : 0);
+            const owned = this.state.mercs?.squads || 0; squads = Math.max(0, Math.min(squads, owned - curAssignedElsewhere));
+            if (idx>=0) { this.state.bounties.assignments[idx].squads = squads; if (!this.state.bounties.assignments[idx].buffers) this.state.bounties.assignments[idx].buffers = { gold:0, items:{} }; }
+            else { this.state.bounties.assignments.push({ targetId, squads, lastTick: Date.now(), buffers: { gold:0, items:{} } }); }
+            this.uiManager.renderView();
+        }
+        processBounties(deltaMs) {
+            if (!this.state.bounties) return;
+            const assigns = this.state.bounties.assignments || [];
+            for (const a of assigns) {
+                if (!a.squads || a.squads <= 0) continue;
+                const def = (GAME_DATA.BOUNTY_TARGETS || []).find(t=>t.id===a.targetId); if (!def) continue;
+                const power = (a.squads || 0) * (GAME_DATA.MERCENARIES.squad.power || 5);
+                const ratio = Math.min(2.0, Math.max(0.25, power / (def.recommendedPower || 1)));
+                const sec = deltaMs / 1000;
+                const goldGain = (def.base.goldPerMin || 0) / 60 * ratio * sec;
+                a.buffers = a.buffers || { gold:0, items:{} };
+                a.buffers.gold += goldGain;
+                // Items accrual
+                (def.base.items || []).forEach(it => {
+                    const perSec = (it.perMin || 0) / 60 * ratio * sec;
+                    a.buffers.items[it.id] = (a.buffers.items[it.id] || 0) + perSec;
+                });
+                // Flush whole numbers
+                const gWhole = Math.floor(a.buffers.gold); if (gWhole > 0) { this.addGold(gWhole); a.buffers.gold -= gWhole; }
+                for (const [id, val] of Object.entries(a.buffers.items)) {
+                    const whole = Math.floor(val);
+                    if (whole > 0) {
+                        // bundle range
+                        const defItem = (def.base.items || []).find(x=>x.id===id);
+                        let qty = whole;
+                        if (defItem && defItem.bundle) {
+                            // each whole tick yields random in bundle
+                            qty = 0; for (let i=0;i<whole;i++) { const min = defItem.bundle[0]; const max = defItem.bundle[1]; qty += Math.floor(Math.random() * (max - min + 1)) + min; }
+                        }
+                        this.addToBank(id, qty);
+                        a.buffers.items[id] -= whole;
+                    }
+                }
+            }
+        }
+        startExpedition(expId, squads) {
+            const def = (GAME_DATA.EXPEDITIONS || []).find(e=>e.id===expId); if (!def) return;
+            squads = Math.max(1, Math.floor(squads||0));
+            const free = this.getFreeMercs();
+            if (squads > free) { this.uiManager.showModal('Not Enough Mercs', `<p>You have only ${free} free squads.</p>`); return; }
+            if (!this.state.expeditions) this.state.expeditions = { missions: [] };
+            const mission = { id: `M${Date.now()}`, defId: def.id, squads, startMs: Date.now(), durationMs: def.durationMs, remainingMs: def.durationMs, status: 'active' };
+            this.state.expeditions.missions.push(mission);
+            this.uiManager.showFloatingText('Expedition Launched!', 'text-yellow-300'); this.uiManager.renderView();
+        }
+        cancelExpedition(missionId) {
+            const m = (this.state.expeditions?.missions || []).find(x=>x.id===missionId); if (!m || m.status!=='active') return; m.status='canceled'; this.uiManager.renderView();
+        }
+        processExpeditions(deltaMs) {
+            if (!this.state.expeditions) return; let changed=false;
+            for (const m of (this.state.expeditions.missions || [])) {
+                if (m.status !== 'active') continue;
+                m.remainingMs = Math.max(0, (m.remainingMs||0) - deltaMs);
+                if (m.remainingMs <= 0) { m.status = 'complete'; this.resolveExpedition(m); changed=true; }
+            }
+            if (changed) this.uiManager.renderView();
+        }
+        resolveExpedition(m) {
+            const def = (GAME_DATA.EXPEDITIONS || []).find(e=>e.id===m.defId); if (!def) return;
+            const power = (m.squads||0) * (GAME_DATA.MERCENARIES.squad.power || 5);
+            const rec = def.recommendedPower || 1;
+            const baseChance = 0.55;
+            const chance = Math.max(0.2, Math.min(0.95, baseChance + 0.02 * (power - rec)));
+            const success = Math.random() < chance;
+            if (success) {
+                const logs = [];
+                (def.rewards||[]).forEach(r => {
+                    if (Math.random() <= (r.chance||1)) {
+                        if (r.type==='gold') { const amt = Math.floor(Math.random()*(r.max-r.min+1))+r.min; this.addGold(amt); logs.push(`+${amt} Gold`); }
+                        if (r.type==='item') { const qty = Math.floor(Math.random()*(r.max-r.min+1))+r.min; this.addToBank(r.id, qty); logs.push(`+${qty} ${GAME_DATA.ITEMS[r.id]?.name||r.id}`); }
+                    }
+                });
+                this.uiManager.showModal('Expedition Complete', `<p class="text-sm mb-2">${def.name} succeeded.</p><div class="space-y-1">${logs.map(l=>`<p>${l}</p>`).join('')}</div>`);
+            } else {
+                this.uiManager.showModal('Expedition Failed', `<p class="text-sm">${def.name} failed. The squads return battered and wiser.</p>`);
+            }
+        }
     }
 
     class UIManager {
@@ -1027,6 +1155,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'workforce': html = this.renderWorkforceView(); break;
                     case 'spellbook': html = this.renderSpellbookView(); break;
                     case 'shop': html = this.renderShopView(); break;
+                    case 'bounties': html = this.renderBountiesView(); break;
+                    case 'expeditions': html = this.renderExpeditionsView(); break;
                 }
             }
             this.mainContent.innerHTML = html; this.attachViewEventListeners();
@@ -1525,6 +1655,107 @@ document.addEventListener('DOMContentLoaded', () => {
             return `${hero}<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-4">${cards}</div>`;
         }
 
+        renderBountiesView() {
+            const owned = this.game.state.mercs?.squads || 0;
+            const assigned = this.game.getAssignedMercs();
+            const free = this.game.getFreeMercs();
+            const cost = this.game.getMercHireCost();
+            const hero = `
+                <div class="block p-5 mb-5 medieval-glow">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="text-2xl">📜</div>
+                            <div>
+                                <h1 class="text-xl font-extrabold tracking-wide">Bounty Board</h1>
+                                <p class="text-secondary text-sm">Assign Mercenary Squads to farm mobs for steady rewards.</p>
+                            </div>
+                        </div>
+                        <button id="hire-merc-btn" class="chimera-button juicy-button imperial-button px-4 py-3 rounded-md">Hire Squad — ${cost}g</button>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                        <div class="glass-card rounded-md p-3 text-center"><div class="text-[11px] text-secondary uppercase">Squads</div><div class="text-2xl font-mono text-white">${owned}</div></div>
+                        <div class="glass-card rounded-md p-3 text-center"><div class="text-[11px] text-secondary uppercase">Assigned</div><div class="text-xl font-mono text-white">${assigned.total}</div></div>
+                        <div class="glass-card rounded-md p-3 text-center"><div class="text-[11px] text-secondary uppercase">Free</div><div class="text-xl font-mono text-green-300">${free}</div></div>
+                        <div class="glass-card rounded-md p-3 text-center"><div class="text-[11px] text-secondary uppercase">Gold/min</div><div class="text-xl font-mono text-white">${this.estimateBountyGPM().toFixed(1)}</div></div>
+                    </div>
+                </div>`;
+            const cards = (GAME_DATA.BOUNTY_TARGETS||[]).map(t => {
+                const assign = (this.game.state.bounties?.assignments||[]).find(a=>a.targetId===t.id);
+                const squads = assign?.squads || 0;
+                const rec = t.recommendedPower;
+                const power = squads * (GAME_DATA.MERCENARIES.squad.power||5);
+                const ratio = Math.min(2.0, Math.max(0.25, (rec? power/rec : 1)));
+                const gpm = (t.base.goldPerMin||0) * ratio;
+                const loot = (t.base.items||[]).map(i => `${GAME_DATA.ITEMS[i.id]?.icon||'❔'} x${i.bundle?`${i.bundle[0]}-${i.bundle[1]}`:'1'}`).join(' ');
+                return `
+                    <div class="block p-4 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-lg font-bold">${t.icon||'🎯'} ${t.name}</h3>
+                                    <p class="text-secondary text-xs">Rec Power ${rec} • Loot: ${loot}</p>
+                                </div>
+                                <span class="badge"><i class="fas fa-coins"></i> ~${gpm.toFixed(0)}/m</span>
+                            </div>
+                            <div class="mt-2 text-xs text-secondary">Assigned Squads: <span class="text-white font-mono">${squads}</span> • Power <span class="text-white font-mono">${power}</span> (x${ratio.toFixed(2)})</div>
+                            <div class="mt-2 flex items-center gap-2">
+                                <button class="assign-bounty-btn chimera-button px-2 py-1 rounded" data-target-id="${t.id}" data-dir="-1">-</button>
+                                <button class="assign-bounty-btn chimera-button px-2 py-1 rounded" data-target-id="${t.id}" data-dir="+1">+</button>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+            return `<h1 class="text-2xl font-semibold text-white mb-4">Bounties</h1>${hero}<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${cards}</div>`;
+        }
+        estimateBountyGPM() {
+            const assigns = this.game.state.bounties?.assignments || []; let total = 0;
+            assigns.forEach(a => { const t = (GAME_DATA.BOUNTY_TARGETS||[]).find(x=>x.id===a.targetId); if (!t || !a.squads) return; const rec=t.recommendedPower||1; const power=a.squads*(GAME_DATA.MERCENARIES.squad.power||5); const ratio=Math.min(2.0, Math.max(0.25, power/rec)); total += (t.base.goldPerMin||0)*ratio; });
+            return total;
+        }
+        renderExpeditionsView() {
+            const assigned = this.game.getAssignedMercs(); const free = this.game.getFreeMercs();
+            const active = (this.game.state.expeditions?.missions||[]).filter(m=>m.status==='active');
+            const hero = `
+                <div class="block p-5 mb-5 medieval-glow">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="text-2xl">🧭</div>
+                            <div>
+                                <h1 class="text-xl font-extrabold tracking-wide">Expeditions</h1>
+                                <p class="text-secondary text-sm">Send squads on raids and legendary hunts.</p>
+                            </div>
+                        </div>
+                        <div class="text-xs text-secondary">Active: <span class="text-white font-mono">${active.length}</span> • Free Squads: <span class="text-green-300 font-mono">${free}</span></div>
+                    </div>
+                </div>`;
+            const missionCards = (GAME_DATA.EXPEDITIONS||[]).map(e => {
+                const running = active.find(m=>m.defId===e.id);
+                const rec = e.recommendedPower||1;
+                return `
+                    <div class="block p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-bold">${e.icon||'🗺️'} ${e.name}</h3>
+                                <p class="text-secondary text-xs">Rec Power ${rec} • Duration ${Math.round(e.durationMs/60000)}m</p>
+                            </div>
+                            ${running ? `<span class="badge"><i class="fas fa-hourglass-half"></i> ${Math.ceil((running.remainingMs||0)/60000)}m</span>` : ''}
+                        </div>
+                        ${running ? `<div class="mt-2 text-xs text-secondary">Squads: <span class="text-white font-mono">${running.squads}</span></div><button class="cancel-expedition-btn chimera-button px-3 py-2 rounded-md mt-3" data-mission-id="${running.id}">Recall</button>` : `
+                        <div class="mt-2 flex items-center gap-2">
+                            <label class="text-xs text-secondary">Squads</label>
+                            <input type="number" min="1" value="${Math.max(1, Math.min(3, free))}" class="w-20 p-1 bg-primary border border-border-color rounded-md text-center exp-squad-input" data-exp-id="${e.id}" />
+                            <button class="start-expedition-btn chimera-button px-3 py-2 rounded-md" data-exp-id="${e.id}">Send</button>
+                        </div>`}
+                    </div>`;
+            }).join('');
+            const actList = active.map(m => {
+                const def = (GAME_DATA.EXPEDITIONS||[]).find(e=>e.id===m.defId);
+                return `<div class="block p-3 text-xs flex items-center justify-between"><div>${def?.name||m.defId}</div><div class="font-mono">${Math.ceil((m.remainingMs||0)/60000)}m</div></div>`;
+            }).join('');
+            const sidebar = active.length ? `<div class="block p-4"> <h3 class="text-lg font-bold mb-2">In Progress</h3>${actList}</div>` : '';
+            return `<h1 class="text-2xl font-semibold text-white mb-4">Expeditions</h1>${hero}<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${missionCards}</div>`;
+        }
+
         attachViewEventListeners() {
             const addTaskBtn = document.getElementById('add-task-btn'); if (addTaskBtn) { addTaskBtn.addEventListener('click', () => { const category = document.getElementById('task-category-select').value; const difficulty = document.getElementById('task-difficulty-select').value; this.game.completeRealLifeTask(category, difficulty); const n = document.getElementById('task-name-input'); if (n) n.value = ''; }); }
             const ge = document.getElementById('goto-empire'); if (ge) ge.addEventListener('click', () => { this.currentView = 'clicker'; this.render(); });
@@ -1621,6 +1852,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const ar = document.getElementById('army-rally'); if (ar) ar.addEventListener('click', (e) => { const r = this.game.state.player.activeBuffs?.['armyRally']; if (!r || Date.now() >= r) { const rect = e.currentTarget.getBoundingClientRect(); this.juiceBurst('upgrade', rect.left + rect.width/2, rect.top + rect.height/2); } this.game.rallyArmy(); });
             document.querySelectorAll('.army-upgrade-btn').forEach(btn => { btn.addEventListener('click', () => this.game.upgradeArmy(btn.dataset.type)); });
             document.querySelectorAll('input[name="army-stance"]').forEach(r => { r.addEventListener('change', () => this.game.setArmyStance(r.value)); });
+
+            // Bounties
+            const hireMerc = document.getElementById('hire-merc-btn'); if (hireMerc) hireMerc.addEventListener('click', () => this.game.hireMercSquad());
+            document.querySelectorAll('.assign-bounty-btn').forEach(btn => { btn.addEventListener('click', () => { const id = btn.dataset.targetId; const dir = btn.dataset.dir === '+1' ? 1 : -1; const existing = (this.game.state.bounties?.assignments||[]).find(a=>a.targetId===id)?.squads || 0; this.game.setBountyAssignment(id, existing + dir); }); });
+
+            // Expeditions
+            document.querySelectorAll('.start-expedition-btn').forEach(btn => { btn.addEventListener('click', () => { const id = btn.dataset.expId; const input = this.mainContent.querySelector(`.exp-squad-input[data-exp-id="${id}"]`); const val = Math.max(1, parseInt(input?.value||'1', 10)); this.game.startExpedition(id, val); }); });
+            document.querySelectorAll('.cancel-expedition-btn').forEach(btn => { btn.addEventListener('click', () => this.game.cancelExpedition(btn.dataset.missionId)); });
         }
 
         showModal(title, content) {
