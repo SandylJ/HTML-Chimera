@@ -1024,7 +1024,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }).join('');
 
             const altar = `
-                <div class="block p-4 col-span-1 md:col-span-2">
+                <div class="block p-4 col-span-1 md:col-span-1">
                     <h2 class="text-lg font-bold mb-2">Runic Altar</h2>
                     <div class="altar-zone" id="altar-dropzone">
                         <div class="altar-glow"></div>
@@ -1046,13 +1046,13 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
 
             const recipeList = `
-                <div class="block p-4">
+                <div class="block p-4 col-span-1 md:col-span-2">
                     <h2 class="text-lg font-bold mb-2">Altars</h2>
-                    <div class="grid grid-cols-1 gap-3">${recipeCards}</div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">${recipeCards}</div>
                 </div>
             `;
 
-            return `<div class="grid grid-cols-1 md:grid-cols-3 gap-4">${altar}${recipeList}</div>`;
+            return `<div class=\"grid grid-cols-1 md:grid-cols-3 gap-4\">${altar}${recipeList}</div>`;
         }
 
         renderBankView() {

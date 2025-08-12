@@ -87,6 +87,7 @@
         .rc-locked { opacity: 0.55; filter: grayscale(0.2); }
         .rune-essence-token { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-color); background: rgba(2,6,23,0.5); padding: 6px 10px; border-radius: 9999px; cursor: grab; user-select: none; }
         .rune-output-badge { display:inline-flex; align-items:center; gap:6px; border:1px solid rgba(88,166,255,0.35); background: rgba(2,6,23,0.6); padding: 6px 10px; border-radius: 9999px; }
+        @media (min-width: 768px) { .altar-zone { height: 360px; } }
         /* New gathering themes */
         .border-farming { border-color: #6b8e23; } .bg-farming { background-color: #6b8e23; }
         .border-hunter { border-color: #556b2f; } .bg-hunter { background-color: #556b2f; }
@@ -1414,7 +1415,7 @@
                 }).join('');
 
                 const altar = `
-                    <div class="block p-4 col-span-1 md:col-span-2">
+                    <div class="block p-4 col-span-1 md:col-span-1">
                         <h2 class="text-lg font-bold mb-2">Runic Altar</h2>
                         <div class="altar-zone" id="altar-dropzone">
                             <div class="altar-glow"></div>
@@ -1436,9 +1437,9 @@
                 `;
 
                 const recipeList = `
-                    <div class="block p-4">
+                    <div class="block p-4 col-span-1 md:col-span-2">
                         <h2 class="text-lg font-bold mb-2">Altars</h2>
-                        <div class="grid grid-cols-1 gap-3">${recipeCards}</div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">${recipeCards}</div>
                     </div>
                 `;
 
