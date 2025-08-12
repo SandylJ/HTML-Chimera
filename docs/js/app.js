@@ -248,7 +248,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 lastTick: Date.now(),
                 production: { dps: 0, hps: 0, hungry: false },
                 upkeep: { foodBuffer: 0, hungry: false },
-                fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() }
+                fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() },
+                upgrades: { offenseLevel: 0, supportLevel: 0, logisticsLevel: 0 },
+                stance: 'balanced'
             };
             Object.keys(GAME_DATA.ARMY_CLASSES || {}).forEach(id => { this.army.units[id] = 0; });
 
@@ -356,8 +358,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const upkeep = this.consumeArmyUpkeep(armyDeltaSec);
                     const base = this.calculateArmyOutputPerSecond();
                     const hungryPenalty = upkeep.hungry ? 0.5 : 1.0;
-                    const dps = base.dps * hungryPenalty;
-                    const hps = base.hps * hungryPenalty;
+                    const rallyMult = this.hasBuff('armyRally') ? 2 : 1;
+                    const dps = base.dps * hungryPenalty * rallyMult;
+                    const hps = base.hps * hungryPenalty * rallyMult;
                     this.state.army.production = { dps, hps, hungry: upkeep.hungry };
                     // Apply damage to enemy and heals to player
                     const dmg = dps * armyDeltaSec;
@@ -865,7 +868,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!this.state.empire.units) this.state.empire.units = {};
                     Object.keys(GAME_DATA.UNITS).forEach(id => { if (typeof this.state.empire.units[id] !== 'number') this.state.empire.units[id] = 0; });
                     // Backfill army system defaults if missing
-                    if (!this.state.army) { this.state.army = { units: {}, lastTick: Date.now(), production: { dps: 0, hps: 0, hungry: false }, upkeep: { foodBuffer: 0, hungry: false }, fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() } }; }
+                    if (!this.state.army) { this.state.army = { units: {}, lastTick: Date.now(), production: { dps: 0, hps: 0, hungry: false }, upkeep: { foodBuffer: 0, hungry: false }, fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() }, upgrades: { offenseLevel: 0, supportLevel: 0, logisticsLevel: 0 }, stance: 'balanced' }; }
                     if (!this.state.army.units) this.state.army.units = {};
                     Object.keys(GAME_DATA.ARMY_CLASSES).forEach(id => { if (typeof this.state.army.units[id] !== 'number') this.state.army.units[id] = 0; });
                  } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
@@ -886,6 +889,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 hps += (def.hps || 0) * count;
                 foodPerMin += (def.foodPerMin || 0) * count;
             }
+            // Apply upgrades and stance
+            const up = this.state.army.upgrades || {};
+            dps *= (1 + 0.08 * (up.offenseLevel || 0));
+            hps *= (1 + 0.08 * (up.supportLevel || 0));
+            foodPerMin *= Math.pow(0.94, (up.logisticsLevel || 0));
+            const stance = this.state.army.stance || 'balanced';
+            if (stance === 'aggressive') { dps *= 1.25; hps *= 0.8; }
+            if (stance === 'defensive') { dps *= 0.8; hps *= 1.25; }
             return { dps, hps, foodPerMin };
         }
         consumeArmyUpkeep(deltaSec) {
@@ -909,6 +920,39 @@ document.addEventListener('DOMContentLoaded', () => {
             const hungry = needed > 0; // unmet demand
             this.state.army.upkeep.hungry = hungry;
             return { hungry, out };
+        }
+        rallyArmy(durationMs = 60000, runeCost = 2) {
+            const availableRunes = this.state.player.runes + this.getTotalRuneItemCount();
+            if (availableRunes < runeCost) { this.uiManager.showModal('Not Enough Runes', '<p>You lack the runes to rally your troops.</p>'); return; }
+            const spendFromGeneric = Math.min(this.state.player.runes, runeCost);
+            this.state.player.runes -= spendFromGeneric;
+            const remaining = runeCost - spendFromGeneric;
+            if (remaining > 0) this.consumeRuneItems(remaining);
+            this.state.player.activeBuffs['armyRally'] = Date.now() + durationMs;
+            this.uiManager.showFloatingText('Rallying Cry!', 'text-purple-300');
+            this.uiManager.playSound('upgrade');
+            this.uiManager.renderView();
+        }
+        getArmyUpgradeCost(type) {
+            const lvl = (this.state.army?.upgrades?.[`${type}Level`]) || 0;
+            const baseMap = { offense: 300, support: 300, logistics: 320 };
+            const growth = 1.45; const base = baseMap[type] || 300;
+            return Math.floor(base * Math.pow(growth, lvl));
+        }
+        upgradeArmy(type) {
+            if (!this.state.army.upgrades) this.state.army.upgrades = { offenseLevel: 0, supportLevel: 0, logisticsLevel: 0 };
+            const key = `${type}Level`;
+            const cost = this.getArmyUpgradeCost(type);
+            if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold for this upgrade.</p>`); return; }
+            if (typeof this.state.army.upgrades[key] !== 'number') this.state.army.upgrades[key] = 0;
+            this.state.army.upgrades[key] += 1;
+            this.uiManager.playSound('upgrade');
+            this.uiManager.renderView();
+        }
+        setArmyStance(stance) {
+            if (!['balanced','aggressive','defensive'].includes(stance)) return;
+            this.state.army.stance = stance;
+            this.uiManager.renderView();
         }
     }
 
@@ -1521,8 +1565,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.cast-spell-btn').forEach(btn => { btn.addEventListener('click', () => this.game.castSpell(btn.dataset.spellId)); });
             // Shop
             document.querySelectorAll('.buy-chest-btn').forEach(btn => { btn.addEventListener('click', () => this.game.buyChest(btn.dataset.chestId)); });
-            // Army
-            document.querySelectorAll('.hire-army-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireArmyUnit(btn.dataset.unitId)); });
 
             // Workers - generic
             document.querySelectorAll('.hire-worker-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.hireWorker(btn.dataset.skillId); this.pulseAt(btn); this.game.uiManager.playSound('hire'); }); });
@@ -1573,6 +1615,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const picks = Array.from(this.mainContent.querySelectorAll(`.hl-pick[data-mission-id="${missionId}"]`)).filter(ch => ch.checked).map(ch => ch.value);
                 this.game.startHunterMission(missionId, picks);
             }); });
+
+            // Army
+            document.querySelectorAll('.hire-army-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireArmyUnit(btn.dataset.unitId)); });
+            const ar = document.getElementById('army-rally'); if (ar) ar.addEventListener('click', (e) => { const r = this.game.state.player.activeBuffs?.['armyRally']; if (!r || Date.now() >= r) { const rect = e.currentTarget.getBoundingClientRect(); this.juiceBurst('upgrade', rect.left + rect.width/2, rect.top + rect.height/2); } this.game.rallyArmy(); });
+            document.querySelectorAll('.army-upgrade-btn').forEach(btn => { btn.addEventListener('click', () => this.game.upgradeArmy(btn.dataset.type)); });
+            document.querySelectorAll('input[name="army-stance"]').forEach(r => { r.addEventListener('change', () => this.game.setArmyStance(r.value)); });
         }
 
         showModal(title, content) {
@@ -1843,6 +1891,94 @@ document.addEventListener('DOMContentLoaded', () => {
             const key = `item:${itemId}`;
             this.createOrUpdateNotification(key, { increment: qty, icon: icon, label: name, kind: 'item' });
         }
+        renderArmyView() {
+            const prod = this.game.calculateArmyOutputPerSecond();
+            const hungry = this.game.state.army.upkeep?.hungry;
+            const buffs = this.game.state.player.activeBuffs || {};
+            const rallyActive = buffs['armyRally'] && Date.now() < buffs['armyRally'];
+            const rallyRemaining = rallyActive ? Math.ceil((buffs['armyRally'] - Date.now())/1000) : 0;
+            const edible = Object.entries(this.game.state.bank).filter(([id,q]) => GAME_DATA.ITEMS[id]?.heals).reduce((a,[,q])=>a+q,0);
+            const foodPerMin = prod.foodPerMin || 0;
+            const minutesLeft = foodPerMin > 0 ? Math.floor(edible / foodPerMin) : '∞';
+            const stance = this.game.state.army.stance || 'balanced';
+            const up = this.game.state.army.upgrades || { offenseLevel:0, supportLevel:0, logisticsLevel:0 };
+            const offenseCost = this.game.getArmyUpgradeCost('offense');
+            const supportCost = this.game.getArmyUpgradeCost('support');
+            const logisticsCost = this.game.getArmyUpgradeCost('logistics');
+            const unitCards = Object.keys(GAME_DATA.ARMY_CLASSES).map(id => {
+                const def = GAME_DATA.ARMY_CLASSES[id];
+                const owned = this.game.state.army.units[id] || 0;
+                const cost = this.game.getArmyUnitCost(id);
+                const lines = [];
+                if (def.dps) lines.push(`DPS +${def.dps}`);
+                if (def.hps) lines.push(`HPS +${def.hps}`);
+                if (def.foodPerMin) lines.push(`Upkeep ${def.foodPerMin}/m`);
+                return `
+                    <div class="block p-4 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold">${def.emoji} ${def.name} <span class="text-xs text-secondary">(${def.role})</span></h3>
+                            <p class="text-secondary text-xs">${def.description}</p>
+                            <p class="text-secondary text-xs mt-1">${lines.join(' • ')}</p>
+                            <p class="text-white text-sm mt-2">Owned: <span class="font-mono">${owned}</span></p>
+                        </div>
+                        <button class="hire-army-btn chimera-button juicy-button px-3 py-2 rounded-md mt-3" data-unit-id="${id}">Recruit — ${cost}g</button>
+                    </div>
+                `;
+            }).join('');
+            const hero = `
+                <div class="block p-5 mb-5 medieval-glow gradient-army">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="text-2xl">🛡️⚔️</div>
+                            <div>
+                                <h1 class="text-xl font-extrabold tracking-wide">War Council</h1>
+                                <p class="text-secondary text-sm">Command your forces. Train, rally, and conquer.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button id="army-rally" class="chimera-button juicy-button imperial-button px-4 py-3 rounded-md font-extrabold tracking-wide">${rallyActive ? `Rally Active • ${rallyRemaining}s` : 'Rally Troops'}</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                        <div class="glass-card rounded-md p-3 text-center shine"><div class="text-[11px] text-secondary uppercase tracking-wider">DPS</div><div class="text-2xl font-mono text-white">${prod.dps.toFixed(1)}</div></div>
+                        <div class="glass-card rounded-md p-3 text-center"><div class="text-[11px] text-secondary uppercase tracking-wider">HPS</div><div class="text-2xl font-mono text-white">${prod.hps.toFixed(1)}</div></div>
+                        <div class="glass-card rounded-md p-3 text-center"><div class="text-[11px] text-secondary uppercase tracking-wider">Upkeep</div><div class="text-xl font-mono text-white">${foodPerMin.toFixed(1)}/m ${hungry ? '<span class="text-red-400 text-xs ml-1">Hungry</span>' : ''}</div></div>
+                        <div class="glass-card rounded-md p-3 text-center"><div class="text-[11px] text-secondary uppercase tracking-wider">Rations</div><div class="text-xl font-mono text-white">${edible} items • ${minutesLeft}m</div></div>
+                    </div>
+                </div>`;
+            const upgrades = `
+                <div class="block p-5 mb-5">
+                    <h2 class="text-lg font-bold mb-2">Doctrine & Upgrades</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div class="block p-3 flex flex-col">
+                            <div class="flex items-center justify-between"><div class="font-semibold">Offense Drills</div><div class="text-xs text-secondary">L${up.offenseLevel||0}</div></div>
+                            <p class="text-xs text-secondary mt-1">+8% Army DPS per level.</p>
+                            <button class="army-upgrade-btn chimera-button juicy-button px-3 py-2 rounded-md mt-2" data-type="offense">Upgrade — ${offenseCost}g</button>
+                        </div>
+                        <div class="block p-3 flex flex-col">
+                            <div class="flex items-center justify-between"><div class="font-semibold">Field Medics</div><div class="text-xs text-secondary">L${up.supportLevel||0}</div></div>
+                            <p class="text-xs text-secondary mt-1">+8% Army HPS per level.</p>
+                            <button class="army-upgrade-btn chimera-button juicy-button px-3 py-2 rounded-md mt-2" data-type="support">Upgrade — ${supportCost}g</button>
+                        </div>
+                        <div class="block p-3 flex flex-col">
+                            <div class="flex items-center justify-between"><div class="font-semibold">Supply Lines</div><div class="text-xs text-secondary">L${up.logisticsLevel||0}</div></div>
+                            <p class="text-xs text-secondary mt-1">-6% Upkeep per level.</p>
+                            <button class="army-upgrade-btn chimera-button juicy-button px-3 py-2 rounded-md mt-2" data-type="logistics">Upgrade — ${logisticsCost}g</button>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="text-xs text-secondary mb-1">Formations</div>
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs flex items-center gap-1"><input type="radio" name="army-stance" value="balanced" ${stance==='balanced'?'checked':''}/> Balanced</label>
+                            <label class="text-xs flex items-center gap-1"><input type="radio" name="army-stance" value="aggressive" ${stance==='aggressive'?'checked':''}/> Aggressive</label>
+                            <label class="text-xs flex items-center gap-1"><input type="radio" name="army-stance" value="defensive" ${stance==='defensive'?'checked':''}/> Defensive</label>
+                        </div>
+                    </div>
+                </div>`;
+            const recruits = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${unitCards}</div>`;
+            return `<h1 class="text-2xl font-semibold text-white mb-4">Army</h1>${hero}${upgrades}${recruits}`;
+        }
+        renderCombatFooter() { /* placeholder for potential dynamic footer updates */ }
     }
 
     const game = new GameManager(); game.init(); window.chimeraGame = game;
