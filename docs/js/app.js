@@ -1030,9 +1030,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // Shop
             document.querySelectorAll('.buy-chest-btn').forEach(btn => { btn.addEventListener('click', () => this.game.buyChest(btn.dataset.chestId)); });
             // Army
-            document.querySelectorAll('.hire-army-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireArmyUnit(btn.dataset.unitId)); });
+                        document.querySelectorAll('.hire-army-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireArmyUnit(btn.dataset.unitId)); });
 
-            // Workers - Woodcutting
+            // Workers - generic
+            document.querySelectorAll('.hire-worker-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireWorker(btn.dataset.skillId)); });
+            document.querySelectorAll('.upgrade-worker-btn').forEach(btn => { btn.addEventListener('click', () => this.game.upgradeWorkers(btn.dataset.skillId, btn.dataset.type)); });
+
+            // Workers - Woodcutting (legacy ids supported if present)
             const hire = document.getElementById('hire-wood-worker'); if (hire) hire.addEventListener('click', () => this.game.hireWorker('woodcutting'));
             const upS = document.getElementById('upgrade-wood-speed'); if (upS) upS.addEventListener('click', () => this.game.upgradeWorkers('woodcutting', 'speed'));
             const upY = document.getElementById('upgrade-wood-yield'); if (upY) upY.addEventListener('click', () => this.game.upgradeWorkers('woodcutting', 'yield'));
@@ -1089,6 +1093,72 @@ document.addEventListener('DOMContentLoaded', () => {
             this.floatingTextContainer.appendChild(floatText);
             const duration = typeClass === 'fly-crit' || typeClass === 'fly-level' ? 1900 : (typeClass === 'fly-loot' ? 1800 : 1600);
             setTimeout(() => floatText.remove(), duration);
+        }
+
+        renderWorkerPanel(skillId) {
+            const ws = this.game.state.workers[skillId];
+            const hireCost = this.game.getHireCost(skillId);
+            const speedCost = this.game.getUpgradeCost(skillId, 'speed');
+            const yieldCost = this.game.getUpgradeCost(skillId, 'yield');
+            const speedLvl = ws.upgrades.speedLevel;
+            const yieldLvl = ws.upgrades.yieldLevel;
+            const theme = GAME_DATA.SKILLS[skillId].theme;
+            const NAMES = {
+                woodcutting: { lodge: 'Timber Lodge', worker: 'Timberhands' },
+                mining: { lodge: 'Prospector Camp', worker: 'Miners' },
+                fishing: { lodge: 'Fishing Pier', worker: 'Anglers' },
+                farming: { lodge: 'Farmstead', worker: 'Farmhands' },
+                hunter: { lodge: 'Hunter Lodge', worker: 'Trappers' },
+                archaeology: { lodge: 'Digsite', worker: 'Excavators' },
+                divination: { lodge: 'Wisp Grove', worker: 'Diviners' },
+            };
+            const name = NAMES[skillId] || { lodge: 'Work Camp', worker: 'Workers' };
+            return `
+                <div class="block p-4 mb-4 border border-${theme}">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <div>
+                            <h2 class="text-lg font-bold">${name.lodge}</h2>
+                            <p class="text-secondary text-sm">${name.worker} work in the background. Assign them to specific tasks.</p>
+                            <p class="text-white text-sm mt-1">Workers: <span class="font-bold">${ws.total}</span></p>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <button class="hire-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}">Hire ${name.worker.slice(0, -1)} — Cost: ${hireCost} gold</button>
+                            <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-type="speed">Upgrade Tools (Speed L${speedLvl}) — Cost: ${speedCost} gold</button>
+                            <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-type="yield">Logistics (Yield L${yieldLvl}) — Cost: ${yieldCost} gold</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        renderWorkerAssign(skillId, action) {
+            const ws = this.game.state.workers[skillId]; const assigned = ws.assigned[action.id] || 0;
+            const total = ws.total; const sumAssigned = Object.values(ws.assigned).reduce((a,b)=>a+b,0);
+            const free = Math.max(0, total - sumAssigned);
+            const speedMult = this.game.getWorkerSpeedMultiplier(skillId, action);
+            const yieldMult = this.game.getWorkerYieldMultiplier(skillId, action);
+            const NAMES = {
+                woodcutting: { worker: 'Timberhands' },
+                mining: { worker: 'Miners' },
+                fishing: { worker: 'Anglers' },
+                farming: { worker: 'Farmhands' },
+                hunter: { worker: 'Trappers' },
+                archaeology: { worker: 'Excavators' },
+                divination: { worker: 'Diviners' },
+            };
+            const workerName = (NAMES[skillId] || { worker: 'Workers' }).worker;
+            return `
+                <div class="mt-3 p-2 rounded-md bg-black/30 border border-border-color">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-secondary">${workerName} Assigned: <span class="text-white font-mono">${assigned}</span> / Free: <span class="text-white font-mono">${free}</span></span>
+                        <div class="space-x-1">
+                            <button class="assign-worker-btn chimera-button px-2 py-1 rounded" data-skill-id="${skillId}" data-action-id="${action.id}" data-dir="-1">-</button>
+                            <button class="assign-worker-btn chimera-button px-2 py-1 rounded" data-skill-id="${skillId}" data-action-id="${action.id}" data-dir="+1">+</button>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-secondary mt-1">Eff: x${yieldMult.toFixed(2)} yield, ${Math.round(100 - speedMult*100)}% faster</p>
+                </div>
+            `;
         }
     }
 
