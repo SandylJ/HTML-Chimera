@@ -23,7 +23,7 @@
 .notify-pulse { animation: notify-pulse 380ms ease-out; }
 .notify-out { animation: notify-out 220ms ease-in forwards; }
 @keyframes notify-in { from { transform: translateX(16px); opacity:0;} to { transform: translateX(0); opacity:1; } }
-@keyframes notify-out { from { transform: translateY(0); opacity:1; } to { transform: translateY(-6px); opacity:0; } }
+@keyframes notify-out { from { transform: translateY(0); opacity:1; } to { transform: translateY(-8px); opacity:0; } }
 @keyframes notify-pulse { 0%{ transform: scale(1);} 50%{ transform: scale(1.05);} 100%{ transform: scale(1);} }
 </style>
 </head>
@@ -53,20 +53,31 @@
             </div>
         </nav>
         <div class="flex-grow flex flex-col">
-            <header class="flex-shrink-0 p-3 bg-secondary border-b border-border-color grid grid-cols-2 gap-4">
-                <div class="flex items-center space-x-4">
-                    <div class="flex items-center space-x-2"><i class="fas fa-coins text-yellow-400"></i><span id="gold-display">0</span><span id="gps-display" class="text-xs text-secondary ml-2">(+0/s)</span></div>
-                    <div class="flex items-center space-x-2"><i class="fas fa-gem text-purple-300"></i><span id="runes-display" class="font-mono">0</span></div>
-                    <div class="flex items-center space-x-2 w-full">
-                        <i class="fas fa-bolt text-green-400"></i>
-                        <div class="w-full bg-black/50 rounded-full h-5 border border-border-color overflow-hidden"><div id="stamina-bar-fill" class="stamina-bar-fill h-full rounded-full"></div></div>
-                        <span id="stamina-value" class="font-mono">0/100</span>
+            <header class="epic-hud flex-shrink-0 border-b border-border-color">
+                <div class="epic-hud-content grid grid-cols-3 gap-4 items-center">
+                    <div class="hud-resources flex items-center gap-3">
+                        <div class="hud-chip hud-gold">
+                            <i class="fas fa-coins"></i>
+                            <span id="gold-display">0</span>
+                            <span id="gps-display" class="hud-subtext">(+0/s)</span>
+                        </div>
+                        <div class="hud-chip hud-runes">
+                            <i class="fas fa-gem"></i>
+                            <span id="runes-display" class="font-mono">0</span>
+                        </div>
+                    </div>
+                    <div class="hud-center">
+                        <div id="mastery-progress-bar" class="block"></div>
+                    </div>
+                    <div class="hud-stamina flex items-center gap-2 justify-end">
+                        <i class="fas fa-bolt hud-stamina-icon"></i>
+                        <div class="hud-stamina-track">
+                            <div id="stamina-bar-fill" class="stamina-bar-fill hud-stamina-fill"></div>
+                        </div>
+                        <span id="stamina-value" class="font-mono hud-subtext">0/100</span>
                     </div>
                 </div>
-                <div class="relative">
-                    <div id="mastery-progress-bar" class="block"></div>
-                    <div id="top-notification-stack" class="absolute top-1 right-1 flex flex-col gap-1 items-end pointer-events-none"></div>
-                </div>
+                <div id="top-notification-stack" class="hud-notify-lane pointer-events-none"></div>
             </header>
             <main id="main-content" class="flex-grow p-4 overflow-y-auto"></main>
         </div>
