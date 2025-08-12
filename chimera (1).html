@@ -216,6 +216,14 @@
                 law_rune: { name: 'Law Rune', icon: '⚖️' },
                 death_rune: { name: 'Death Rune', icon: '💀' },
                 blood_rune: { name: 'Blood Rune', icon: '🩸' },
+
+                // Epic combat loot
+                goblin_ear: { name: 'Goblin Ear', icon: '👂' },
+                zombie_brain: { name: 'Zombie Brain', icon: '🧠🧟' },
+                giant_toe: { name: 'Giant Toe', icon: '🦶' },
+                dragon_scale: { name: 'Dragon Scale', icon: '🐉' },
+                phoenix_feather: { name: 'Phoenix Feather', icon: '🪶🔥' },
+                raid_trophy: { name: 'Raid Trophy', icon: '🏆' },
             },
             ACTIONS: {
                 woodcutting: [
@@ -296,6 +304,16 @@
                     { id: 'wolf', name: 'Wolf', level: 5, hp: 60, maxHp: 60, attack: 7, defense: 2, gold: [12, 25], drops: [ {id:'raw_shrimp', qty:[1,1], chance:30} ], attackSpeedMs: 1800 },
                     { id: 'skeleton', name: 'Skeleton', level: 10, hp: 120, maxHp: 120, attack: 12, defense: 4, gold: [30, 60], drops: [ {id:'bronze_bar', qty:[1,2], chance:35} ], attackSpeedMs: 1700 },
                     { id: 'troll', name: 'Troll', level: 20, hp: 300, maxHp: 300, attack: 20, defense: 8, gold: [80, 150], drops: [ {id:'item_ancient_key', qty:[1,1], chance:10} ], attackSpeedMs: 1600 },
+                ],
+                BOUNTIES: [
+                    { id: 'bounty_goblins', name: 'Cull the Goblin Clans', type: 'farm', icon: '🗡️', durationMs: 15 * 60 * 1000, recommendedLP: 500, enemyPool: ['goblin'], rewardGold: [150, 300], rewardItems: [ {id:'goblin_ear', qty:[3,7], chance: 100} ], rewardRunes: [0, 1] },
+                    { id: 'bounty_undead', name: 'Purge the Undead', type: 'farm', icon: '🕯️', durationMs: 25 * 60 * 1000, recommendedLP: 1200, enemyPool: ['skeleton'], rewardGold: [300, 600], rewardItems: [ {id:'zombie_brain', qty:[2,5], chance: 100} ], rewardRunes: [1, 2] },
+                    { id: 'bounty_giants', name: 'Hunt the Mountain Giants', type: 'farm', icon: '🗻', durationMs: 45 * 60 * 1000, recommendedLP: 3000, enemyPool: ['troll'], rewardGold: [800, 1500], rewardItems: [ {id:'giant_toe', qty:[1,3], chance: 100} ], rewardRunes: [1, 3] },
+                    { id: 'bounty_dragons', name: 'Scour the Dragon Whelps', type: 'farm', icon: '🐉', durationMs: 60 * 60 * 1000, recommendedLP: 5500, enemyPool: [], rewardGold: [1500, 3000], rewardItems: [ {id:'dragon_scale', qty:[1,2], chance: 80} ], rewardRunes: [2, 4] },
+                ],
+                RAIDS: [
+                    { id: 'raid_necropolis', name: 'Raid: The Sunken Necropolis', type: 'raid', icon: '💀', durationMs: 90 * 60 * 1000, recommendedLP: 8000, boss: { id: 'lich_king', name: 'Lich King', hp: 12000 }, rewardGold: [3000, 6000], rewardItems: [ {id:'phoenix_feather', qty:[1,1], chance: 25}, {id:'raid_trophy', qty:[1,1], chance: 100} ], rewardRunes: [3, 6] },
+                    { id: 'raid_dragon_roost', name: 'Raid: Emberpeak Roost', type: 'raid', icon: '🔥', durationMs: 120 * 60 * 1000, recommendedLP: 15000, boss: { id: 'ancient_dragon', name: 'Ancient Dragon', hp: 25000 }, rewardGold: [6000, 12000], rewardItems: [ {id:'dragon_scale', qty:[3,6], chance: 100}, {id:'raid_trophy', qty:[1,1], chance: 100} ], rewardRunes: [5, 10] },
                 ]
             },
             ARMY_CLASSES: {
@@ -378,6 +396,7 @@
                     lastTick: Date.now(),
                     production: { dps: 0, hps: 0, hungry: false },
                     upkeep: { foodBuffer: 0, hungry: false },
+                    deployments: { active: [] },
                     fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() }
                 };
 
@@ -413,6 +432,9 @@
                 const resilienceBonus = 1 + (this.state.player.meta_skills[META_SKILLS.RESILIENCE].level - 1) * 0.05;
                 const regenPerSecond = (10 / 60) * resilienceBonus;
                 this.state.player.stamina = Math.min(this.state.player.staminaMax, this.state.player.stamina + (regenPerSecond * (delta / 1000)));
+
+                // Expeditions & Raids tick
+                this.tickDeployments(delta);
 
                 // Bonfire expiry
                 if (this.state.bonfire.active && now > this.state.bonfire.expiry) { this.state.bonfire.active = false; this.state.bonfire.xpBoost = 0; this.uiManager.renderView(); }
@@ -805,10 +827,12 @@
                         if (!this.state.empire.units) this.state.empire.units = {};
                         Object.keys(GAME_DATA.UNITS).forEach(id => { if (typeof this.state.empire.units[id] !== 'number') this.state.empire.units[id] = 0; });
                         // Backfill army system defaults if missing
-                        if (!this.state.army) { this.state.army = { units: {}, lastTick: Date.now(), production: { dps: 0, hps: 0, hungry: false }, upkeep: { foodBuffer: 0, hungry: false }, fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() } }; }
+                        if (!this.state.army) { this.state.army = { units: {}, lastTick: Date.now(), production: { dps: 0, hps: 0, hungry: false }, upkeep: { foodBuffer: 0, hungry: false }, deployments: { active: [] }, fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() } }; }
                         if (!this.state.army.units) this.state.army.units = {};
                         Object.keys(GAME_DATA.ARMY_CLASSES).forEach(id => { if (typeof this.state.army.units[id] !== 'number') this.state.army.units[id] = 0; });
                         if (!this.state.army.production) this.state.army.production = { dps: 0, hps: 0, hungry: false };
+                        if (!this.state.army.deployments) this.state.army.deployments = { active: [] };
+                        if (!Array.isArray(this.state.army.deployments.active)) this.state.army.deployments.active = [];
                         if (!this.state.army.upkeep) this.state.army.upkeep = { foodBuffer: 0, hungry: false };
                         if (!this.state.army.fly) this.state.army.fly = { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() };
                         if (!this.state.army.lastTick) this.state.army.lastTick = Date.now();
@@ -837,14 +861,24 @@
             }
             calculateArmyOutputPerSecond() {
                 const units = this.state.army.units || {};
+                const activeMissions = (this.state.army.deployments?.active || []);
+                // Calculate reserved units from deployments
+                const reserved = {};
+                for (const m of activeMissions) {
+                    const comp = m.composition || {};
+                    for (const uid of Object.keys(comp)) {
+                        reserved[uid] = (reserved[uid] || 0) + (comp[uid] || 0);
+                    }
+                }
                 let dps = 0, hps = 0, foodPerMin = 0;
                 for (const id of Object.keys(GAME_DATA.ARMY_CLASSES)) {
                     const def = GAME_DATA.ARMY_CLASSES[id];
-                    const count = units[id] || 0;
-                    if (count <= 0) continue;
-                    dps += (def.dps || 0) * count;
-                    hps += (def.hps || 0) * count;
-                    foodPerMin += (def.foodPerMin || 0) * count;
+                    const countOwned = units[id] || 0;
+                    const countFree = Math.max(0, countOwned - (reserved[id] || 0));
+                    if (countFree <= 0) continue;
+                    dps += (def.dps || 0) * countFree;
+                    hps += (def.hps || 0) * countFree;
+                    foodPerMin += (def.foodPerMin || 0) * countFree;
                 }
                 return { dps, hps, foodPerMin };
             }
@@ -888,6 +922,113 @@
                 this.state.player.activeBuffs['armyRally'] = Date.now() + (20 * 1000);
                 this.uiManager.showFloatingText('Rally!', 'text-yellow-300');
                 this.uiManager.renderView();
+            }
+
+            startDeployment(missionId, missionType, composition) {
+                const catalog = missionType === 'raid' ? GAME_DATA.COMBAT.RAIDS : GAME_DATA.COMBAT.BOUNTIES;
+                const def = catalog.find(x => x.id === missionId);
+                if (!def) return false;
+                // Ensure we have enough free units
+                const owned = this.state.army.units || {};
+                const reserved = {};
+                for (const m of (this.state.army.deployments?.active || [])) {
+                    const comp = m.composition || {};
+                    for (const uid of Object.keys(comp)) reserved[uid] = (reserved[uid] || 0) + comp[uid];
+                }
+                for (const uid of Object.keys(composition)) {
+                    const want = composition[uid] || 0;
+                    const available = Math.max(0, (owned[uid] || 0) - (reserved[uid] || 0));
+                    if (want > available) { this.uiManager.showModal('Insufficient Units', `<p>Not enough ${GAME_DATA.ARMY_CLASSES[uid].name}s available.</p>`); return false; }
+                }
+                const now = Date.now();
+                const dep = {
+                    id: `dep_${now}_${Math.floor(Math.random()*9999)}`,
+                    missionId: missionId,
+                    missionType: missionType,
+                    name: def.name,
+                    icon: def.icon || '⚔️',
+                    startedAt: now,
+                    endsAt: now + def.durationMs,
+                    durationMs: def.durationMs,
+                    composition: { ...composition },
+                    progressMs: 0,
+                    completed: false,
+                    rewards: null
+                };
+                if (!this.state.army.deployments) this.state.army.deployments = { active: [] };
+                this.state.army.deployments.active.push(dep);
+                this.uiManager.showFloatingText('Expedition Launched!', 'text-green-300');
+                this.uiManager.renderView();
+                return true;
+            }
+
+            tickDeployments(deltaMs) {
+                const list = this.state.army.deployments?.active || [];
+                if (list.length === 0) return;
+                const now = Date.now();
+                for (const dep of list) {
+                    if (dep.completed) continue;
+                    dep.progressMs = Math.min(dep.durationMs, (now - dep.startedAt));
+                    if (now >= dep.endsAt) {
+                        dep.completed = true;
+                        dep.rewards = this.rollDeploymentRewards(dep);
+                        this.uiManager.showFloatingText(`${dep.name} Complete!`, 'text-yellow-300');
+                    }
+                }
+            }
+
+            cancelDeployment(depId) {
+                const list = this.state.army.deployments?.active || [];
+                const idx = list.findIndex(d => d.id === depId);
+                if (idx >= 0) {
+                    list.splice(idx, 1);
+                    this.uiManager.renderView();
+                }
+            }
+
+            claimDeployment(depId) {
+                const list = this.state.army.deployments?.active || [];
+                const dep = list.find(d => d.id === depId);
+                if (!dep || !dep.completed || !dep.rewards) return;
+                // Apply rewards
+                const r = dep.rewards;
+                if (r.gold && r.gold > 0) this.state.player.gold += r.gold * this.goldMultiplier();
+                if (r.runes && r.runes > 0) this.state.player.runes = (this.state.player.runes || 0) + r.runes;
+                if (Array.isArray(r.items)) {
+                    for (const it of r.items) {
+                        if (!it || !it.id) continue;
+                        this.state.bank[it.id] = (this.state.bank[it.id] || 0) + (it.qty || 0);
+                    }
+                }
+                // Remove deployment
+                const idx = list.findIndex(d => d.id === depId);
+                if (idx >= 0) list.splice(idx, 1);
+                this.uiManager.renderView();
+            }
+
+            rollDeploymentRewards(dep) {
+                const catalog = dep.missionType === 'raid' ? GAME_DATA.COMBAT.RAIDS : GAME_DATA.COMBAT.BOUNTIES;
+                const def = catalog.find(x => x.id === dep.missionId);
+                if (!def) return { gold: 0, runes: 0, items: [] };
+                // Compute power scaling: use LP proportional to units sent
+                const powerSent = Object.entries(dep.composition || {}).reduce((acc, [uid, qty]) => {
+                    const hp = (GAME_DATA.ARMY_CLASSES[uid]?.hp ?? 100);
+                    return acc + hp * qty;
+                }, 0);
+                const req = Math.max(1, def.recommendedLP || 1);
+                const successMult = Math.min(2.0, Math.max(0.25, powerSent / req));
+                const rng = (min, max) => Math.floor(min + Math.random() * (max - min + 1));
+                const gold = Math.floor(successMult * rng(def.rewardGold[0], def.rewardGold[1]));
+                const runes = Math.max(0, Math.floor(successMult * rng(def.rewardRunes[0], def.rewardRunes[1])));
+                const items = [];
+                for (const entry of (def.rewardItems || [])) {
+                    const chance = entry.chance ?? 100;
+                    if (Math.random() * 100 <= chance * Math.min(1.5, successMult)) {
+                        const qty = rng(entry.qty[0], entry.qty[1]);
+                        items.push({ id: entry.id, qty });
+                    }
+                }
+                return { gold, runes, items };
             }
         }
 
@@ -1109,32 +1250,123 @@
             }
 
             renderCombatView() {
-                const eList = GAME_DATA.COMBAT.ENEMIES.map(e => `<button class="start-combat-btn chimera-button px-3 py-2 rounded-md" data-enemy-id="${e.id}"><i class="fas fa-skull"></i> ${e.name} (Lv ${e.level})</button>`).join(' ');
-                const equipped = this.game.state.player.weapon ? GAME_DATA.ITEMS[this.game.state.player.weapon].name : 'None';
-                const foodList = Object.entries(this.game.state.bank).filter(([id, q]) => GAME_DATA.ITEMS[id]?.heals).map(([id, q]) => `<button class="eat-food-btn chimera-button px-2 py-1 rounded-md" data-item-id="${id}">${GAME_DATA.ITEMS[id].name} x${q}</button>`).join(' ');
-                const weapons = Object.entries(this.game.state.bank).filter(([id, q]) => GAME_DATA.ITEMS[id]?.damage).map(([id, q]) => `<button class="equip-weapon-btn chimera-button px-2 py-1 rounded-md" data-item-id="${id}">${GAME_DATA.ITEMS[id].name}</button>`).join(' ');
-                const combatStatus = this.game.state.combat.inCombat && this.game.state.combat.enemy ? `<p class="text-secondary">Fighting: <span class="text-white font-bold">${this.game.state.combat.enemy.name}</span></p>` : '<p class="text-secondary">Not in combat.</p>';
+                const armyUnits = this.game.state.army.units || {};
+                const freeUnits = (() => {
+                    const reserved = {};
+                    for (const m of (this.game.state.army.deployments?.active || [])) {
+                        for (const [uid, qty] of Object.entries(m.composition || {})) reserved[uid] = (reserved[uid] || 0) + qty;
+                    }
+                    const out = {};
+                    for (const id of Object.keys(GAME_DATA.ARMY_CLASSES)) {
+                        const owned = armyUnits[id] || 0;
+                        out[id] = Math.max(0, owned - (reserved[id] || 0));
+                    }
+                    return out;
+                })();
+
+                const unitPill = (id) => {
+                    const d = GAME_DATA.ARMY_CLASSES[id];
+                    return `<span class="badge">${d.emoji} ${d.name}: <span class="font-mono">${freeUnits[id] || 0}</span></span>`;
+                };
+                const freeSummary = Object.keys(GAME_DATA.ARMY_CLASSES).map(unitPill).join(' ');
+
+                const renderMissionCard = (def, type) => {
+                    const rec = def.recommendedLP || 0;
+                    const durationMin = Math.round((def.durationMs || 0) / 60000);
+                    const rewards = [
+                        `${def.rewardGold[0]}-${def.rewardGold[1]} gold`,
+                        `${def.rewardRunes[0]}-${def.rewardRunes[1]} runes`,
+                        ...(def.rewardItems || []).map(i => `${GAME_DATA.ITEMS[i.id]?.icon || '🎁'} x${i.qty[0]}-${i.qty[1]}${i.chance < 100 ? ` (${i.chance}%)` : ''}`)
+                    ].join(' • ');
+
+                    const unitControls = Object.keys(GAME_DATA.ARMY_CLASSES).map(uid => {
+                        const d = GAME_DATA.ARMY_CLASSES[uid];
+                        const free = freeUnits[uid] || 0;
+                        return `
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs text-secondary">${d.emoji} ${d.name}</span>
+                                <div class="flex items-center gap-1">
+                                    <button class="chimera-button px-2 py-1 rounded-md assign-mission-unit" data-mission-id="${def.id}" data-mission-type="${type}" data-unit-id="${uid}" data-dir="-1">-</button>
+                                    <input type="number" min="0" max="${free}" value="0" class="w-16 p-1 bg-primary border border-border-color rounded-md text-center mission-unit-input" data-mission-id="${def.id}" data-mission-type="${type}" data-unit-id="${uid}" />
+                                    <button class="chimera-button px-2 py-1 rounded-md assign-mission-unit" data-mission-id="${def.id}" data-mission-type="${type}" data-unit-id="${uid}" data-dir="+1">+</button>
+                                </div>
+                            </div>`;
+                    }).join('');
+
+                    return `
+                        <div class="block p-4 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-lg font-bold">${def.icon || '⚔️'} ${def.name}</h3>
+                                    <span class="badge">${durationMin}m</span>
+                                </div>
+                                <p class="text-secondary text-xs">Recommended LP: ${rec.toLocaleString()}</p>
+                                <p class="text-secondary text-xs mt-1">Rewards: ${rewards}</p>
+                                <div class="mt-3 p-2 rounded-md bg-black/30 border border-border-color">
+                                    <p class="text-xs text-secondary mb-2">Assign units to compose your expedition:</p>
+                                    ${unitControls}
+                                </div>
+                            </div>
+                            <button class="launch-mission-btn chimera-button px-3 py-2 rounded-md mt-3" data-mission-id="${def.id}" data-mission-type="${type}">Send Expedition</button>
+                        </div>`;
+                };
+
+                const bounties = (GAME_DATA.COMBAT.BOUNTIES || []).map(b => renderMissionCard(b, 'bounty')).join('');
+                const raids = (GAME_DATA.COMBAT.RAIDS || []).map(r => renderMissionCard(r, 'raid')).join('');
+
+                const active = (this.game.state.army.deployments?.active || []);
+                const activeCards = active.length === 0 ? '<p class="text-secondary">No active missions.</p>' : active.map(dep => {
+                    const pct = Math.floor((dep.progressMs / dep.durationMs) * 100);
+                    const remainingMs = Math.max(0, dep.endsAt - Date.now());
+                    const mins = Math.ceil(remainingMs / 60000);
+                    const compStr = Object.keys(dep.composition || {}).map(uid => {
+                        const qty = dep.composition[uid] || 0; if (!qty) return '';
+                        const d = GAME_DATA.ARMY_CLASSES[uid];
+                        return `${d.emoji} ${d.name} x${qty}`;
+                    }).filter(Boolean).join(' • ');
+                    const actionBtn = dep.completed ? `<button class="claim-mission-btn chimera-button px-3 py-2 rounded-md" data-dep-id="${dep.id}">Claim Rewards</button>` : `<button class="cancel-mission-btn chimera-button px-3 py-2 rounded-md" data-dep-id="${dep.id}">Recall</button>`;
+                    const rewardPreview = dep.completed && dep.rewards ? `<p class="text-xs text-green-300">Loot: +${Math.floor(dep.rewards.gold)} gold, +${dep.rewards.runes} runes, ${(dep.rewards.items||[]).map(i => (GAME_DATA.ITEMS[i.id]?.name||i.id)+` x${i.qty}`).join(', ')}</p>` : '';
+                    return `
+                        <div class="block p-4">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-bold">${dep.icon || '⚔️'} ${dep.name}</h3>
+                                ${actionBtn}
+                            </div>
+                            <p class="text-secondary text-xs">Composition: ${compStr || '—'}</p>
+                            <div class="w-full xp-bar-bg rounded-full h-2 my-2"><div class="mastery-bar-fill h-2 rounded-full" style="width:${pct}%"></div></div>
+                            <p class="text-xs text-secondary">${dep.completed ? 'Completed' : `ETA: ~${mins}m`}</p>
+                            ${rewardPreview}
+                        </div>`;
+                }).join('');
+
+                const playerEquipped = this.game.state.player.weapon ? GAME_DATA.ITEMS[this.game.state.player.weapon].name : 'None';
+
                 return `
-                    <h1 class="text-2xl font-semibold text-white mb-4">Combat</h1>
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                        <div class="block p-4 space-y-3">
-                            <h2 class="text-lg font-bold">Enemies</h2>
-                            <div class="space-x-2">${eList}</div>
+                    <h1 class="text-2xl font-semibold text-white mb-4">War Room</h1>
+                    <div class="block p-4 mb-4">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div>
+                                <h2 class="text-lg font-bold">Command Summary</h2>
+                                <p class="text-secondary text-sm">Available Forces: ${freeSummary}</p>
+                                <p class="text-secondary text-sm mt-1">Weapon: <span class="text-white">${playerEquipped}</span></p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="badge"><i class="fas fa-users"></i> Allies: DPS ${(Math.max(0,(this.game.state.army.production?.dps||0))).toFixed(1)} • HPS ${(Math.max(0,(this.game.state.army.production?.hps||0))).toFixed(1)}</span>
+                                ${this.game.state.army.upkeep?.hungry ? '<span class="badge">Hungry</span>' : ''}
+                            </div>
                         </div>
-                                                 <div class="block p-4 space-y-2">
-                             <h2 class="text-lg font-bold">Status</h2>
-                             ${combatStatus}
-                             <p class="text-secondary">HP: <span class="font-mono">${Math.floor(this.game.state.player.hp)}/${this.game.state.player.hpMax}</span></p>
-                             <div class="mt-2">
-                                 <span class="badge"><i class="fas fa-users"></i> Allies: DPS ${Math.max(0,(this.game.state.army.production?.dps||0)).toFixed(1)} • HPS ${Math.max(0,(this.game.state.army.production?.hps||0)).toFixed(1)} ${this.game.state.army.upkeep?.hungry ? '<span class="text-red-400 ml-1">Hungry</span>' : ''}</span>
-                             </div>
-                             <button id="end-combat-btn" class="chimera-button px-3 py-2 rounded-md" ${this.game.state.combat.inCombat ? '' : 'disabled'}>Retreat</button>
-                         </div>
-                        <div class="block p-4 space-y-3">
-                            <h2 class="text-lg font-bold">Equipment & Food</h2>
-                            <p class="text-secondary">Weapon: <span class="text-white">${equipped}</span></p>
-                            <div class="space-x-2">${weapons || '<span class="text-secondary">Craft a weapon in Smithing.</span>'}</div>
-                            <div class="space-x-2">${foodList || '<span class="text-secondary">Cook food to heal.</span>'}</div>
+                    </div>
+
+                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                        <div class="xl:col-span-2 block p-4">
+                            <h2 class="text-lg font-bold">Bounties</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">${bounties}</div>
+                            <h2 class="text-lg font-bold mt-6">Raids</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">${raids}</div>
+                        </div>
+                        <div class="block p-4">
+                            <h2 class="text-lg font-bold">Active Missions</h2>
+                            <div class="space-y-3">${activeCards}</div>
                         </div>
                     </div>
                 `;
@@ -1216,7 +1448,7 @@
                 const gr = document.getElementById('goto-runecrafting'); if (gr) gr.addEventListener('click', () => { this.currentView = 'runecrafting'; this.render(); });
                 const gc = document.getElementById('goto-combat'); if (gc) gc.addEventListener('click', () => { this.currentView = 'combat'; this.render(); });
                 const gs = document.getElementById('goto-shop'); if (gs) gs.addEventListener('click', () => { this.currentView = 'shop'; this.render(); });
-                                 document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => { const duration = parseInt(prompt('Enter duration in minutes:', '15'), 10); if (isNaN(duration) || duration <= 0) return; this.game.startAction(btn.dataset.skillId, btn.dataset.actionId, duration); }); });
+                document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => { const duration = parseInt(prompt('Enter duration in minutes:', '15'), 10); if (isNaN(duration) || duration <= 0) return; this.game.startAction(btn.dataset.skillId, btn.dataset.actionId, duration); }); });
                 document.querySelectorAll('.stop-action-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.stopAction(); }); });
                 document.querySelectorAll('.craft-action-btn, .light-action-btn').forEach(btn => { btn.addEventListener('click', () => {
                     const s = btn.dataset.skillId; const a = btn.dataset.actionId;
@@ -1238,13 +1470,13 @@
                 // Runecrafting interactive altar handlers
                 const altar = document.getElementById('altar-dropzone');
                 const essenceToken = document.getElementById('essence-token');
-                                 const qtyInput = document.getElementById('rc-qty');
-                 const qtyRange = document.getElementById('rc-range');
-                 const btnMinus = document.getElementById('rc-minus');
-                 const btnPlus = document.getElementById('rc-plus');
-                 const craftBtn = document.getElementById('rc-craft-btn');
-                 const haveEss = (this.game.state.bank['rune_essence'] || 0);
-                 const selectRecipe = (id) => { document.querySelectorAll('.rc-altar-card').forEach(c => c.classList.toggle('rc-selected', c.dataset.rcRecipeId === id)); if (craftBtn) { craftBtn.dataset.recipeId = id || ''; craftBtn.disabled = !id; } };
+                const qtyInput = document.getElementById('rc-qty');
+                const qtyRange = document.getElementById('rc-range');
+                const btnMinus = document.getElementById('rc-minus');
+                const btnPlus = document.getElementById('rc-plus');
+                const craftBtn = document.getElementById('rc-craft-btn');
+                const haveEss = (this.game.state.bank['rune_essence'] || 0);
+                const selectRecipe = (id) => { document.querySelectorAll('.rc-altar-card').forEach(c => c.classList.toggle('rc-selected', c.dataset.rcRecipeId === id)); if (craftBtn) { craftBtn.dataset.recipeId = id || ''; craftBtn.disabled = !id; } };
                 document.querySelectorAll('.rc-altar-card').forEach(card => { card.addEventListener('click', () => selectRecipe(card.dataset.rcRecipeId)); });
                 document.querySelectorAll('.quick-craft-btn').forEach(btn => { btn.addEventListener('click', (e) => { e.stopPropagation(); const id = btn.dataset.recipeId; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const maxQty = Math.floor((this.game.state.bank['rune_essence'] || 0) / per); if (maxQty <= 0) return; this.game.craftItem('runecrafting', id, Math.min(1, maxQty)); this.render(); }); });
                 if (btnMinus) btnMinus.addEventListener('click', () => { const v = Math.max(1, (parseInt(qtyInput.value || '1', 10) - 10)); qtyInput.value = v; if (qtyRange) qtyRange.value = v; });
@@ -1255,11 +1487,43 @@
                 if (altar) { altar.addEventListener('dragover', (e) => { e.preventDefault(); altar.style.borderColor = 'rgba(88,166,255,0.6)'; }); altar.addEventListener('dragleave', () => { altar.style.borderColor = 'var(--border-color)'; }); altar.addEventListener('drop', (e) => { e.preventDefault(); altar.style.borderColor = 'var(--border-color)'; const sel = document.querySelector('.rc-altar-card.rc-selected'); if (!sel) { this.game.uiManager.showFloatingText('Select an altar first', 'text-yellow-300'); return; } const id = sel.dataset.rcRecipeId; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const have = (this.game.state.bank['rune_essence'] || 0); const maxQty = Math.floor(have / per); const want = Math.min(maxQty, Math.max(1, parseInt((qtyInput?.value || qtyRange?.value || '1'), 10))); if (want <= 0) return; this.game.craftItem('runecrafting', id, want); for (let i = 0; i < Math.min(10, want); i++) { const spark = document.createElement('div'); spark.className = 'rune-spark'; spark.style.setProperty('--sx', `${(Math.random() - 0.5) * 120}px`); spark.style.setProperty('--sy', `${(Math.random() - 0.2) * 40}px`); spark.style.setProperty('--tx', `${(Math.random() - 0.5) * 40}px`); spark.style.setProperty('--ty', `${-140 - Math.random() * 40}px`); altar.appendChild(spark); setTimeout(() => spark.remove(), 950); } this.render(); }); }
                 if (essenceToken) { essenceToken.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', 'essence'); }); }
 
-                // Combat
+                // Combat (legacy quick fight — disabled in new war room but kept for compatibility)
                 document.querySelectorAll('.start-combat-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.startCombat(btn.dataset.enemyId); this.currentView = 'combat'; this.render(); }); });
                 const endBtn = document.getElementById('end-combat-btn'); if (endBtn) endBtn.addEventListener('click', () => this.game.endCombat(false));
                 document.querySelectorAll('.eat-food-btn').forEach(btn => { btn.addEventListener('click', () => this.game.eatFood(btn.dataset.itemId)); });
                 document.querySelectorAll('.equip-weapon-btn').forEach(btn => { btn.addEventListener('click', () => this.game.equipWeapon(btn.dataset.itemId)); });
+
+                // War Room mission composition handlers
+                const buildComposition = (missionId, missionType) => {
+                    const inputs = Array.from(document.querySelectorAll(`.mission-unit-input[data-mission-id="${missionId}"][data-mission-type="${missionType}"]`));
+                    const comp = {};
+                    for (const el of inputs) {
+                        const uid = el.dataset.unitId; const val = Math.max(0, parseInt(el.value || '0', 10));
+                        if (val > 0) comp[uid] = val;
+                    }
+                    return comp;
+                };
+                document.querySelectorAll('.assign-mission-unit').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const missionId = btn.dataset.missionId; const missionType = btn.dataset.missionType; const uid = btn.dataset.unitId; const dir = btn.dataset.dir;
+                        const input = document.querySelector(`.mission-unit-input[data-mission-id="${missionId}"][data-mission-type="${missionType}"][data-unit-id="${uid}"]`);
+                        if (!input) return;
+                        const max = parseInt(input.getAttribute('max') || '0', 10);
+                        let v = Math.max(0, parseInt(input.value || '0', 10));
+                        v = dir === '+1' ? Math.min(max, v + 1) : Math.max(0, v - 1);
+                        input.value = v;
+                    });
+                });
+                document.querySelectorAll('.launch-mission-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const missionId = btn.dataset.missionId; const missionType = btn.dataset.missionType;
+                        const comp = buildComposition(missionId, missionType);
+                        if (Object.keys(comp).length === 0) { this.game.uiManager.showModal('No Units Assigned', '<p>Assign at least one unit to launch.</p>'); return; }
+                        this.game.startDeployment(missionId, missionType === 'raid' ? 'raid' : 'bounty', comp);
+                    });
+                });
+                document.querySelectorAll('.cancel-mission-btn').forEach(btn => { btn.addEventListener('click', () => this.game.cancelDeployment(btn.dataset.depId)); });
+                document.querySelectorAll('.claim-mission-btn').forEach(btn => { btn.addEventListener('click', () => this.game.claimDeployment(btn.dataset.depId)); });
 
                 // Empire hiring events
                 document.querySelectorAll('.hire-unit-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireEmpireUnit(btn.dataset.unitId)); });
