@@ -72,6 +72,12 @@
         .border-cooking { border-color: #d2691e; } .bg-cooking { background-color: #d2691e; }
         .medieval-border { border-image: linear-gradient(45deg, #8b5a2b, #b8860b) 1; border-width: 1px; border-style: solid; }
         .medieval-glow { box-shadow: 0 0 0 1px rgba(255,215,0,0.08) inset, 0 0 24px rgba(255,215,0,0.06); }
+        
+        /* New gathering themes */
+        .border-farming { border-color: #6b8e23; } .bg-farming { background-color: #6b8e23; }
+        .border-hunter { border-color: #556b2f; } .bg-hunter { background-color: #556b2f; }
+        .border-archaeology { border-color: #c2b280; } .bg-archaeology { background-color: #c2b280; }
+        .border-divination { border-color: #7b68ee; } .bg-divination { background-color: #7b68ee; }
     </style>
 </head>
 <body class="text-sm">
@@ -130,6 +136,13 @@
                 woodcutting: { name: 'Woodcutting', type: 'gathering', icon: 'fa-tree', theme: 'woodcutting' },
                 mining: { name: 'Mining', type: 'gathering', icon: 'fa-gem', theme: 'mining' },
                 fishing: { name: 'Fishing', type: 'gathering', icon: 'fa-fish', theme: 'fishing' },
+                
+                // New gathering skills
+                farming: { name: 'Farming', type: 'gathering', icon: 'fa-seedling', theme: 'farming' },
+                hunter: { name: 'Hunter', type: 'gathering', icon: 'fa-paw', theme: 'hunter' },
+                archaeology: { name: 'Archaeology', type: 'gathering', icon: 'fa-brush', theme: 'archaeology' },
+                divination: { name: 'Divination', type: 'gathering', icon: 'fa-sparkles', theme: 'divination' },
+
                 firemaking: { name: 'Firemaking', type: 'artisan', icon: 'fa-fire', theme: 'firemaking' },
                 smithing: { name: 'Smithing', type: 'artisan', icon: 'fa-hammer', theme: 'smithing' },
                 cooking: { name: 'Cooking', type: 'artisan', icon: 'fa-utensils', theme: 'cooking' },
@@ -162,15 +175,27 @@
                 air_rune: { name: 'Air Rune', icon: '🌀' },
                 mind_rune: { name: 'Mind Rune', icon: '🧠' },
                 water_rune: { name: 'Water Rune', icon: '💧' },
-                earth_rune: { name: 'Earth Rune', icon: '🪨' },
+                earth_rune: { name: 'Earth Rune', icon: '🌱' },
                 fire_rune: { name: 'Fire Rune', icon: '🔥' },
-                body_rune: { name: 'Body Rune', icon: '🏋️' },
-                cosmic_rune: { name: 'Cosmic Rune', icon: '🌌' },
-                chaos_rune: { name: 'Chaos Rune', icon: '☄️' },
+                body_rune: { name: 'Body Rune', icon: '🫀' },
+                chaos_rune: { name: 'Chaos Rune', icon: '🧿' },
                 nature_rune: { name: 'Nature Rune', icon: '🍃' },
                 law_rune: { name: 'Law Rune', icon: '⚖️' },
+                                blood_rune: { name: 'Blood Rune', icon: '🩸' },
+                cosmic_rune: { name: 'Cosmic Rune', icon: '🌌' },
                 death_rune: { name: 'Death Rune', icon: '💀' },
-                blood_rune: { name: 'Blood Rune', icon: '🩸' },
+                
+                // New gathering outputs
+                potato: { name: 'Potato', icon: '🥔' },
+                wheat: { name: 'Wheat', icon: '🌾' },
+                flax: { name: 'Flax', icon: '🪢' },
+                raw_bird_meat: { name: 'Raw Bird Meat', icon: '🍖' },
+                animal_pelt: { name: 'Animal Pelt', icon: '🦫' },
+                artifact_fragment: { name: 'Artifact Fragment', icon: '🗿' },
+                ancient_relic: { name: 'Ancient Relic', icon: '🏺' },
+                pale_energy: { name: 'Pale Energy', icon: '✨' },
+                flickering_energy: { name: 'Flickering Energy', icon: '🔮' },
+                feather: { name: 'Feather', icon: '🪶' },
             },
             ACTIONS: {
                 woodcutting: [
@@ -185,6 +210,25 @@
                 fishing: [
                     { id: 'shrimp_spot', name: 'Shrimp Spot', level: 1, xp: 8, output: { itemId: 'raw_shrimp', quantity: 1 }, baseTime: 4000 },
                     { id: 'sardine_spot', name: 'Sardine Spot', level: 5, xp: 15, output: { itemId: 'raw_sardine', quantity: 1 }, baseTime: 4500 },
+                ],
+
+                // New gathering actions
+                farming: [
+                    { id: 'potato_patch', name: 'Potato Patch', level: 1, xp: 7, output: { itemId: 'potato', quantity: 1 }, baseTime: 4500 },
+                    { id: 'wheat_field', name: 'Wheat Field', level: 5, xp: 10, output: { itemId: 'wheat', quantity: 1 }, baseTime: 5000 },
+                    { id: 'flax_field', name: 'Flax Field', level: 10, xp: 14, output: { itemId: 'flax', quantity: 1 }, baseTime: 5200 },
+                ],
+                hunter: [
+                    { id: 'bird_snare', name: 'Bird Snaring', level: 1, xp: 9, output: { itemId: 'raw_bird_meat', quantity: 1 }, baseTime: 4200, rareDrop: { itemId: 'feather', chance: 5 } },
+                    { id: 'rabbit_trap', name: 'Rabbit Trapping', level: 7, xp: 14, output: { itemId: 'animal_pelt', quantity: 1 }, baseTime: 5200 },
+                ],
+                archaeology: [
+                    { id: 'surface_excavation', name: 'Surface Excavation', level: 1, xp: 6, output: { itemId: 'artifact_fragment', quantity: 1 }, baseTime: 4800 },
+                    { id: 'ancient_digsite', name: 'Ancient Digsite', level: 20, xp: 18, output: { itemId: 'ancient_relic', quantity: 1 }, baseTime: 8000 },
+                ],
+                divination: [
+                    { id: 'pale_wisp', name: 'Pale Wisp', level: 1, xp: 5, output: { itemId: 'pale_energy', quantity: 1 }, baseTime: 3000 },
+                    { id: 'flickering_wisp', name: 'Flickering Wisp', level: 10, xp: 8, output: { itemId: 'flickering_energy', quantity: 1 }, baseTime: 3600 },
                 ],
             },
             RECIPES: {
@@ -322,16 +366,14 @@
                 Object.keys(GAME_DATA.SKILLS).forEach(id => { this.player.skills[id] = new Skill(id, GAME_DATA.SKILLS[id].name); this.player.mastery[id] = {}; });
                 Object.values(META_SKILLS).forEach(name => { this.player.meta_skills[name] = new Skill(name, name); });
                 
-                // Worker systems (Timber Camp for Woodcutting)
-                this.workers = {
-                    woodcutting: {
-                        total: 0,
-                        upgrades: { speedLevel: 0, yieldLevel: 0 },
-                        assigned: {},
-                        progress: {}
-                    }
-                };
-                (GAME_DATA.ACTIONS.woodcutting || []).forEach(a => { this.workers.woodcutting.assigned[a.id] = 0; this.workers.woodcutting.progress[a.id] = 0; });
+                // Worker systems for all gathering skills
+                this.workers = {};
+                Object.keys(GAME_DATA.SKILLS)
+                    .filter(id => GAME_DATA.SKILLS[id].type === 'gathering')
+                    .forEach(skillId => {
+                        this.workers[skillId] = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} };
+                        (GAME_DATA.ACTIONS[skillId] || []).forEach(a => { this.workers[skillId].assigned[a.id] = 0; this.workers[skillId].progress[a.id] = 0; });
+                    });
             }
         }
 
@@ -447,40 +489,42 @@
             
             // Worker helpers
             getWorkerSpeedMultiplier(skillId, action) {
-                if (skillId !== 'woodcutting') return 1;
-                const speedLevel = this.state.workers.woodcutting.upgrades.speedLevel || 0;
+                const ws = this.state.workers?.[skillId]; if (!ws) return 1;
+                const speedLevel = ws.upgrades.speedLevel || 0;
                 // 8% faster per level multiplicative
                 return Math.pow(0.92, speedLevel);
             }
             getWorkerYieldMultiplier(skillId, action) {
-                if (skillId !== 'woodcutting') return 1;
-                const yieldLevel = this.state.workers.woodcutting.upgrades.yieldLevel || 0;
+                const ws = this.state.workers?.[skillId]; if (!ws) return 1;
+                const yieldLevel = ws.upgrades.yieldLevel || 0;
                 // 10% more per level
                 return 1 + (0.10 * yieldLevel);
             }
             
             processWorkers(deltaMs) {
-                const wc = this.state.workers?.woodcutting; if (!wc) return;
-                const actions = GAME_DATA.ACTIONS.woodcutting || [];
-                for (const action of actions) {
-                    const assigned = wc.assigned[action.id] || 0; if (assigned <= 0) continue;
-                    const perCycleTime = this.calculateActionTime({ ...action, skillId: 'woodcutting' }) * this.getWorkerSpeedMultiplier('woodcutting', action);
-                    wc.progress[action.id] += deltaMs * assigned;
-                    const cycles = Math.floor(wc.progress[action.id] / perCycleTime);
-                    if (cycles > 0) {
-                        wc.progress[action.id] %= perCycleTime;
-                        const totalQty = (action.output?.quantity || 0) * cycles * this.getWorkerYieldMultiplier('woodcutting', action);
-                        if (action.output?.itemId && totalQty > 0) {
-                            this.addToBank(action.output.itemId, Math.floor(totalQty));
-                            // Worker XP to player skill, reduced rate (50%)
-                            const xpGain = (action.xp || 0) * cycles * 0.5;
-                            this.state.player.skills['woodcutting'].addXP(xpGain, this);
-                        }
-                        // Rare drops (each cycle independently, reduced chance)
-                        if (action.rareDrop) {
-                            for (let i = 0; i < cycles; i++) {
-                                if (Math.random() * 100 < (action.rareDrop.chance * 0.6)) {
-                                    this.addToBank(action.rareDrop.itemId, 1);
+                const workerSkills = Object.keys(this.state.workers || {});
+                for (const skillId of workerSkills) {
+                    const ws = this.state.workers[skillId];
+                    const actions = GAME_DATA.ACTIONS[skillId] || [];
+                    for (const action of actions) {
+                        const assigned = ws.assigned[action.id] || 0; if (assigned <= 0) continue;
+                        const perCycleTime = this.calculateActionTime({ ...action, skillId }) * this.getWorkerSpeedMultiplier(skillId, action);
+                        ws.progress[action.id] += deltaMs * assigned;
+                        const cycles = Math.floor(ws.progress[action.id] / perCycleTime);
+                        if (cycles > 0) {
+                            ws.progress[action.id] %= perCycleTime;
+                            const totalQty = (action.output?.quantity || 0) * cycles * this.getWorkerYieldMultiplier(skillId, action);
+                            if (action.output?.itemId && totalQty > 0) {
+                                this.addToBank(action.output.itemId, Math.floor(totalQty));
+                                // Worker XP to player skill, reduced rate (50%)
+                                const xpGain = (action.xp || 0) * cycles * 0.5;
+                                this.state.player.skills[skillId].addXP(xpGain, this);
+                            }
+                            // Rare drops (each cycle independently, reduced chance)
+                            if (action.rareDrop) {
+                                const chance = action.rareDrop.chance || 0; // as percent
+                                for (let i = 0; i < cycles; i++) {
+                                    if (Math.random() * 100 < chance * 0.5) { this.addToBank(action.rareDrop.itemId, 1); }
                                 }
                             }
                         }
@@ -577,32 +621,29 @@
 
             // Worker economy
             getHireCost(skillId) {
-                if (skillId !== 'woodcutting') return Infinity;
-                const base = 150;
-                const owned = this.state.workers.woodcutting.total || 0;
-                return Math.floor(base * Math.pow(1.35, owned));
+                const ws = this.state.workers?.[skillId]; if (!ws) return Infinity;
+                const base = 150; const owned = ws.total || 0; return Math.floor(base * Math.pow(1.35, owned));
             }
             getUpgradeCost(skillId, type) {
-                if (skillId !== 'woodcutting') return Infinity;
-                const base = type === 'speed' ? 250 : 300;
-                const level = type === 'speed' ? (this.state.workers.woodcutting.upgrades.speedLevel || 0) : (this.state.workers.woodcutting.upgrades.yieldLevel || 0);
+                const ws = this.state.workers?.[skillId]; if (!ws) return Infinity;
+                const base = type === 'speed' ? 250 : 300; const level = type === 'speed' ? (ws.upgrades.speedLevel || 0) : (ws.upgrades.yieldLevel || 0);
                 return Math.floor(base * Math.pow(1.55, level));
             }
             hireWorker(skillId) {
-                if (skillId !== 'woodcutting') return;
+                const ws = this.state.workers?.[skillId]; if (!ws) return;
                 const cost = this.getHireCost(skillId);
                 if (!this.spendGold(cost)) { this.uiManager.showModal('Not Enough Gold', `<p>You need ${cost} gold to hire a worker.</p>`); return; }
-                this.state.workers.woodcutting.total += 1;
-                this.uiManager.showFloatingText('+1 Timberhand Hired', 'text-green-400');
+                ws.total += 1;
+                this.uiManager.showFloatingText(`+1 Worker Hired`, 'text-green-400');
                 this.uiManager.renderView();
             }
             upgradeWorkers(skillId, type) {
-                if (skillId !== 'woodcutting') return;
+                const ws = this.state.workers?.[skillId]; if (!ws) return;
                 const cost = this.getUpgradeCost(skillId, type);
                 if (!this.spendGold(cost)) { this.uiManager.showModal('Not Enough Gold', `<p>You need ${cost} gold to upgrade.</p>`); return; }
-                if (type === 'speed') this.state.workers.woodcutting.upgrades.speedLevel += 1;
-                if (type === 'yield') this.state.workers.woodcutting.upgrades.yieldLevel += 1;
-                this.uiManager.showFloatingText('Timber Lodge Upgraded!', 'text-yellow-300');
+                if (type === 'speed') ws.upgrades.speedLevel += 1;
+                if (type === 'yield') ws.upgrades.yieldLevel += 1;
+                this.uiManager.showFloatingText('Work Camp Upgraded!', 'text-yellow-300');
                 this.uiManager.renderView();
             }
 
@@ -713,12 +754,18 @@
                         });
                         this.state.lastUpdate = Date.now();
                         // Backfill worker system defaults if missing
-                        if (!this.state.workers) { this.state.workers = { woodcutting: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} } }; }
-                        if (!this.state.workers.woodcutting) { this.state.workers.woodcutting = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} }; }
-                        (GAME_DATA.ACTIONS.woodcutting || []).forEach(a => {
-                            if (typeof this.state.workers.woodcutting.assigned[a.id] !== 'number') this.state.workers.woodcutting.assigned[a.id] = 0;
-                            if (typeof this.state.workers.woodcutting.progress[a.id] !== 'number') this.state.workers.woodcutting.progress[a.id] = 0;
-                        });
+                        if (!this.state.workers) {
+                            this.state.workers = {};
+                        }
+                        Object.keys(GAME_DATA.SKILLS)
+                            .filter(id => GAME_DATA.SKILLS[id].type === 'gathering')
+                            .forEach(skillId => {
+                                if (!this.state.workers[skillId]) { this.state.workers[skillId] = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} }; }
+                                (GAME_DATA.ACTIONS[skillId] || []).forEach(a => {
+                                    if (typeof this.state.workers[skillId].assigned[a.id] !== 'number') this.state.workers[skillId].assigned[a.id] = 0;
+                                    if (typeof this.state.workers[skillId].progress[a.id] !== 'number') this.state.workers[skillId].progress[a.id] = 0;
+                                });
+                            });
                         // Backfill empire system defaults if missing
                         if (!this.state.empire) { this.state.empire = { units: {}, lastTick: Date.now(), production: { goldPerSec: 0, runesPerSec: 0, essencePerSec: 0 }, buffers: { gold: 0, runes: 0, essence: 0 } }; }
                         if (!this.state.empire.units) this.state.empire.units = {};
@@ -922,7 +969,7 @@
                     actionType = 'Craft'; if (skillId === 'firemaking') { contentHtml = this.renderFiremakingView(); }
                     else { contentHtml = GAME_DATA.RECIPES[skillId].map(recipe => this.renderActionCard(skillId, recipe, actionType)).join(''); }
                 }
-                const workerPanel = skillId === 'woodcutting' ? this.renderWorkerPanel() : '';
+                const workerPanel = (skillData.type === 'gathering' && this.game.state.workers[skillId]) ? this.renderWorkerPanel(skillId) : '';
                 return `<h1 class="text-2xl font-semibold text-white mb-4">${skillData.name} <span class="text-base text-secondary">(Level ${playerSkill.level})</span></h1>${workerPanel}<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">${contentHtml}</div>`;
             }
 
@@ -933,11 +980,11 @@
                 let yieldMult = 1;
                 if (skillId === 'runecrafting') { yieldMult = Math.max(1, 1 + Math.floor((playerSkill.level - action.level) / 11)); }
                 const inputList = action.input ? action.input.map(inp => { const has = (this.game.state.bank[inp.itemId] || 0) >= inp.quantity; return `<span class="${has ? 'text-green-400' : 'text-red-400'}">${inp.quantity}x ${GAME_DATA.ITEMS[inp.itemId].name}</span>`; }).join(', ') : '';
-                const workerAssign = skillId === 'woodcutting' ? this.renderWorkerAssign(action) : '';
+                const workerAssign = this.game.state.workers[skillId] ? this.renderWorkerAssign(skillId, action) : '';
                 return `
                     <div class="block p-4 flex flex-col justify-between ${!hasLevel ? 'opacity-50' : ''}">
                         <div>
-                            <h3 class="text-lg font-bold text-white">${action.name}</h3>
+                            <h3 class="text-lg font-bold">${action.name}</h3>
                             <p class="text-secondary text-xs">Requires Level: ${action.level}</p>
                             <p class="text-secondary text-xs">XP: ${action.xp}</p>
                             ${action.input ? `<p class="text-secondary text-xs mt-1">Requires: ${inputList}</p>`: ''}
@@ -951,10 +998,9 @@
                             </div>
                             ${workerAssign}
                         </div>
-                                                    <div class="mt-4 flex gap-2">
-                                <button class="${actionType.toLowerCase()}-action-btn chimera-button px-4 py-2 rounded-md" data-skill-id="${skillId}" data-action-id="${action.id}" ${!hasLevel || !canAfford || this.game.state.activeAction ? 'disabled' : ''}>${actionType}</button>
-                                ${actionType === 'Start' ? `<button class="stop-action-btn chimera-button px-4 py-2 rounded-md" data-skill-id="${skillId}" data-action-id="${action.id}" ${(this.game.state.activeAction && this.game.state.activeAction.skillId === skillId && this.game.state.activeAction.id === action.id) ? '' : 'disabled'}>Stop</button>` : ''}
-                            </div>
+                        <div class="mt-4 flex gap-2">
+                            <button class="${actionType.toLowerCase()}-action-btn chimera-button px-4 py-2 rounded-md" data-skill-id="${skillId}" data-action-id="${action.id}" ${!hasLevel || !canAfford || this.game.state.activeAction ? 'disabled' : ''}>${actionType}</button>
+                        </div>
                     </div>
                 `;
             }
@@ -1186,44 +1232,65 @@
                 setTimeout(() => floatText.remove(), duration);
             }
 
-            renderWorkerPanel() {
-                const wc = this.game.state.workers.woodcutting;
-                const hireCost = this.game.getHireCost('woodcutting');
-                const speedCost = this.game.getUpgradeCost('woodcutting', 'speed');
-                const yieldCost = this.game.getUpgradeCost('woodcutting', 'yield');
-                const speedLvl = wc.upgrades.speedLevel;
-                const yieldLvl = wc.upgrades.yieldLevel;
+            renderWorkerPanel(skillId) {
+                const ws = this.game.state.workers[skillId];
+                const hireCost = this.game.getHireCost(skillId);
+                const speedCost = this.game.getUpgradeCost(skillId, 'speed');
+                const yieldCost = this.game.getUpgradeCost(skillId, 'yield');
+                const speedLvl = ws.upgrades.speedLevel;
+                const yieldLvl = ws.upgrades.yieldLevel;
+                const theme = GAME_DATA.SKILLS[skillId].theme;
+                const NAMES = {
+                    woodcutting: { lodge: 'Timber Lodge', worker: 'Timberhands' },
+                    mining: { lodge: 'Prospector Camp', worker: 'Miners' },
+                    fishing: { lodge: 'Fishing Pier', worker: 'Anglers' },
+                    farming: { lodge: 'Farmstead', worker: 'Farmhands' },
+                    hunter: { lodge: 'Hunter Lodge', worker: 'Trappers' },
+                    archaeology: { lodge: 'Digsite', worker: 'Excavators' },
+                    divination: { lodge: 'Wisp Grove', worker: 'Diviners' },
+                };
+                const name = NAMES[skillId] || { lodge: 'Work Camp', worker: 'Workers' };
                 return `
-                    <div class="block p-4 mb-4 border border-woodcutting">
+                    <div class="block p-4 mb-4 border border-${theme}">
                         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                             <div>
-                                <h2 class="text-lg font-bold">Timber Lodge</h2>
-                                <p class="text-secondary text-sm">Timberhands harvest trees in the background. Assign them to specific tree types.</p>
-                                <p class="text-white text-sm mt-1">Workers: <span class="font-bold">${wc.total}</span></p>
+                                <h2 class="text-lg font-bold">${name.lodge}</h2>
+                                <p class="text-secondary text-sm">${name.worker} work in the background. Assign them to specific tasks.</p>
+                                <p class="text-white text-sm mt-1">Workers: <span class="font-bold">${ws.total}</span></p>
                             </div>
                             <div class="flex flex-col sm:flex-row gap-2">
-                                <button id="hire-wood-worker" class="chimera-button px-3 py-2 rounded-md">Hire Timberhand — Cost: ${hireCost} gold</button>
-                                <button id="upgrade-wood-speed" class="chimera-button px-3 py-2 rounded-md">Upgrade Axes (Speed L${speedLvl}) — Cost: ${speedCost} gold</button>
-                                <button id="upgrade-wood-yield" class="chimera-button px-3 py-2 rounded-md">Lumber Sleds (Yield L${yieldLvl}) — Cost: ${yieldCost} gold</button>
+                                <button class="hire-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}">Hire ${name.worker.slice(0, -1)} — Cost: ${hireCost} gold</button>
+                                <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-type="speed">Upgrade Tools (Speed L${speedLvl}) — Cost: ${speedCost} gold</button>
+                                <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-type="yield">Logistics (Yield L${yieldLvl}) — Cost: ${yieldCost} gold</button>
                             </div>
                         </div>
                     </div>
                 `;
             }
 
-            renderWorkerAssign(action) {
-                const wc = this.game.state.workers.woodcutting; const assigned = wc.assigned[action.id] || 0;
-                const total = wc.total; const sumAssigned = Object.values(wc.assigned).reduce((a,b)=>a+b,0);
+            renderWorkerAssign(skillId, action) {
+                const ws = this.game.state.workers[skillId]; const assigned = ws.assigned[action.id] || 0;
+                const total = ws.total; const sumAssigned = Object.values(ws.assigned).reduce((a,b)=>a+b,0);
                 const free = Math.max(0, total - sumAssigned);
-                const speedMult = this.game.getWorkerSpeedMultiplier('woodcutting', action);
-                const yieldMult = this.game.getWorkerYieldMultiplier('woodcutting', action);
+                const speedMult = this.game.getWorkerSpeedMultiplier(skillId, action);
+                const yieldMult = this.game.getWorkerYieldMultiplier(skillId, action);
+                const NAMES = {
+                    woodcutting: { worker: 'Timberhands' },
+                    mining: { worker: 'Miners' },
+                    fishing: { worker: 'Anglers' },
+                    farming: { worker: 'Farmhands' },
+                    hunter: { worker: 'Trappers' },
+                    archaeology: { worker: 'Excavators' },
+                    divination: { worker: 'Diviners' },
+                };
+                const workerName = (NAMES[skillId] || { worker: 'Workers' }).worker;
                 return `
                     <div class="mt-3 p-2 rounded-md bg-black/30 border border-border-color">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs text-secondary">Timberhands Assigned: <span class="text-white font-mono">${assigned}</span> / Free: <span class="text-white font-mono">${free}</span></span>
+                            <span class="text-xs text-secondary">${workerName} Assigned: <span class="text-white font-mono">${assigned}</span> / Free: <span class="text-white font-mono">${free}</span></span>
                             <div class="space-x-1">
-                                <button class="assign-worker-btn chimera-button px-2 py-1 rounded" data-action-id="${action.id}" data-dir="-1">-</button>
-                                <button class="assign-worker-btn chimera-button px-2 py-1 rounded" data-action-id="${action.id}" data-dir="+1">+</button>
+                                <button class="assign-worker-btn chimera-button px-2 py-1 rounded" data-skill-id="${skillId}" data-action-id="${action.id}" data-dir="-1">-</button>
+                                <button class="assign-worker-btn chimera-button px-2 py-1 rounded" data-skill-id="${skillId}" data-action-id="${action.id}" data-dir="+1">+</button>
                             </div>
                         </div>
                         <p class="text-[11px] text-secondary mt-1">Eff: x${yieldMult.toFixed(2)} yield, ${Math.round(100 - speedMult*100)}% faster</p>
