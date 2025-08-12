@@ -74,20 +74,25 @@
         .medieval-glow { box-shadow: 0 0 0 1px rgba(255,215,0,0.08) inset, 0 0 24px rgba(255,215,0,0.06); }
 
         /* Runecrafting Altar UI */
-        .altar-zone { position: relative; height: 260px; border: 1px dashed var(--border-color); background: radial-gradient(120px 80px at 50% 60%, rgba(88,166,255,0.15), transparent 70%); border-radius: 12px; overflow: hidden; }
-        .altar-core { position: absolute; left: 50%; top: 56%; transform: translate(-50%, -50%); width: 140px; height: 140px; border-radius: 9999px; background: radial-gradient(circle at 50% 45%, rgba(88,166,255,0.3), rgba(10,132,255,0.14) 45%, transparent 65%); box-shadow: 0 0 40px rgba(88,166,255,0.18), inset 0 0 24px rgba(88,166,255,0.16); border: 1px solid rgba(88,166,255,0.25); }
-        .altar-sigil { position: absolute; left: 50%; top: 56%; transform: translate(-50%, -50%); font-size: 38px; color: rgba(255,255,255,0.9); text-shadow: 0 0 10px rgba(88,166,255,0.6); }
-        .altar-glow { position: absolute; inset: -20px; background: conic-gradient(from 0deg, rgba(88,166,255,0.08), rgba(255,255,255,0.04), rgba(88,166,255,0.08)); filter: blur(12px); opacity: 0.7; animation: altar-rotate 9s linear infinite; pointer-events: none; }
+        .rc-hero { position: relative; overflow: hidden; border: 1px solid var(--border-color); border-radius: 14px; background: radial-gradient(700px 380px at 50% 120%, rgba(88,166,255,0.10), rgba(124,58,237,0.06) 35%, transparent 70%), linear-gradient(180deg, rgba(2,6,23,0.65), rgba(2,6,23,0.35)); }
+        .altar-zone { position: relative; height: 360px; border: 1px dashed rgba(88,166,255,0.25); background: radial-gradient(180px 120px at 50% 60%, rgba(88,166,255,0.18), transparent 70%); border-radius: 14px; overflow: hidden; }
+        .altar-core { position: absolute; left: 50%; top: 58%; transform: translate(-50%, -50%); width: 180px; height: 180px; border-radius: 9999px; background: radial-gradient(circle at 50% 45%, rgba(88,166,255,0.35), rgba(10,132,255,0.16) 48%, transparent 66%); box-shadow: 0 0 56px rgba(88,166,255,0.22), inset 0 0 36px rgba(88,166,255,0.18); border: 1px solid rgba(88,166,255,0.35); }
+        .altar-sigil { position: absolute; left: 50%; top: 58%; transform: translate(-50%, -50%); font-size: 46px; color: rgba(255,255,255,0.95); text-shadow: 0 0 14px rgba(88,166,255,0.7); }
+        .altar-glow { position: absolute; inset: -30px; background: conic-gradient(from 0deg, rgba(88,166,255,0.08), rgba(255,255,255,0.06), rgba(88,166,255,0.08)); filter: blur(16px); opacity: 0.75; animation: altar-rotate 10s linear infinite; pointer-events: none; }
+        .altar-veil { position: absolute; inset: 0; background: radial-gradient(220px 120px at 50% 65%, rgba(255,255,255,0.08), transparent 70%); mix-blend-mode: screen; opacity: 0.6; pointer-events: none; }
+        .sigil-ring { position: absolute; left: 50%; top: 58%; transform: translate(-50%, -50%); width: 280px; height: 280px; border-radius: 9999px; border: 1px dashed rgba(88,166,255,0.25); box-shadow: 0 0 24px rgba(88,166,255,0.12) inset; animation: altar-rotate 18s linear infinite; pointer-events: none; }
         @keyframes altar-rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .rune-spark { position: absolute; width: 6px; height: 6px; border-radius: 9999px; background: rgba(88,166,255,0.95); box-shadow: 0 0 10px rgba(88,166,255,0.7); animation: spark-fly 900ms ease-out forwards; }
+        .rune-spark { position: absolute; width: 7px; height: 7px; border-radius: 9999px; background: rgba(88,166,255,0.95); box-shadow: 0 0 12px rgba(88,166,255,0.75); animation: spark-fly 900ms ease-out forwards; }
         @keyframes spark-fly { 0% { opacity: 0; transform: translate(var(--sx, 0), var(--sy, 0)) scale(0.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--tx, 0), var(--ty, -140px)) scale(1.1); } }
-        .rc-altar-card { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; background: rgba(2,6,23,0.35); transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease; display: flex; flex-direction: column; gap: 6px; }
-        .rc-altar-card:hover { transform: translateY(-2px); border-color: rgba(88,166,255,0.35); background: rgba(2,6,23,0.55); }
-        .rc-altar-card.rc-selected { border-color: rgba(255,255,255,0.4); box-shadow: 0 0 0 1px rgba(88,166,255,0.25) inset; }
+        .rc-altar-card { border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; background: linear-gradient(180deg, rgba(2,6,23,0.55), rgba(2,6,23,0.35)); transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease; display: flex; flex-direction: column; gap: 8px; }
+        .rc-altar-card:hover { transform: translateY(-2px); border-color: rgba(88,166,255,0.45); background: rgba(2,6,23,0.6); }
+        .rc-altar-card.rc-selected { border-color: rgba(88,166,255,0.75); box-shadow: 0 0 0 1px rgba(88,166,255,0.35) inset, 0 0 28px rgba(88,166,255,0.08); }
         .rc-locked { opacity: 0.55; filter: grayscale(0.2); }
-        .rune-essence-token { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-color); background: rgba(2,6,23,0.5); padding: 6px 10px; border-radius: 9999px; cursor: grab; user-select: none; }
-        .rune-output-badge { display:inline-flex; align-items:center; gap:6px; border:1px solid rgba(88,166,255,0.35); background: rgba(2,6,23,0.6); padding: 6px 10px; border-radius: 9999px; }
-        @media (min-width: 768px) { .altar-zone { height: 360px; } }
+        .rune-essence-token { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border-color); background: rgba(2,6,23,0.6); padding: 8px 12px; border-radius: 9999px; cursor: grab; user-select: none; }
+        .rune-output-badge { display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(88,166,255,0.45); background: rgba(2,6,23,0.65); padding: 8px 12px; border-radius: 9999px; }
+        .rc-controls { background: linear-gradient(180deg, rgba(2,6,23,0.6), rgba(2,6,23,0.4)); border: 1px solid var(--border-color); border-radius: 12px; }
+        .sticky-panel { position: sticky; top: 16px; }
+        @media (min-width: 768px) { .altar-zone { height: 480px; } }
         /* New gathering themes */
         .border-farming { border-color: #6b8e23; } .bg-farming { background-color: #6b8e23; }
         .border-hunter { border-color: #556b2f; } .bg-hunter { background-color: #556b2f; }
@@ -1210,19 +1215,21 @@
                 // Runecrafting interactive altar handlers
                 const altar = document.getElementById('altar-dropzone');
                 const essenceToken = document.getElementById('essence-token');
-                const qtyInput = document.getElementById('rc-qty');
-                const btnMinus = document.getElementById('rc-minus');
-                const btnPlus = document.getElementById('rc-plus');
-                const craftBtn = document.getElementById('rc-craft-btn');
-                const haveEss = (this.game.state.bank['rune_essence'] || 0);
-                const selectRecipe = (id) => { document.querySelectorAll('.rc-altar-card').forEach(c => c.classList.toggle('rc-selected', c.dataset.rcRecipeId === id)); if (craftBtn) { craftBtn.dataset.recipeId = id || ''; craftBtn.disabled = !id; } };
+                                 const qtyInput = document.getElementById('rc-qty');
+                 const qtyRange = document.getElementById('rc-range');
+                 const btnMinus = document.getElementById('rc-minus');
+                 const btnPlus = document.getElementById('rc-plus');
+                 const craftBtn = document.getElementById('rc-craft-btn');
+                 const haveEss = (this.game.state.bank['rune_essence'] || 0);
+                 const selectRecipe = (id) => { document.querySelectorAll('.rc-altar-card').forEach(c => c.classList.toggle('rc-selected', c.dataset.rcRecipeId === id)); if (craftBtn) { craftBtn.dataset.recipeId = id || ''; craftBtn.disabled = !id; } };
                 document.querySelectorAll('.rc-altar-card').forEach(card => { card.addEventListener('click', () => selectRecipe(card.dataset.rcRecipeId)); });
                 document.querySelectorAll('.quick-craft-btn').forEach(btn => { btn.addEventListener('click', (e) => { e.stopPropagation(); const id = btn.dataset.recipeId; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const maxQty = Math.floor((this.game.state.bank['rune_essence'] || 0) / per); if (maxQty <= 0) return; this.game.craftItem('runecrafting', id, Math.min(1, maxQty)); this.render(); }); });
-                if (btnMinus) btnMinus.addEventListener('click', () => { const v = Math.max(1, (parseInt(qtyInput.value || '1', 10) - 10)); qtyInput.value = v; });
-                if (btnPlus) btnPlus.addEventListener('click', () => { const v = Math.min(haveEss, (parseInt(qtyInput.value || '1', 10) + 10)); qtyInput.value = v; });
-                if (qtyInput) qtyInput.addEventListener('change', () => { let v = parseInt(qtyInput.value || '1', 10); if (isNaN(v) || v <= 0) v = 1; v = Math.min(v, haveEss); qtyInput.value = v; });
-                if (craftBtn) craftBtn.addEventListener('click', () => { const id = craftBtn.dataset.recipeId; if (!id) return; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const maxQty = Math.floor((this.game.state.bank['rune_essence'] || 0) / per); const want = Math.min(maxQty, Math.max(1, parseInt(qtyInput.value || '1', 10))); if (want <= 0) return; this.game.craftItem('runecrafting', id, want); if (altar) { for (let i = 0; i < Math.min(10, want); i++) { const spark = document.createElement('div'); spark.className = 'rune-spark'; spark.style.setProperty('--sx', `${(Math.random() - 0.5) * 120}px`); spark.style.setProperty('--sy', `${(Math.random() - 0.2) * 40}px`); spark.style.setProperty('--tx', `${(Math.random() - 0.5) * 40}px`); spark.style.setProperty('--ty', `${-140 - Math.random() * 40}px`); altar.appendChild(spark); setTimeout(() => spark.remove(), 950); } } this.render(); });
-                if (altar) { altar.addEventListener('dragover', (e) => { e.preventDefault(); altar.style.borderColor = 'rgba(88,166,255,0.6)'; }); altar.addEventListener('dragleave', () => { altar.style.borderColor = 'var(--border-color)'; }); altar.addEventListener('drop', (e) => { e.preventDefault(); altar.style.borderColor = 'var(--border-color)'; const sel = document.querySelector('.rc-altar-card.rc-selected'); if (!sel) { this.game.uiManager.showFloatingText('Select an altar first', 'text-yellow-300'); return; } const id = sel.dataset.rcRecipeId; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const have = (this.game.state.bank['rune_essence'] || 0); const maxQty = Math.floor(have / per); const want = Math.min(maxQty, Math.max(1, parseInt(qtyInput?.value || '1', 10))); if (want <= 0) return; this.game.craftItem('runecrafting', id, want); for (let i = 0; i < Math.min(10, want); i++) { const spark = document.createElement('div'); spark.className = 'rune-spark'; spark.style.setProperty('--sx', `${(Math.random() - 0.5) * 120}px`); spark.style.setProperty('--sy', `${(Math.random() - 0.2) * 40}px`); spark.style.setProperty('--tx', `${(Math.random() - 0.5) * 40}px`); spark.style.setProperty('--ty', `${-140 - Math.random() * 40}px`); altar.appendChild(spark); setTimeout(() => spark.remove(), 950); } this.render(); }); }
+                if (btnMinus) btnMinus.addEventListener('click', () => { const v = Math.max(1, (parseInt(qtyInput.value || '1', 10) - 10)); qtyInput.value = v; if (qtyRange) qtyRange.value = v; });
+                if (btnPlus) btnPlus.addEventListener('click', () => { const v = Math.min(haveEss, (parseInt(qtyInput.value || '1', 10) + 10)); qtyInput.value = v; if (qtyRange) qtyRange.value = v; });
+                if (qtyInput) qtyInput.addEventListener('change', () => { let v = parseInt(qtyInput.value || '1', 10); if (isNaN(v) || v <= 0) v = 1; v = Math.min(v, haveEss); qtyInput.value = v; if (qtyRange) qtyRange.value = v; });
+                if (qtyRange) qtyRange.addEventListener('input', () => { let v = parseInt(qtyRange.value || '1', 10); if (isNaN(v) || v <= 0) v = 1; v = Math.min(v, haveEss); qtyRange.value = v; if (qtyInput) qtyInput.value = v; });
+                if (craftBtn) craftBtn.addEventListener('click', () => { const id = craftBtn.dataset.recipeId; if (!id) return; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const maxQty = Math.floor((this.game.state.bank['rune_essence'] || 0) / per); const want = Math.min(maxQty, Math.max(1, parseInt((qtyInput?.value || qtyRange?.value || '1'), 10))); if (want <= 0) return; this.game.craftItem('runecrafting', id, want); if (altar) { for (let i = 0; i < Math.min(10, want); i++) { const spark = document.createElement('div'); spark.className = 'rune-spark'; spark.style.setProperty('--sx', `${(Math.random() - 0.5) * 120}px`); spark.style.setProperty('--sy', `${(Math.random() - 0.2) * 40}px`); spark.style.setProperty('--tx', `${(Math.random() - 0.5) * 40}px`); spark.style.setProperty('--ty', `${-140 - Math.random() * 40}px`); altar.appendChild(spark); setTimeout(() => spark.remove(), 950); } } this.render(); });
+                if (altar) { altar.addEventListener('dragover', (e) => { e.preventDefault(); altar.style.borderColor = 'rgba(88,166,255,0.6)'; }); altar.addEventListener('dragleave', () => { altar.style.borderColor = 'var(--border-color)'; }); altar.addEventListener('drop', (e) => { e.preventDefault(); altar.style.borderColor = 'var(--border-color)'; const sel = document.querySelector('.rc-altar-card.rc-selected'); if (!sel) { this.game.uiManager.showFloatingText('Select an altar first', 'text-yellow-300'); return; } const id = sel.dataset.rcRecipeId; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const have = (this.game.state.bank['rune_essence'] || 0); const maxQty = Math.floor(have / per); const want = Math.min(maxQty, Math.max(1, parseInt((qtyInput?.value || qtyRange?.value || '1'), 10))); if (want <= 0) return; this.game.craftItem('runecrafting', id, want); for (let i = 0; i < Math.min(10, want); i++) { const spark = document.createElement('div'); spark.className = 'rune-spark'; spark.style.setProperty('--sx', `${(Math.random() - 0.5) * 120}px`); spark.style.setProperty('--sy', `${(Math.random() - 0.2) * 40}px`); spark.style.setProperty('--tx', `${(Math.random() - 0.5) * 40}px`); spark.style.setProperty('--ty', `${-140 - Math.random() * 40}px`); altar.appendChild(spark); setTimeout(() => spark.remove(), 950); } this.render(); }); }
                 if (essenceToken) { essenceToken.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', 'essence'); }); }
 
                 // Combat
@@ -1414,36 +1421,57 @@
                     `;
                 }).join('');
 
-                const altar = `
-                    <div class="block p-4 col-span-1 md:col-span-1">
-                        <h2 class="text-lg font-bold mb-2">Runic Altar</h2>
-                        <div class="altar-zone" id="altar-dropzone">
-                            <div class="altar-glow"></div>
-                            <div class="altar-core"></div>
-                            <div class="altar-sigil">🔷</div>
-                        </div>
-                        <div class="mt-3 flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <div class="rune-essence-token" draggable="true" id="essence-token"><span>✨</span><span class="text-xs">Rune Essence</span><span class="font-mono ml-1">x${haveEss}</span></div>
-                                <div class="flex items-center gap-2 text-xs">
-                                    <button class="chimera-button px-2 py-1 rounded-md" id="rc-minus">-10</button>
-                                    <input id="rc-qty" type="number" min="1" value="${Math.min(25, haveEss)}" class="w-20 p-1 bg-primary border border-border-color rounded-md text-center" />
-                                    <button class="chimera-button px-2 py-1 rounded-md" id="rc-plus">+10</button>
+                                 const altar = `
+                     <div class="block p-2 md:p-4 col-span-1 md:col-span-1">
+                         <div class="flex items-center justify-between mb-2">
+                             <h2 class="text-lg font-bold">Runic Altar</h2>
+                             <span class="badge"><i class="fa-regular fa-sparkles"></i> Aesthetic Mode</span>
+                         </div>
+                         <div class="altar-zone" id="altar-dropzone">
+                             <div class="altar-glow"></div>
+                             <div class="sigil-ring"></div>
+                             <div class="altar-core"></div>
+                             <div class="altar-sigil">🔷</div>
+                             <div class="altar-veil"></div>
+                         </div>
+                         <div class="mt-3 flex items-center justify-between gap-2">
+                             <div class="flex items-center gap-2 flex-wrap">
+                                 <div class="rune-essence-token" draggable="true" id="essence-token"><span>✨</span><span class="text-xs">Rune Essence</span><span class="font-mono ml-1">x${haveEss}</span></div>
+                             </div>
+                         </div>
+                     </div>
+                 `;
+
+                                 const recipeList = `
+                     <div class="block p-4 col-span-1 md:col-span-2">
+                         <h2 class="text-lg font-bold mb-2">Altars</h2>
+                         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-3">${recipeCards}</div>
+                     </div>
+                 `;
+
+                return `
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 rc-hero p-4">
+                            ${altar}
+                            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 rc-controls p-3">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-secondary text-xs">Drag essence onto the altar or use Channel.</span>
+                                </div>
+                                <div class="flex items-center gap-3 justify-between">
+                                    <div class="flex items-center gap-2 text-xs">
+                                        <button class="chimera-button px-2 py-1 rounded-md" id="rc-minus">-10</button>
+                                        <input id="rc-qty" type="number" min="1" value="${Math.min(25, haveEss)}" class="w-20 p-1 bg-primary border border-border-color rounded-md text-center" />
+                                        <button class="chimera-button px-2 py-1 rounded-md" id="rc-plus">+10</button>
+                                    </div>
+                                    <input id="rc-range" type="range" min="1" max="${haveEss}" step="1" value="${Math.min(25, haveEss)}" class="w-full ml-3">
+                                    <button class="chimera-button px-3 py-2 rounded-md" id="rc-craft-btn" disabled>Channel Altar</button>
                                 </div>
                             </div>
-                            <button class="chimera-button px-3 py-2 rounded-md" id="rc-craft-btn" disabled>Channel Altar</button>
                         </div>
-                    </div>
-                `;
-
-                const recipeList = `
-                    <div class="block p-4 col-span-1 md:col-span-2">
-                        <h2 class="text-lg font-bold mb-2">Altars</h2>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">${recipeCards}</div>
-                    </div>
-                `;
-
-                return `<div class="grid grid-cols-1 md:grid-cols-3 gap-4">${altar}${recipeList}</div>`;
+                        <div class="lg:col-span-1 sticky-panel">
+                            ${recipeList}
+                        </div>
+                    </div>`;
             }
         }
 
