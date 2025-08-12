@@ -81,8 +81,8 @@
     </style>
 </head>
 <body class="text-sm">
-    <div id="game-container" class="w-full h-screen flex">
-        <nav id="sidebar" class="w-64 bg-secondary flex-shrink-0 flex flex-col border-r border-border-color">
+    <div id="game-container" class="w-full min-h-[100dvh] flex relative">
+        <nav id="sidebar" class="w-64 bg-secondary flex-shrink-0 flex flex-col border-r border-border-color fixed md:static inset-y-0 left-0 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-200">
             <div class="p-4 text-center border-b border-border-color">
                 <h1 class="text-xl font-bold text-white">Project Chimera</h1>
                 <p class="text-xs text-secondary">Melvor x Runescape x Cookie Clicker</p>
@@ -104,9 +104,11 @@
                 <a href="#" class="sidebar-link flex items-center p-3" data-view="meta_skills"><i class="fas fa-star w-6 text-center"></i><span>Meta Skills</span></a>
             </div>
         </nav>
-        <div class="flex-grow flex flex-col">
-            <header class="flex-shrink-0 p-3 bg-secondary border-b border-border-color grid grid-cols-2 gap-4">
-                <div class="flex items-center space-x-4">
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+        <div class="flex-grow flex flex-col md:ml-0">
+            <header class="flex-shrink-0 p-3 bg-secondary border-b border-border-color grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="flex items-center space-x-3">
+                    <button id="mobile-menu-btn" class="md:hidden chimera-button w-9 h-9 rounded-md flex items-center justify-center"><i class="fas fa-bars"></i></button>
                     <div class="flex items-center space-x-2"><i class="fas fa-coins text-yellow-400"></i><span id="gold-display">0</span><span id="gps-display" class="text-xs text-secondary ml-2">(+0/s)</span></div>
                     <div class="flex items-center space-x-2"><i class="fas fa-gem text-purple-300"></i><span id="runes-display" class="font-mono">0</span></div>
                     <div class="flex items-center space-x-2 w-full">
@@ -117,11 +119,20 @@
                 </div>
                 <div id="mastery-progress-bar" class="block"></div>
             </header>
-            <main id="main-content" class="flex-grow p-4 overflow-y-auto"></main>
+            <main id="main-content" class="flex-grow p-4 overflow-y-auto pb-24 md:pb-4"></main>
+            <nav id="mobile-nav" class="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-secondary border-t border-border-color">
+                <div class="grid grid-cols-5 text-xs">
+                    <button class="mobile-nav-link flex flex-col items-center justify-center py-2 text-secondary" data-view="dashboard"><i class="fas fa-tachometer-alt"></i><span>Home</span></button>
+                    <button class="mobile-nav-link flex flex-col items-center justify-center py-2 text-secondary" data-view="bank"><i class="fas fa-box"></i><span>Bank</span></button>
+                    <button class="mobile-nav-link flex flex-col items-center justify-center py-2 text-secondary" data-view="clicker"><i class="fas fa-chess-rook"></i><span>Empire</span></button>
+                    <button class="mobile-nav-link flex flex-col items-center justify-center py-2 text-secondary" data-view="combat"><i class="fas fa-skull"></i><span>Combat</span></button>
+                    <button class="mobile-nav-link flex flex-col items-center justify-center py-2 text-secondary" data-view="shop"><i class="fas fa-store"></i><span>Shop</span></button>
+                </div>
+            </nav>
         </div>
     </div>
-
-    <div id="modal-backdrop" class="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden">
+ 
+    <div id="modal-backdrop" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden">
         <div id="modal-content" class="block p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"></div>
     </div>
     <div id="floating-text-container" class="absolute inset-0 pointer-events-none"></div>
@@ -832,13 +843,13 @@
             constructor(game) {
                 this.game = game; this.mainContent = document.getElementById('main-content'); this.modalBackdrop = document.getElementById('modal-backdrop'); this.modalContent = document.getElementById('modal-content'); this.floatingTextContainer = document.getElementById('floating-text-container'); this.currentView = 'dashboard';
             }
-            init() { this.renderSidebar(); this.attachSidebarEventListeners(); this.render(); }
+            init() { this.renderSidebar(); this.attachSidebarEventListeners(); this.attachMobileChromeListeners(); this.render(); }
             renderSidebar() {
                 const createLink = (skillId, skill) => `<a href="#" class="sidebar-link flex items-center p-3" data-view="${skillId}"><i class="fas ${skill.icon} w-6 text-center"></i><div class="flex-grow"><span>${skill.name}</span><div class="w-full xp-bar-bg rounded-full h-1.5 mt-1"><div id="sidebar-xp-${skillId}" class="xp-bar-fill h-1.5 rounded-full"></div></div></div></a>`;
                 const gatheringHtml = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'gathering').map(id => createLink(id, GAME_DATA.SKILLS[id])).join(''); document.getElementById('gathering-skills-nav').innerHTML = gatheringHtml;
                 const artisanHtml = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'artisan').map(id => createLink(id, GAME_DATA.SKILLS[id])).join(''); document.getElementById('artisan-skills-nav').innerHTML = artisanHtml;
             }
-            attachSidebarEventListeners() { document.querySelectorAll('.sidebar-link').forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); this.currentView = link.dataset.view; this.render(); }); }); }
+            attachSidebarEventListeners() { document.querySelectorAll('.sidebar-link, .mobile-nav-link').forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); this.currentView = link.dataset.view; this.render(); if (this._closeMobileSidebar) this._closeMobileSidebar(); }); }); }
             render() { this.updateSidebarActive(); this.renderView(); }
 
             updateDynamicElements() {
@@ -855,7 +866,7 @@
                 // If in combat, update view footer elements
                 if (this.currentView === 'combat') this.renderCombatFooter();
             }
-            updateSidebarActive() { document.querySelectorAll('.sidebar-link').forEach(link => { link.classList.toggle('active', link.dataset.view === this.currentView); }); }
+            updateSidebarActive() { document.querySelectorAll('.sidebar-link').forEach(link => { link.classList.toggle('active', link.dataset.view === this.currentView); }); document.querySelectorAll('.mobile-nav-link').forEach(link => { const isActive = link.dataset.view === this.currentView; link.classList.toggle('text-blue-400', isActive); link.classList.toggle('text-secondary', !isActive); }); }
 
             updateMasteryBar() {
                 const container = document.getElementById('mastery-progress-bar'); const action = this.game.state.activeAction; const inCombat = this.game.state.combat.inCombat; if (!action && !inCombat) { container.innerHTML = ''; return; }
@@ -1338,5 +1349,17 @@
         const game = new GameManager(); game.init(); window.chimeraGame = game;
     });
     </script>
+<script>
+// Mobile sidebar open/close
+(function(){
+  const btn = document.getElementById('mobile-menu-btn');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (btn && sidebar && overlay) {
+    btn.addEventListener('click', () => { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); });
+    overlay.addEventListener('click', () => { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); });
+  }
+})();
+</script>
 </body>
 </html>
