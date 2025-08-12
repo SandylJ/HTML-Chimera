@@ -256,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 activeBuffs: {}, // { effectKey: expiryTimestamp }
             };
             this.bank = {};
-            this.activeAction = null; // gathering/artisan action
+            this.activeActions = {}; // { [skillId]: { ...actionState } }
             this.bonfire = { active: false, expiry: 0, xpBoost: 0 };
             this.lastUpdate = Date.now();
 
@@ -375,11 +375,19 @@ document.addEventListener('DOMContentLoaded', () => {
             // Bonfire expiry
             if (this.state.bonfire.active && now > this.state.bonfire.expiry) { this.state.bonfire.active = false; this.state.bonfire.xpBoost = 0; this.uiManager.renderView(); }
 
-            // Gathering/Artisan action loop
-            if (this.state.activeAction) {
-                const action = this.state.activeAction; action.progress += delta; const actionTime = this.calculateActionTime(action);
-                if (action.progress >= actionTime) { const loops = Math.floor(action.progress / actionTime); this.gainActionRewards(action, loops); action.progress %= actionTime; }
-                if (action.endTime && now >= action.endTime) { this.stopAction(); }
+            // Gathering/Artisan action loop (supports multiple concurrent actions per skill)
+            if (this.state.activeActions && Object.keys(this.state.activeActions).length > 0) {
+                for (const [skillId, action] of Object.entries(this.state.activeActions)) {
+                    if (!action) continue;
+                    action.progress += delta;
+                    const actionTime = this.calculateActionTime(action);
+                    if (action.progress >= actionTime) {
+                        const loops = Math.floor(action.progress / actionTime);
+                        this.gainActionRewards(action, loops);
+                        action.progress %= actionTime;
+                    }
+                    if (action.endTime && now >= action.endTime) { this.stopAction(skillId); }
+                }
             }
 
             // Worker processing (all gathering skills)
@@ -615,18 +623,29 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        startAction(skillId, actionId) {
-            if (this.state.activeAction) return;
+        startAction(skillId, actionId, durationMinutes) {
+            if (!this.state.activeActions) this.state.activeActions = {};
+            // If an action is already running for this skill, settle it first
+            if (this.state.activeActions[skillId]) {
+                this.stopAction(skillId);
+            }
             let actionData;
             if (GAME_DATA.ACTIONS[skillId]) actionData = GAME_DATA.ACTIONS[skillId].find(a => a.id === actionId);
-            if (GAME_DATA.RECIPES[skillId]) actionData = GAME_DATA.RECIPES[skillId].find(a => a.id === actionId);
-            this.state.activeAction = { ...actionData, skillId: skillId, startTime: Date.now(), endTime: null, progress: 0 };
+            if (!actionData && GAME_DATA.RECIPES[skillId]) actionData = GAME_DATA.RECIPES[skillId].find(a => a.id === actionId);
+            if (!actionData) return;
+            const now = Date.now();
+            const endTime = typeof durationMinutes === 'number' && durationMinutes > 0 ? (now + durationMinutes * 60 * 1000) : null;
+            this.state.activeActions[skillId] = { ...actionData, skillId, startTime: now, endTime, progress: 0 };
             this.uiManager.render();
         }
-        stopAction() {
-            if (!this.state.activeAction) return; const action = this.state.activeAction; const actionTime = this.calculateActionTime(action);
-            const loops = Math.floor(action.progress / actionTime); if (loops > 0) { this.gainActionRewards(action, loops); }
-            this.state.activeAction = null; this.uiManager.render();
+        stopAction(skillId) {
+            if (!this.state.activeActions || !this.state.activeActions[skillId]) return;
+            const action = this.state.activeActions[skillId];
+            const actionTime = this.calculateActionTime(action);
+            const loops = Math.floor(action.progress / actionTime);
+            if (loops > 0) { this.gainActionRewards(action, loops); }
+            delete this.state.activeActions[skillId];
+            this.uiManager.render();
         }
 
         craftItem(skillId, recipeId, quantity) {
@@ -920,6 +939,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     const parsedData = JSON.parse(savedData);
                     Object.assign(this.state, parsedData);
+                    // Migrate single activeAction -> activeActions map
+                    if (!this.state.activeActions) this.state.activeActions = {};
+                    if (this.state.activeAction) {
+                        const aa = this.state.activeAction;
+                        if (aa.skillId) this.state.activeActions[aa.skillId] = aa;
+                        delete this.state.activeAction;
+                    }
                     // Ensure hunter state exists
                     if (!this.state.hunter) this.state.hunter = { roster: [], missions: [], nextHunterId: 1 };
                     if (!Array.isArray(this.state.hunter.roster)) this.state.hunter.roster = [];
@@ -1129,7 +1155,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         updateMasteryBar() {
-            const container = document.getElementById('mastery-progress-bar'); const action = this.game.state.activeAction; const inCombat = this.game.state.combat.inCombat; if (!action && !inCombat) { container.innerHTML = ''; return; }
+            const container = document.getElementById('mastery-progress-bar'); const activeMap = this.game.state.activeActions || {}; const activeList = Object.values(activeMap); const inCombat = this.game.state.combat.inCombat; if ((activeList.length === 0) && !inCombat) { container.innerHTML = ''; container.classList.add('hidden'); return; }
+            container.classList.remove('hidden');
             if (inCombat) {
                 const e = this.game.state.combat.enemy; if (!e) { container.innerHTML = ''; return; }
                 const playerHpPct = (this.game.state.player.hp / this.game.state.player.hpMax) * 100;
@@ -1140,10 +1167,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>`;
                 return;
             }
-            const actionTime = this.game.calculateActionTime(action); const percentComplete = Math.min(100, (action.progress / actionTime) * 100);
-            const skillData = GAME_DATA.SKILLS[action.skillId]; const xpPerHour = (3600000 / actionTime) * action.xp;
-            container.innerHTML = `<div class="block p-2 h-full flex items-center space-x-4"><i class="fas ${skillData.icon} text-xl"></i><div class="flex-grow"><div class="flex justify-between text-xs"><span>${action.name}</span><span class="font-mono">${xpPerHour.toFixed(0)} XP/hr</span></div><div class="w-full xp-bar-bg rounded-full h-2.5 mt-1"><div class="xp-bar-fill h-2.5 rounded-full" style="width: ${percentComplete}%"></div></div></div><button id="stop-action-btn" class="chimera-button rounded-full w-8 h-8 flex items-center justify-center"><i class="fas fa-stop"></i></button></div>`;
-            const stop = document.getElementById('stop-action-btn'); if (stop) stop.onclick = () => this.game.stopAction();
+            // Render multiple concurrent action progress bars
+            const rows = activeList.map((action) => {
+                const actionTime = this.game.calculateActionTime(action);
+                const percentComplete = Math.min(100, (action.progress / actionTime) * 100);
+                const skillData = GAME_DATA.SKILLS[action.skillId];
+                const xpPerHour = (3600000 / actionTime) * action.xp;
+                return `<div class="flex items-center space-x-3 py-1">
+                    <i class="fas ${skillData.icon} text-base"></i>
+                    <div class="flex-grow">
+                        <div class="flex justify-between text-[11px]"><span>${action.name}</span><span class="font-mono">${xpPerHour.toFixed(0)} XP/hr</span></div>
+                        <div class="w-full xp-bar-bg rounded-full h-2 mt-1"><div class="xp-bar-fill h-2 rounded-full" style="width:${percentComplete}%"></div></div>
+                    </div>
+                    <button class="stop-action-btn chimera-button rounded-full w-7 h-7 flex items-center justify-center" data-skill-id="${action.skillId}"><i class="fas fa-stop text-xs"></i></button>
+                </div>`;
+            }).join('');
+            container.innerHTML = `<div class="block p-2 h-full">${rows}</div>`;
+            // Bind stop buttons
+            container.querySelectorAll('.stop-action-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const sid = btn.getAttribute('data-skill-id');
+                    if (sid) this.game.stopAction(sid);
+                });
+            });
         }
 
         renderView() {
@@ -1377,7 +1423,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const isDisabled = isGathering
                 ? (!hasLevel || !canAfford || freeWorkers <= 0)
-                : (!hasLevel || !canAfford || this.game.state.activeAction);
+                : (!hasLevel || !canAfford);
             return `
                 <div class="block p-4">
                     <div class="flex items-center justify-between">
@@ -1393,6 +1439,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p class="text-xs text-secondary text-right">${Math.floor(mastery.currentXP)} / ${mastery.xpToNextLevel} XP</p>
                     </div>
                     ${(GAME_DATA.SKILLS[skillId].type === 'gathering' && this.game.state.workers[skillId]) ? this.renderWorkerAssign(skillId, action) : ''}
+                    ${isGathering ? `<div class="mt-3 flex items-center gap-2"><label class="text-xs text-secondary">Manual</label><select class="action-duration-select chimera-button px-2 py-1 rounded" data-skill-id="${skillId}" data-action-id="${action.id}"><option value="5">5m</option><option value="15" selected>15m</option><option value="30">30m</option><option value="60">60m</option></select><button class="start-action-btn chimera-button px-3 py-1 rounded" data-skill-id="${skillId}" data-action-id="${action.id}" data-mode="manual" ${!hasLevel || !canAfford ? 'disabled' : ''}>Start</button></div>` : ''}
                     ${actionType === 'Start' && !isGathering ? `<div class="mt-3 flex items-center gap-2"><label class="text-xs text-secondary">Duration</label><select class="action-duration-select chimera-button px-2 py-1 rounded" data-skill-id="${skillId}" data-action-id="${action.id}"><option value="5">5m</option><option value="15" selected>15m</option><option value="30">30m</option><option value="60">60m</option></select></div>` : ''}
                     <button class="${actionType.toLowerCase()}-action-btn chimera-button px-4 py-2 rounded-md mt-4" data-skill-id="${skillId}" data-action-id="${action.id}" data-mode="${isGathering ? 'worker' : 'manual'}" ${isDisabled ? 'disabled' : ''}>${actionType}${isGathering ? ' (Assign 1)' : ''}</button>
                 </div>
