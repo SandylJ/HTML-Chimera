@@ -382,10 +382,14 @@
                 // Worker systems (Timber Camp for Woodcutting)
                 this.workers = {
                     woodcutting: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} },
-                    mining: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} }
+                    mining: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} },
+                    farming: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} },
+                    hunter: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} }
                 };
                 (GAME_DATA.ACTIONS.woodcutting || []).forEach(a => { this.workers.woodcutting.assigned[a.id] = 0; this.workers.woodcutting.progress[a.id] = 0; });
                 (GAME_DATA.ACTIONS.mining || []).forEach(a => { this.workers.mining.assigned[a.id] = 0; this.workers.mining.progress[a.id] = 0; });
+                (GAME_DATA.ACTIONS.farming || []).forEach(a => { this.workers.farming.assigned[a.id] = 0; this.workers.farming.progress[a.id] = 0; });
+                (GAME_DATA.ACTIONS.hunter || []).forEach(a => { this.workers.hunter.assigned[a.id] = 0; this.workers.hunter.progress[a.id] = 0; });
             }
         }
 
@@ -654,7 +658,7 @@
                 if (!this.spendGold(cost)) { this.uiManager.showModal('Not Enough Gold', `<p>You need ${cost} gold to hire a worker.</p>`); return; }
                 ws.total += 1;
                 const name = skillId === 'woodcutting' ? 'Timberhand' : (skillId === 'mining' ? 'Miner' : 'Worker');
-                this.uiManager.showFloatingText(`+1 ${name} Hired`, 'text-green-400');
+                                 this.uiManager.showFloatingText(`+1 ${name} Hired`, 'text-green-400'); this.uiManager.renderView();
                 this.uiManager.renderView();
             }
             upgradeWorkers(skillId, type) {
@@ -806,12 +810,12 @@
                      } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
                  }
              }
-+            resetSave() {
-+                try { localStorage.removeItem('chimeraSaveData_web_v1'); } catch (e) { console.error('Failed to clear save:', e); }
-+                this.state = new GameState();
-+                this.uiManager.showFloatingText('Save reset', 'text-red-300');
-+                this.uiManager.render();
-+            }
+            resetSave() {
+                try { localStorage.removeItem('chimeraSaveData_web_v1'); } catch (e) { console.error('Failed to clear save:', e); }
+                this.state = new GameState();
+                this.uiManager.showFloatingText('Save reset', 'text-red-300');
+                this.uiManager.render();
+            }
 
             // Army helpers
             getArmyUnitCost(id) {
@@ -1033,7 +1037,7 @@
                 let yieldMult = 1;
                 if (skillId === 'runecrafting') { yieldMult = Math.max(1, 1 + Math.floor((playerSkill.level - action.level) / 11)); }
                 const inputList = action.input ? action.input.map(inp => { const has = (this.game.state.bank[inp.itemId] || 0) >= inp.quantity; return `<span class="${has ? 'text-green-400' : 'text-red-400'}">${inp.quantity}x ${GAME_DATA.ITEMS[inp.itemId].name}</span>`; }).join(', ') : '';
-                const workerAssign = this.game.state.workers[skillId] ? this.renderWorkerAssign(skillId, action) : '';
+                                 const workerAssign = (GAME_DATA.SKILLS[skillId].type === 'gathering' && this.game.state.workers[skillId]) ? this.renderWorkerAssign(skillId, action) : '';
                 return `
                     <div class="block p-4 flex flex-col justify-between ${!hasLevel ? 'opacity-50' : ''}">
                         <div>
@@ -1194,7 +1198,8 @@
                 const gr = document.getElementById('goto-runecrafting'); if (gr) gr.addEventListener('click', () => { this.currentView = 'runecrafting'; this.render(); });
                 const gc = document.getElementById('goto-combat'); if (gc) gc.addEventListener('click', () => { this.currentView = 'combat'; this.render(); });
                 const gs = document.getElementById('goto-shop'); if (gs) gs.addEventListener('click', () => { this.currentView = 'shop'; this.render(); });
-                document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => { const duration = parseInt(prompt('Enter duration in minutes:', '15'), 10); if (isNaN(duration) || duration <= 0) return; this.game.startAction(btn.dataset.skillId, btn.dataset.actionId, duration); }); });
+                                 document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => { const duration = parseInt(prompt('Enter duration in minutes:', '15'), 10); if (isNaN(duration) || duration <= 0) return; this.game.startAction(btn.dataset.skillId, btn.dataset.actionId, duration); }); });
+                document.querySelectorAll('.stop-action-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.stopAction(); }); });
                 document.querySelectorAll('.craft-action-btn, .light-action-btn').forEach(btn => { btn.addEventListener('click', () => {
                     const s = btn.dataset.skillId; const a = btn.dataset.actionId;
                     if (s === 'runecrafting') {
@@ -1315,8 +1320,8 @@
                 const yieldCost = this.game.getUpgradeCost(skillId, 'yield');
                 const speedLvl = ws.upgrades.speedLevel; const yieldLvl = ws.upgrades.yieldLevel;
                 const theme = GAME_DATA.SKILLS[skillId]?.theme || 'woodcutting';
-                const place = skillId === 'woodcutting' ? 'Timber Lodge' : (skillId === 'mining' ? 'Mining Camp' : 'Workshop');
-                const workerName = skillId === 'woodcutting' ? 'Timberhand' : (skillId === 'mining' ? 'Miner' : 'Worker');
+                                 const place = skillId === 'woodcutting' ? 'Timber Lodge' : (skillId === 'mining' ? 'Mining Camp' : (skillId === 'farming' ? 'Farming Estate' : (skillId === 'hunter' ? "Trapper's Outpost" : 'Workshop')));
+                 const workerName = skillId === 'woodcutting' ? 'Timberhand' : (skillId === 'mining' ? 'Miner' : (skillId === 'farming' ? 'Farmhand' : (skillId === 'hunter' ? 'Trapper' : 'Worker')));
                 return `
                     <div class="block p-4 mb-4 border border-${theme}">
                         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -1341,7 +1346,7 @@
                 const free = Math.max(0, total - sumAssigned);
                 const speedMult = this.game.getWorkerSpeedMultiplier(skillId, action);
                 const yieldMult = this.game.getWorkerYieldMultiplier(skillId, action);
-                const workerName = skillId === 'woodcutting' ? 'Timberhands' : (skillId === 'mining' ? 'Miners' : 'Workers');
+                                 const workerName = skillId === 'woodcutting' ? 'Timberhands' : (skillId === 'mining' ? 'Miners' : (skillId === 'farming' ? 'Farmhands' : (skillId === 'hunter' ? 'Trappers' : 'Workers')));
                 return `
                     <div class="mt-3 p-2 rounded-md bg-black/30 border border-border-color">
                         <div class="flex items-center justify-between">
