@@ -161,6 +161,38 @@ document.addEventListener('DOMContentLoaded', () => {
             cleric: { id: 'cleric', name: 'Cleric', emoji: '⛪', role: 'Healer', description: 'Faithful healer mending wounds.', baseCost: 200, costGrowth: 1.22, dps: 1, hps: 2.5, foodPerMin: 0.7 },
             druid: { id: 'druid', name: 'Druid', emoji: '🌿', role: 'Support', description: "Nature's embrace with heals and thorns.", baseCost: 240, costGrowth: 1.25, dps: 2, hps: 1.5, foodPerMin: 0.6 },
             goblin_merc: { id: 'goblin_merc', name: 'Goblin Merc', emoji: '🗡️', role: 'Rogue', description: 'Cheap hire, rowdy appetite.', baseCost: 100, costGrowth: 1.30, dps: 2, hps: 0, foodPerMin: 0.8 }
+        },
+        MERCHANTS: {
+            bazaar: {
+                name: 'Grand Bazaar',
+                stalls: [
+                    { id: 'weapons', name: "Blacksmith's Forge", emoji: '⚒️', desc: 'Finely wrought blades and blunt instruments.', theme: 'smithing', stock: [
+                        { itemId: 'bronze_dagger', buy: 50, sell: 15 }
+                    ] },
+                    { id: 'armour', name: 'Shield & Mail', emoji: '🛡️', desc: 'Keep your hide intact with sturdy armour.', theme: 'smithing', stock: [
+                        { itemId: 'dragon_scale', buy: 1200, sell: 250 }
+                    ] },
+                    { id: 'potions', name: "Alchemist's Nook", emoji: '🧪', desc: 'Brews, elixirs, and curious tonics.', theme: 'cooking', stock: [
+                        { itemId: 'item_elixir_strength', buy: 220, sell: 60 },
+                        { itemId: 'item_scroll_fortune', buy: 300, sell: 85 }
+                    ] },
+                    { id: 'food', name: 'Cookfire Cantina', emoji: '🍖', desc: 'Freshly cooked bites to restore vigor.', theme: 'cooking', stock: [
+                        { itemId: 'shrimp', buy: 15, sell: 4 },
+                        { itemId: 'sardine', buy: 22, sell: 6 }
+                    ] },
+                    { id: 'general', name: 'General Wares', emoji: '📦', desc: 'Odds, ends, and adventuring essentials.', theme: 'farming', stock: [
+                        { itemId: 'feather', buy: 5, sell: 1 },
+                        { itemId: 'bronze_bar', buy: 40, sell: 10 }
+                    ] },
+                    { id: 'runes', name: 'Regent of Runes', emoji: '🔮', desc: 'Arcane currencies and sigils.', theme: 'divination', stock: [
+                        { itemId: 'air_rune', buy: 8, sell: 2 },
+                        { itemId: 'mind_rune', buy: 10, sell: 3 },
+                        { itemId: 'water_rune', buy: 12, sell: 3 },
+                        { itemId: 'earth_rune', buy: 12, sell: 3 },
+                        { itemId: 'fire_rune', buy: 14, sell: 4 }
+                    ] }
+                ]
+            }
         }
     };
     
@@ -317,6 +349,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Hunter missions subsystem
             this.hunter = { roster: [], missions: [], nextHunterId: 1 };
+
+            // Merchant state (future expansions like dynamic prices)
+            this.merchant = { selectedStallId: 'weapons' };
         }
     }
 
@@ -954,6 +989,41 @@ document.addEventListener('DOMContentLoaded', () => {
             this.state.army.stance = stance;
             this.uiManager.renderView();
         }
+
+        // Merchant helpers
+        getMerchant() { return GAME_DATA.MERCHANTS.bazaar; }
+        getStallById(stallId) { const m = this.getMerchant(); return (m.stalls || []).find(s => s.id === stallId) || m.stalls?.[0]; }
+        getItemPrice(itemId, type = 'buy') {
+            const m = this.getMerchant();
+            for (const s of (m.stalls || [])) {
+                const e = (s.stock || []).find(x => x.itemId === itemId);
+                if (e) return e[type];
+            }
+            return null;
+        }
+        buyItem(itemId, qty = 1) {
+            const price = this.getItemPrice(itemId, 'buy');
+            if (price == null) return false;
+            const total = Math.max(0, Math.floor(price * qty));
+            if (!this.spendGold(total)) { this.uiManager.showModal('Not Enough Gold', `<p>You need ${total} gold to buy this.</p>`); return false; }
+            this.addToBank(itemId, qty);
+            this.uiManager.showFloatingText(`+${qty} ${GAME_DATA.ITEMS[itemId]?.name || itemId}`, 'text-yellow-300');
+            this.uiManager.playSound('upgrade');
+            this.uiManager.renderView();
+            return true;
+        }
+        sellItem(itemId, qty = 1) {
+            const have = this.state.bank[itemId] || 0; if (have <= 0) return false;
+            const sellable = Math.min(qty, have);
+            const price = this.getItemPrice(itemId, 'sell'); if (price == null) return false;
+            const total = Math.max(0, Math.floor(price * sellable));
+            this.removeFromBank(itemId, sellable);
+            this.addGold(total);
+            this.uiManager.showFloatingText(`+${total}g`, 'text-yellow-300');
+            this.uiManager.playSound('hire');
+            this.uiManager.renderView();
+            return true;
+        }
     }
 
     class UIManager {
@@ -1027,6 +1097,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'workforce': html = this.renderWorkforceView(); break;
                     case 'spellbook': html = this.renderSpellbookView(); break;
                     case 'shop': html = this.renderShopView(); break;
+                    case 'merchant': html = this.renderMerchantView(); break;
                 }
             }
             this.mainContent.innerHTML = html; this.attachViewEventListeners();
@@ -1525,6 +1596,46 @@ document.addEventListener('DOMContentLoaded', () => {
             return `${hero}<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-4">${cards}</div>`;
         }
 
+        renderMerchantView() {
+            const bazaar = this.game.getMerchant();
+            const selected = this.game.state.merchant?.selectedStallId || (bazaar.stalls?.[0]?.id);
+            const nav = (bazaar.stalls || []).map(s => `<button class="merchant-tab ${selected===s.id?'active':''}" data-stall-id="${s.id}">${s.emoji} ${s.name}</button>`).join('');
+            const stall = this.game.getStallById(selected);
+            const cards = (stall?.stock || []).map(entry => {
+                const item = GAME_DATA.ITEMS[entry.itemId];
+                const have = this.game.state.bank[entry.itemId] || 0;
+                return `
+                    <div class="merchant-card block p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-bold">${item?.icon || '❔'} ${item?.name || entry.itemId}</h3>
+                                <p class="text-secondary text-xs">Buy ${entry.buy}g • Sell ${entry.sell}g</p>
+                                <p class="text-secondary text-xs">Owned: <span class="text-white font-mono">${have}</span></p>
+                            </div>
+                            <span class="badge"><i class="fas fa-sack-dollar"></i> ${stall.name}</span>
+                        </div>
+                        <div class="mt-3 grid grid-cols-2 gap-2">
+                            <button class="merchant-buy-btn chimera-button juicy-button px-3 py-2 rounded-md" data-item-id="${entry.itemId}">Buy</button>
+                            <button class="merchant-sell-btn chimera-button px-3 py-2 rounded-md" data-item-id="${entry.itemId}" ${have<=0?'disabled':''}>Sell</button>
+                        </div>
+                    </div>`;
+            }).join('');
+            const hero = `
+                <div class="block p-5 mb-5 medieval-glow gradient-merchant">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="text-2xl">🏛️</div>
+                            <div>
+                                <h1 class="text-xl font-extrabold tracking-wide">${bazaar.name}</h1>
+                                <p class="text-secondary text-sm">Haggle, barter, and browse the finest wares.</p>
+                            </div>
+                        </div>
+                        <div class="merchant-nav flex flex-wrap gap-2">${nav}</div>
+                    </div>
+                </div>`;
+            return `<h1 class="text-2xl font-semibold text-white mb-4">Merchant</h1>${hero}<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${cards}</div>`;
+        }
+
         attachViewEventListeners() {
             const addTaskBtn = document.getElementById('add-task-btn'); if (addTaskBtn) { addTaskBtn.addEventListener('click', () => { const category = document.getElementById('task-category-select').value; const difficulty = document.getElementById('task-difficulty-select').value; this.game.completeRealLifeTask(category, difficulty); const n = document.getElementById('task-name-input'); if (n) n.value = ''; }); }
             const ge = document.getElementById('goto-empire'); if (ge) ge.addEventListener('click', () => { this.currentView = 'clicker'; this.render(); });
@@ -1621,6 +1732,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const ar = document.getElementById('army-rally'); if (ar) ar.addEventListener('click', (e) => { const r = this.game.state.player.activeBuffs?.['armyRally']; if (!r || Date.now() >= r) { const rect = e.currentTarget.getBoundingClientRect(); this.juiceBurst('upgrade', rect.left + rect.width/2, rect.top + rect.height/2); } this.game.rallyArmy(); });
             document.querySelectorAll('.army-upgrade-btn').forEach(btn => { btn.addEventListener('click', () => this.game.upgradeArmy(btn.dataset.type)); });
             document.querySelectorAll('input[name="army-stance"]').forEach(r => { r.addEventListener('change', () => this.game.setArmyStance(r.value)); });
+
+            // Merchant
+            document.querySelectorAll('.merchant-tab').forEach(btn => { btn.addEventListener('click', () => { this.game.state.merchant.selectedStallId = btn.dataset.stallId; this.renderView(); }); });
+            document.querySelectorAll('.merchant-buy-btn').forEach(btn => { btn.addEventListener('click', (e) => {
+                const rect = e.currentTarget.getBoundingClientRect(); this.juiceBurst('upgrade', rect.left + rect.width/2, rect.top + rect.height/2);
+                this.game.buyItem(btn.dataset.itemId, 1);
+            }); });
+            document.querySelectorAll('.merchant-sell-btn').forEach(btn => { btn.addEventListener('click', () => this.game.sellItem(btn.dataset.itemId, 1)); });
         }
 
         showModal(title, content) {
