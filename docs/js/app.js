@@ -1068,7 +1068,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cat = this.getItemCategory(itemId);
                 if (this.bankFilter !== 'all' && cat !== this.bankFilter) return false;
                 // Search
-                if (this.bankSearchQuery && !item.name.toLowerCase().includes(this.bankSearchQuery.toLowerCase())) return false;
+                const itemName = (item.name || '').toLowerCase();
+                if (this.bankSearchQuery && !itemName.includes(this.bankSearchQuery.toLowerCase())) return false;
                 return true;
             });
             // Sort
