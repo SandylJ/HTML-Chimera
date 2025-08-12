@@ -64,6 +64,9 @@ document.addEventListener('DOMContentLoaded', () => {
             pale_energy: { name: 'Pale Energy', icon: '✨' },
             flickering_energy: { name: 'Flickering Energy', icon: '🔮' },
             feather: { name: 'Feather', icon: '🪶' },
+            
+            // New artisan meta reward
+            artisan_token: { name: 'Artisan Token', icon: '⚙️' },
         },
         ACTIONS: {
             woodcutting: [
@@ -137,6 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
             { id: 'chest_common', name: 'Common Chest', description: 'Contains a few simple rewards.', cost: 250, keyItemID: null, rarity: 'common', icon: 'shippingbox', lootTable: [ {type:'currency', amount:100}, {type:'item', id:'seed_vigor', qty:1}, {type:'item', id:'material_joyful_ember', qty:2} ], rewardCount: [1,2] },
             { id: 'chest_rare', name: 'Rare Chest', description: 'Valuable materials and chance for rare seeds.', cost: 1000, keyItemID: null, rarity: 'rare', icon: 'archivebox', lootTable: [ {type:'currency', amount:500}, {type:'item', id:'seed_clarity', qty:1}, {type:'item', id:'material_sunstone_shard', qty:1}, {type:'runes', amount:1} ], rewardCount: [2,3] },
             { id: 'chest_ancient', name: 'Ancient Chest', description: 'A locked chest from a forgotten era.', cost: 0, keyItemID: 'item_ancient_key', rarity: 'epic', icon: 'treasurechest', lootTable: [ {type:'currency', amount:2000}, {type:'item', id:'seed_inspiration', qty:1}, {type:'item', id:'tree_ironwood', qty:1}, {type:'runes', amount:5} ], rewardCount: [3,4] },
+            { id: 'chest_workshop', name: 'Workshop Crate', description: 'Automation milestone cache of artisan goodies.', cost: 0, keyItemID: null, rarity: 'rare', icon: 'cog', lootTable: [ {type:'currency', amount:350}, {type:'item', id:'artisan_token', qty:[1,2]}, {type:'runes', amount:2} ], rewardCount: [2,3] },
         ],
         COMBAT: {
             ENEMIES: [
@@ -244,6 +248,13 @@ document.addEventListener('DOMContentLoaded', () => {
             (GAME_DATA.ACTIONS.mining || []).forEach(a => { this.workers.mining.assigned[a.id] = 0; this.workers.mining.progress[a.id] = 0; });
             (GAME_DATA.ACTIONS.fishing || []).forEach(a => { this.workers.fishing.assigned[a.id] = 0; this.workers.fishing.progress[a.id] = 0; });
             (GAME_DATA.ACTIONS.farming || []).forEach(a => { this.workers.farming.assigned[a.id] = 0; this.workers.farming.progress[a.id] = 0; });
+
+            // Artisan Workshops automation state
+            this.workshops = {};
+            Object.keys(GAME_DATA.SKILLS).filter(k => GAME_DATA.SKILLS[k].type === 'artisan').forEach(id => {
+                const defaultRecipe = (GAME_DATA.RECIPES[id] || [])[0]?.id || null;
+                this.workshops[id] = { auto: { enabled: false, recipeId: defaultRecipe, mode: 'until_out', targetCount: 0, remaining: 0 }, apprentices: 0, upgrades: { speedLevel: 0, yieldLevel: 0, queueLevel: 0 }, progress: 0, craftsTotal: 0, rewardsClaimed: {} };
+            });
         }
     }
 
@@ -346,6 +357,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (essWhole > 0) { this.addToBank('rune_essence', essWhole); this.state.empire.buffers.essence -= essWhole; }
                 this.state.empire.production = totals;
             }
+
+            // Process artisan automation
+            this.processWorkshops(delta);
 
             this.uiManager.updateDynamicElements();
         }
@@ -611,6 +625,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!this.state.army) { this.state.army = { units: {}, lastTick: Date.now(), production: { dps: 0, hps: 0, hungry: false }, upkeep: { foodBuffer: 0, hungry: false }, fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() } }; }
                     if (!this.state.army.units) this.state.army.units = {};
                     Object.keys(GAME_DATA.ARMY_CLASSES).forEach(id => { if (typeof this.state.army.units[id] !== 'number') this.state.army.units[id] = 0; });
+
+                    // Backfill workshops for artisan automation
+                    if (!this.state.workshops) this.state.workshops = {};
+                    Object.keys(GAME_DATA.SKILLS).filter(k => GAME_DATA.SKILLS[k].type === 'artisan').forEach(id => {
+                        if (!this.state.workshops[id]) {
+                            const defaultRecipe = (GAME_DATA.RECIPES[id] || [])[0]?.id || null;
+                            this.state.workshops[id] = { auto: { enabled: false, recipeId: defaultRecipe, mode: 'until_out', targetCount: 0, remaining: 0 }, apprentices: 0, upgrades: { speedLevel: 0, yieldLevel: 0, queueLevel: 0 }, progress: 0, craftsTotal: 0, rewardsClaimed: {} };
+                        }
+                    });
                  } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
              }
          }
@@ -653,6 +676,101 @@ document.addEventListener('DOMContentLoaded', () => {
             this.state.army.upkeep.hungry = hungry;
             return { hungry, out };
         }
+
+        // Empire helpers (ensure present)
+        getEmpireUnitCost(id) { const data = GAME_DATA.UNITS[id]; const owned = (this.state.empire?.units?.[id] || 0); return Math.floor(data.baseCost * Math.pow(data.costGrowth, owned)); }
+        hireEmpireUnit(id) { const cost = this.getEmpireUnitCost(id); if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold to hire a ${GAME_DATA.UNITS[id].name}.</p>`); return; } this.state.empire.units[id] = (this.state.empire.units[id] || 0) + 1; this.uiManager.playSound('hire'); this.uiManager.renderView(); }
+        calculateEmpireProductionPerSecond() {
+            const units = this.state.empire?.units || {};
+            let goldPerSec = 0, runesPerSec = 0, essencePerSec = 0;
+            Object.keys(GAME_DATA.UNITS).forEach(id => {
+                const u = GAME_DATA.UNITS[id]; const qty = units[id] || 0; if (qty <= 0) return;
+                goldPerSec += (u.goldPerSec || 0) * qty;
+                runesPerSec += (u.runesPerSec || 0) * qty;
+                essencePerSec += (u.essencePerSec || 0) * qty;
+            });
+            return { goldPerSec, runesPerSec, essencePerSec };
+        }
+
+        // Generic worker helpers for gathering (ensure present)
+        getHireCost(skillId) { const ws = this.state.workers?.[skillId]; const total = ws?.total || 0; const base = 100; return Math.floor(base * Math.pow(1.2, total)); }
+        hireWorker(skillId) { const cost = this.getHireCost(skillId); if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold to hire a worker.</p>`); return; } this.ensureWorkerState(); this.state.workers[skillId].total = (this.state.workers[skillId].total || 0) + 1; this.uiManager.playSound('hire'); this.uiManager.renderView(); }
+        getUpgradeCost(skillId, type) {
+            const ws = this.state.workers?.[skillId]; if (!ws) return 0;
+            const lvlMap = {
+                speed: ws.upgrades?.speedLevel || 0,
+                yield: ws.upgrades?.yieldLevel || 0,
+                // mining specials
+                depth: ws.upgrades?.depthLevel || 0,
+                cart: ws.upgrades?.cartLevel || 0,
+                // farming specials
+                irrigation: ws.upgrades?.irrigationLevel || 0,
+                tools: ws.upgrades?.toolsLevel || 0,
+                compost: ws.upgrades?.compostLevel || 0,
+                tractor: ws.upgrades?.tractorLevel || 0,
+            };
+            const lvl = lvlMap[type] || 0;
+            const baseMap = { speed: 200, yield: 220, depth: 260, cart: 260, irrigation: 240, tools: 240, compost: 200, tractor: 400 };
+            return Math.floor((baseMap[type] || 250) * Math.pow(1.35, lvl));
+        }
+        upgradeWorkers(skillId, type) {
+            this.ensureWorkerState(); const cost = this.getUpgradeCost(skillId, type); if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold to upgrade.</p>`); return; }
+            const ws = this.state.workers[skillId]; const key = `${type}Level`; ws.upgrades[key] = (ws.upgrades[key] || 0) + 1; this.uiManager.playSound('upgrade'); this.uiManager.renderView();
+        }
+
+        // Workshop automation helpers (ensure present)
+        getWorkshopSpeedMultiplier(skillId) { const lvl = this.state.workshops?.[skillId]?.upgrades?.speedLevel || 0; return Math.pow(0.92, lvl); }
+        getWorkshopYieldMultiplier(skillId) { const lvl = this.state.workshops?.[skillId]?.upgrades?.yieldLevel || 0; return 1 + 0.10 * lvl; }
+        getWorkshopSlots(skillId) { const ws = this.state.workshops?.[skillId]; if (!ws) return 1; return 1 + (ws.apprentices || 0) + (ws.upgrades?.queueLevel || 0); }
+        processWorkshops(deltaMs) {
+            const artisanIds = Object.keys(GAME_DATA.SKILLS).filter(k => GAME_DATA.SKILLS[k].type === 'artisan');
+            for (const skillId of artisanIds) {
+                const ws = this.state.workshops[skillId]; if (!ws?.auto?.enabled) continue;
+                const recipe = (GAME_DATA.RECIPES[skillId] || []).find(r => r.id === ws.auto.recipeId);
+                if (!recipe) { ws.auto.enabled = false; continue; }
+                const slots = this.getWorkshopSlots(skillId);
+                const timePer = this.calculateActionTime({ ...recipe, skillId }) * this.getWorkshopSpeedMultiplier(skillId);
+                ws.progress += deltaMs * slots;
+                let cycles = Math.floor(ws.progress / timePer);
+                if (cycles <= 0) continue;
+                if (ws.auto.mode === 'x') cycles = Math.min(cycles, ws.auto.remaining || 0);
+                let maxByMats = Infinity;
+                (recipe.input || []).forEach(inp => { const have = this.state.bank[inp.itemId] || 0; const can = Math.floor(have / inp.quantity); maxByMats = Math.min(maxByMats, can); });
+                cycles = Math.min(cycles, isFinite(maxByMats) ? maxByMats : cycles);
+                if (cycles <= 0) { ws.auto.enabled = false; this.uiManager.showFloatingText('Workshop halted: materials depleted', 'text-yellow-300'); continue; }
+                (recipe.input || []).forEach(inp => this.removeFromBank(inp.itemId, inp.quantity * cycles));
+                let totalOut = (recipe.output?.quantity || 0) * cycles * this.getWorkshopYieldMultiplier(skillId);
+                if (skillId === 'runecrafting') { const lvl = this.state.player.skills[skillId].level; const mult = Math.max(1, 1 + Math.floor((lvl - recipe.level) / 11)); totalOut *= mult; }
+                totalOut = Math.floor(totalOut); if (recipe.output?.itemId && totalOut > 0) this.addToBank(recipe.output.itemId, totalOut);
+                const skill = this.state.player.skills[skillId]; skill.addXP((recipe.xp || 0) * cycles, this);
+                const mastery = this.getMastery(skillId, recipe.id); mastery.addXP(((recipe.baseTime || 1000) / 1000) * cycles);
+                if (skillId === 'firemaking') { this.state.bonfire.active = true; this.state.bonfire.expiry = Date.now() + 2 * 60 * 60 * 1000; this.state.bonfire.xpBoost = 0.05; }
+                ws.progress -= cycles * timePer;
+                if (ws.auto.mode === 'x') { ws.auto.remaining = Math.max(0, (ws.auto.remaining || 0) - cycles); if (ws.auto.remaining <= 0) ws.auto.enabled = false; }
+                ws.craftsTotal += cycles;
+                this.checkWorkshopMilestones(skillId);
+            }
+        }
+        checkWorkshopMilestones(skillId) {
+            const ws = this.state.workshops[skillId]; if (!ws) return;
+            const tiers = [50, 200, 500, 1000];
+            for (const t of tiers) {
+                if (ws.craftsTotal >= t && !ws.rewardsClaimed[t]) {
+                    ws.rewardsClaimed[t] = true;
+                    this.buyChest('chest_workshop');
+                    this.addToBank('artisan_token', 1);
+                    this.uiManager.showFloatingText(`Automation milestone! ${t} crafts`, 'text-purple-300');
+                }
+            }
+        }
+        setWorkshopRecipe(skillId, recipeId) { if (!this.state.workshops[skillId]) return; this.state.workshops[skillId].auto.recipeId = recipeId; this.uiManager.renderView(); }
+        toggleWorkshopAuto(skillId, enabled) { if (!this.state.workshops[skillId]) return; this.state.workshops[skillId].auto.enabled = enabled; if (enabled && this.state.workshops[skillId].auto.mode === 'x') { this.state.workshops[skillId].auto.remaining = this.state.workshops[skillId].auto.targetCount || 0; } this.uiManager.renderView(); }
+        setWorkshopModeCount(skillId, count) { const ws = this.state.workshops[skillId]; if (!ws) return; ws.auto.mode = 'x'; ws.auto.targetCount = Math.max(0, count|0); ws.auto.remaining = ws.auto.targetCount; this.uiManager.renderView(); }
+        setWorkshopModeUntilOut(skillId) { const ws = this.state.workshops[skillId]; if (!ws) return; ws.auto.mode = 'until_out'; ws.auto.targetCount = 0; ws.auto.remaining = 0; this.uiManager.renderView(); }
+        getApprenticeCost(skillId) { const ws = this.state.workshops[skillId]; const owned = ws?.apprentices || 0; return Math.floor(200 * Math.pow(1.35, owned)); }
+        hireWorkshopApprentice(skillId) { const cost = this.getApprenticeCost(skillId); if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold to hire an Apprentice.</p>`); return; } this.state.workshops[skillId].apprentices++; this.uiManager.showFloatingText('+1 Apprentice', 'text-green-300'); this.uiManager.renderView(); }
+        getWorkshopUpgradeCost(skillId, type) { const lvl = this.state.workshops[skillId]?.upgrades?.[type+'Level'] || 0; const base = { speed: 250, yield: 300, queue: 400 }[type] || 300; return Math.floor(base * Math.pow(1.4, lvl)); }
+        upgradeWorkshop(skillId, type) { const key = type+'Level'; const cost = this.getWorkshopUpgradeCost(skillId, type); if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold to upgrade.</p>`); return; } const ws = this.state.workshops[skillId]; ws.upgrades[key] = (ws.upgrades[key] || 0) + 1; this.uiManager.showFloatingText(`Upgraded ${type}`, 'text-green-300'); this.uiManager.renderView(); }
     }
 
     class UIManager {
@@ -765,7 +883,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 else { contentHtml = (GAME_DATA.RECIPES[skillId]||[]).map(recipe => this.renderActionCard(skillId, recipe, actionType)).join(''); }
             }
             const workerPanel = (skillData.type === 'gathering' && this.game.state.workers[skillId]) ? this.renderWorkerPanel(skillId) : '';
-            return `<h1 class="text-2xl font-semibold text-white mb-4">${skillData.name} <span class="text-base text-secondary">(Level ${playerSkill.level})</span></h1>${workerPanel}<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">${contentHtml}</div>`;
+            const workshopPanel = (skillData.type === 'artisan') ? this.renderWorkshopPanel(skillId) : '';
+            return `<h1 class="text-2xl font-semibold text-white mb-4">${skillData.name} <span class="text-base text-secondary">(Level ${playerSkill.level})</span></h1>${workshopPanel}${workerPanel}<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">${contentHtml}</div>`;
         }
 
         renderActionCard(skillId, action, actionType) {
@@ -1070,6 +1189,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.renderView();
                 });
             });
+
+            // Workshops events
+            document.querySelectorAll('.workshop-select').forEach(sel => { sel.addEventListener('change', (e) => { const skillId = sel.dataset.skillId; const rid = sel.value; this.game.setWorkshopRecipe(skillId, rid); }); });
+            document.querySelectorAll('.toggle-workshop-auto').forEach(btn => { btn.addEventListener('click', () => { const skillId = btn.dataset.skillId; const enabled = btn.dataset.on === '1'; this.game.toggleWorkshopAuto(skillId, enabled); }); });
+            document.querySelectorAll('.hire-apprentice-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.hireWorkshopApprentice(btn.dataset.skillId); }); });
+            document.querySelectorAll('.upgrade-workshop-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.upgradeWorkshop(btn.dataset.skillId, btn.dataset.type); }); });
+            document.querySelectorAll('.set-workshop-mode-x').forEach(btn => { btn.addEventListener('click', () => { const skillId = btn.dataset.skillId; const input = document.getElementById(`workshop-count-${skillId}`); const val = parseInt(input?.value || '0', 10); if (isNaN(val) || val <= 0) return; this.game.setWorkshopModeCount(skillId, val); this.game.toggleWorkshopAuto(skillId, true); }); });
+            document.querySelectorAll('.set-workshop-mode-until').forEach(btn => { btn.addEventListener('click', () => { const skillId = btn.dataset.skillId; this.game.setWorkshopModeUntilOut(skillId); this.game.toggleWorkshopAuto(skillId, true); }); });
         }
 
         showModal(title, content) {
@@ -1231,6 +1358,65 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                     <p class="text-[11px] text-secondary mt-1">Eff: x${yieldMult.toFixed(2)} yield, ${Math.round(100 - speedMult*100)}% faster</p>
+                </div>
+            `;
+        }
+
+        // Workshop panel for artisan skills
+        renderWorkshopPanel(skillId) {
+            const ws = this.game.state.workshops?.[skillId];
+            const recipes = GAME_DATA.RECIPES[skillId] || [];
+            const selected = ws?.auto?.recipeId || (recipes[0]?.id || '');
+            const slots = this.game.getWorkshopSlots(skillId);
+            const apprCost = this.game.getApprenticeCost(skillId);
+            const upSpeedCost = this.game.getWorkshopUpgradeCost(skillId, 'speed');
+            const upYieldCost = this.game.getWorkshopUpgradeCost(skillId, 'yield');
+            const upQueueCost = this.game.getWorkshopUpgradeCost(skillId, 'queue');
+            const rOptions = recipes.map(r => `<option value="${r.id}" ${selected===r.id?'selected':''}>${r.name} (Lvl ${r.level})</option>`).join('');
+            const active = ws?.auto?.enabled;
+            const mode = ws?.auto?.mode || 'until_out';
+            const remaining = ws?.auto?.remaining || 0;
+            const crafts = ws?.craftsTotal || 0;
+            return `
+                <div class="block p-4 mb-4 workshop-accent border border-${GAME_DATA.SKILLS[skillId].theme}">
+                    <div class="flex flex-col gap-3">
+                        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+                            <div class="flex-1">
+                                <h2 class="text-lg font-bold">Workshop Automation</h2>
+                                <p class="text-secondary text-xs">Queue artisan recipes and let apprentices craft automatically.</p>
+                                <div class="mt-2 flex gap-2 items-center">
+                                    <select class="workshop-select chimera-button px-2 py-2 rounded-md flex-1" data-skill-id="${skillId}">${rOptions}</select>
+                                    ${active ? `<button class="toggle-workshop-auto chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-on="0">Stop</button>` : `<button class="toggle-workshop-auto chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-on="1">Start</button>`}
+                                </div>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <button class="hire-apprentice-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}">Hire Apprentice — Cost: ${apprCost} gold</button>
+                                <button class="upgrade-workshop-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-type="speed">Faster Tools (L${ws.upgrades.speedLevel}) — ${upSpeedCost}g</button>
+                                <button class="upgrade-workshop-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-type="yield">Quality Molds (L${ws.upgrades.yieldLevel}) — ${upYieldCost}g</button>
+                                <button class="upgrade-workshop-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-type="queue">Benches (L${ws.upgrades.queueLevel}) — ${upQueueCost}g</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div class="glass-card rounded-md p-3 text-center">
+                                <div class="text-[11px] text-secondary uppercase tracking-wider">Apprentices</div>
+                                <div class="text-xl font-mono text-white">${ws.apprentices}</div>
+                            </div>
+                            <div class="glass-card rounded-md p-3 text-center">
+                                <div class="text-[11px] text-secondary uppercase tracking-wider">Active Slots</div>
+                                <div class="text-xl font-mono text-white">${slots}</div>
+                            </div>
+                            <div class="glass-card rounded-md p-3 text-center">
+                                <div class="text-[11px] text-secondary uppercase tracking-wider">Total Crafts</div>
+                                <div class="text-xl font-mono text-white">${crafts}</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 mt-1">
+                            <input id="workshop-count-${skillId}" class="chimera-button px-2 py-2 rounded-md w-28" type="number" placeholder="x crafts" min="1"/>
+                            <button class="set-workshop-mode-x chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}">Craft X</button>
+                            <button class="set-workshop-mode-until chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}">Until Out</button>
+                            ${mode==='x' && active ? `<span class="text-xs text-secondary">Remaining: <span class="text-white font-mono">${remaining}</span></span>` : ''}
+                        </div>
+                    </div>
                 </div>
             `;
         }
