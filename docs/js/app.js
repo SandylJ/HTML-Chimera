@@ -1109,6 +1109,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const runesDisplay = document.getElementById('runes-display'); if (runesDisplay) runesDisplay.textContent = Math.floor(this.game.state.player.runes).toLocaleString();
             const staminaFill = document.getElementById('stamina-bar-fill'); const staminaValue = document.getElementById('stamina-value'); if (staminaFill && staminaValue) { const s = this.game.state.player; staminaFill.style.width = `${(s.stamina / s.staminaMax) * 100}%`; staminaValue.textContent = `${Math.floor(s.stamina)}/${s.staminaMax}`; }
             const armyLpEl = document.getElementById('army-lp-display'); if (armyLpEl && this.game.calculateArmyLifePoints) { const lp = this.game.calculateArmyLifePoints(); armyLpEl.textContent = `${lp.toLocaleString()} LP`; }
+            // Live update hunter mission progress if on hunter view
+            if (this.currentView === 'hunter') {
+                const missions = this.game.state.hunter?.missions || [];
+                for (const m of missions) {
+                    if (m.status !== 'active') continue;
+                    const pct = Math.floor(100 * (1 - (m.remainingMs||0)/(m.durationMs||1)));
+                    const bar = document.getElementById(`hl-progress-${m.id}`); if (bar) bar.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+                    const eta = document.getElementById(`hl-eta-${m.id}`); if (eta) eta.textContent = `${Math.ceil((m.remainingMs||0)/60000)}m`;
+                }
+            }
         }
         updateSidebarActive() { document.querySelectorAll('.sidebar-link').forEach(link => { link.classList.toggle('active', link.dataset.view === this.currentView); }); }
 
@@ -1546,14 +1556,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const owned = roster.filter(h => h.classId === id).length;
                 const cost = Math.floor(c.baseCost * Math.pow(1.22, owned));
                 return `
-                    <div class=\"block p-4 flex flex-col justify-between\">
+                    <div class=\"block p-4 flex flex-col justify-between glass-card">
                         <div>
-                            <h3 class=\"text-lg font-bold\">${c.emoji} ${c.name}</h3>
-                            <p class=\"text-secondary text-xs\">${c.description}</p>
-                            <p class=\"text-secondary text-xs mt-1\">Success +${Math.round((c.successBonus||0)*100)}% • Speed ${Math.round((c.speedBonus||0)*100)}%</p>
-                            <p class=\"text-white text-sm mt-2\">Owned: <span class=\"font-mono\">${owned}</span></p>
+                            <h3 class="text-lg font-bold">${c.emoji} ${c.name}</h3>
+                            <p class="text-secondary text-xs">${c.description}</p>
+                            <p class="text-secondary text-xs mt-1">Success +${Math.round((c.successBonus||0)*100)}% • Speed ${Math.round((c.speedBonus||0)*100)}%</p>
+                            <p class="text-white text-sm mt-2">Owned: <span class="font-mono">${owned}</span></p>
                         </div>
-                        <button class=\"hire-hunter-class-btn chimera-button px-3 py-2 rounded-md mt-3\" data-class-id=\"${id}\">Hire — Cost: ${cost} GP</button>
+                        <button class="hire-hunter-class-btn juicy-button chimera-button px-3 py-2 rounded-md mt-3" data-class-id="${id}">Hire — Cost: ${cost} GP</button>
                     </div>
                 `;
             }).join('');
@@ -1563,41 +1573,54 @@ document.addEventListener('DOMContentLoaded', () => {
                 const req = m.huntersNeeded || 1;
                 const rosterAvail = roster.filter(h => !h.busy);
                 const canSelect = rosterAvail.length >= req;
-                const pickers = rosterAvail.map(h => `<label class=\"flex items-center gap-2 text-xs\"><input type=\"checkbox\" class=\"hl-pick\" data-mission-id=\"${m.id}\" value=\"${h.instanceId}\"><span>${GAME_DATA.HUNTERS[h.classId].emoji} ${h.name}</span></label>`).join('');
+                const pickers = rosterAvail.map(h => `<label class="flex items-center gap-2 text-xs"><input type="checkbox" class="hl-pick" data-mission-id="${m.id}" value="${h.instanceId}"><span>${GAME_DATA.HUNTERS[h.classId].emoji} ${h.name}</span></label>`).join('');
                 const timeMins = Math.round((m.durationMs || 0)/60000);
                 const basePct = Math.round((m.baseSuccess || 0.5) * 100);
+                const rewardsPreview = (m.rewards||[]).map(r => {
+                    if (r.type === 'gold') return `<span class="badge"><i class="fas fa-coins"></i> ${r.min}-${r.max} GP</span>`;
+                    const it = GAME_DATA.ITEMS[r.id];
+                    return `<span class="badge">${it?.icon || '🎁'} ${it?.name || r.id} x${r.min}-${r.max}${(r.chance||1)<1?` (${Math.round((r.chance||1)*100)}%)`:''}</span>`;
+                }).join(' ');
+                const progress = active ? Math.floor(100 * (1 - (active.remainingMs||0) / (active.durationMs||1))) : 0;
                 return `
-                    <div class=\"block p-4\">
-                        <div class=\"flex items-center justify-between\"> 
+                    <div class="block p-4 glass-card">
+                        <div class="flex items-center justify-between"> 
                             <div>
-                                <h3 class=\"text-lg font-bold\">${m.icon||'🪤'} ${m.name}</h3>
-                                <p class=\"text-secondary text-xs\">Req Lv ${m.level} • Team ${req} • Base ${basePct}% • ${timeMins}m</p>
+                                <h3 class="text-lg font-bold">${m.icon||'🪤'} ${m.name}</h3>
+                                <p class="text-secondary text-xs">Req Lv ${m.level} • Team ${req} • Base ${basePct}% • ${timeMins}m</p>
                             </div>
-                            ${active ? `<span class=\"badge\"><i class=\"fas fa-hourglass-half\"></i> In Progress</span>` : ''}
+                            ${active ? `<span class="badge"><i class="fas fa-hourglass-half"></i> In Progress</span>` : ''}
                         </div>
-                        ${active ? `<p class=\"text-secondary text-xs mt-2\">Time Left: ${Math.ceil((active.remainingMs||0)/60000)}m</p>` : `
-                        <div class=\"mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2\">${canSelect ? pickers : '<span class=\\"text-secondary text-xs\\">No available hunters</span>'}</div>
-                        <button class=\"start-hunter-mission-btn chimera-button px-3 py-2 rounded-md mt-3\" data-mission-id=\"${m.id}\" ${canSelect? '' : 'disabled'}>Send Team</button>
+                        <div class="mt-2 flex flex-wrap gap-2">${rewardsPreview}</div>
+                        ${active ? `
+                            <div class="mt-3">
+                                <div class="w-full xp-bar-bg rounded-full h-2"><div id="hl-progress-${m.id}" class="mastery-bar-fill h-2 rounded-full" style="width:${progress}%"></div></div>
+                                <p class="text-xs text-secondary mt-1">ETA: <span id="hl-eta-${m.id}">${Math.ceil((active.remainingMs||0)/60000)}m</span></p>
+                            </div>
+                        ` : `
+                        <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">${canSelect ? pickers : '<span class=\"text-secondary text-xs\">No available hunters</span>'}</div>
+                        <div class="mt-2 text-xs text-secondary">Projected Success: <span class="text-white font-mono" id="hl-chance-${m.id}">${basePct}%</span></div>
+                        <button class="start-hunter-mission-btn juicy-button chimera-button px-3 py-2 rounded-md mt-3" data-mission-id="${m.id}" ${canSelect? '' : 'disabled'} id="hl-send-${m.id}">Send Team</button>
                         `}
                     </div>
                 `;
             }).join('');
 
             return `
-                <div class=\"block p-4 mb-4 border border-hunter medieval-glow\">
-                    <div class=\"flex items-center justify-between mb-3\">
-                        <div class=\"flex items-center gap-3\">
-                            <div class=\"text-2xl\">🪤</div>
+                <div class="block p-4 mb-4 border border-hunter medieval-glow">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="text-2xl">🪤</div>
                             <div>
-                                <h2 class=\"text-xl font-extrabold tracking-wide\">Hunter's Lodge</h2>
-                                <p class=\"text-secondary text-sm\">Hire specialists and send them on daring hunts.</p>
+                                <h2 class="text-xl font-extrabold tracking-wide">Hunter's Lodge</h2>
+                                <p class="text-secondary text-sm">Hire specialists and send them on daring hunts.</p>
                             </div>
                         </div>
-                        <div class=\"text-xs text-secondary\">Roster: <span class=\"text-white font-mono\">${roster.length}</span> • Available: <span class=\"text-green-300 font-mono\">${roster.filter(h=>!h.busy).length}</span></div>
+                        <div class="text-xs text-secondary">Roster: <span class="text-white font-mono">${roster.length}</span> • Available: <span class="text-green-300 font-mono">${roster.filter(h=>!h.busy).length}</span></div>
                     </div>
-                    <div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4\">${hireCards}</div>
-                    <h3 class=\"text-lg font-bold mb-2\">Mission Board</h3>
-                    <div class=\"grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4\">${missionCards}</div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">${hireCards}</div>
+                    <h3 class="text-lg font-bold mb-2">Mission Board</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">${missionCards}</div>
                 </div>
             `;
         }
@@ -2053,6 +2076,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 const picks = Array.from(this.mainContent.querySelectorAll(`.hl-pick[data-mission-id="${missionId}"]`)).filter(ch => ch.checked).map(ch => ch.value);
                 this.game.startHunterMission(missionId, picks);
             }); });
+            // Dynamic projected chance and CTA enablement per mission
+            const updateMissionChance = (missionId) => {
+                const def = (GAME_DATA.HUNTER_MISSIONS||[]).find(m => m.id === missionId); if (!def) return;
+                const needed = def.huntersNeeded || 1;
+                const picks = Array.from(this.mainContent.querySelectorAll(`.hl-pick[data-mission-id=\"${missionId}\"]`)).filter(ch => ch.checked).map(ch => ch.value);
+                const team = picks.map(id => (this.game.state.hunter?.roster||[]).find(h => h.instanceId === id)).filter(Boolean);
+                const teamSuccess = team.reduce((acc, h) => acc + (GAME_DATA.HUNTERS[h.classId]?.successBonus || 0), 0);
+                const metaBonus = 0.01 * (this.game.state.player.meta_skills[META_SKILLS.STEWARDSHIP].level - 1);
+                const base = def.baseSuccess || 0.5;
+                const chance = Math.max(0.05, Math.min(0.95, base + teamSuccess + metaBonus));
+                const span = document.getElementById(`hl-chance-${missionId}`); if (span) span.textContent = `${Math.round(chance*100)}%`;
+                const cta = document.getElementById(`hl-send-${missionId}`); if (cta) cta.disabled = (picks.length < needed);
+            };
+            document.querySelectorAll('.hl-pick').forEach(ch => {
+                ch.addEventListener('change', () => updateMissionChance(ch.dataset.missionId));
+            });
 
             // Army
             document.querySelectorAll('.hire-army-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireArmyUnit(btn.dataset.unitId)); });
