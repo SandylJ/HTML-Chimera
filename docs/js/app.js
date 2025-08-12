@@ -226,7 +226,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 lastTick: Date.now(),
                 production: { dps: 0, hps: 0, hungry: false },
                 upkeep: { foodBuffer: 0, hungry: false },
-                fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() }
+                fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() },
+                formation: 'balanced',
+                morale: 1.0
             };
             Object.keys(GAME_DATA.ARMY_CLASSES || {}).forEach(id => { this.army.units[id] = 0; });
 
@@ -329,6 +331,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (armyDeltaSec > 0.1) {
                     this.state.army.lastTick = now;
                     const upkeep = this.consumeArmyUpkeep(armyDeltaSec);
+                    // Morale drift based on logistics
+                    const currentMorale = typeof this.state.army.morale === 'number' ? this.state.army.morale : 1.0;
+                    const moraleDeltaPerSec = upkeep.hungry ? -0.004 : 0.003;
+                    this.state.army.morale = Math.max(0.7, Math.min(1.25, currentMorale + moraleDeltaPerSec * armyDeltaSec));
                     const base = this.calculateArmyOutputPerSecond();
                     const hungryPenalty = upkeep.hungry ? 0.5 : 1.0;
                     const dps = base.dps * hungryPenalty;
@@ -733,6 +739,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!this.state.army) { this.state.army = { units: {}, lastTick: Date.now(), production: { dps: 0, hps: 0, hungry: false }, upkeep: { foodBuffer: 0, hungry: false }, fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() } }; }
                     if (!this.state.army.units) this.state.army.units = {};
                     Object.keys(GAME_DATA.ARMY_CLASSES).forEach(id => { if (typeof this.state.army.units[id] !== 'number') this.state.army.units[id] = 0; });
+                    if (!this.state.army.formation) this.state.army.formation = 'balanced';
+                    if (typeof this.state.army.morale !== 'number') this.state.army.morale = 1.0;
                  } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
              }
          }
@@ -751,7 +759,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 hps += (def.hps || 0) * count;
                 foodPerMin += (def.foodPerMin || 0) * count;
             }
-            return { dps, hps, foodPerMin };
+            // Formation modifiers
+            const form = this.state.army.formation || 'balanced';
+            let dpsMult = 1.0, hpsMult = 1.0;
+            if (form === 'aggressive') { dpsMult *= 1.20; hpsMult *= 0.70; }
+            else if (form === 'defensive') { dpsMult *= 0.80; hpsMult *= 1.40; }
+            // Morale modifier (0.7 .. 1.25)
+            const morale = Math.max(0.7, Math.min(1.25, typeof this.state.army.morale === 'number' ? this.state.army.morale : 1.0));
+            dpsMult *= morale; hpsMult *= morale;
+            // Warhorn temporary buff
+            if (this.hasBuff && this.hasBuff('warhorn')) { dpsMult *= 1.30; hpsMult *= 1.30; }
+            return { dps: dps * dpsMult, hps: hps * hpsMult, foodPerMin };
         }
         consumeArmyUpkeep(deltaSec) {
             // Use cooked foods first; each food heals value ~ treat 1 HP heal as 1 food unit
@@ -774,6 +792,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const hungry = needed > 0; // unmet demand
             this.state.army.upkeep.hungry = hungry;
             return { hungry, out };
+        }
+        setArmyFormation(formation) { const allowed = ['balanced','aggressive','defensive']; if (!allowed.includes(formation)) return; this.state.army.formation = formation; this.uiManager.renderView(); }
+        soundWarhorn() {
+            const cost = 250;
+            if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold to sound the Warhorn.</p>`); return; }
+            this.state.player.activeBuffs['warhorn'] = Date.now() + (2 * 60 * 1000); // 2 minutes
+            this.uiManager.showFloatingText('Warhorn sounded!', 'text-yellow-300');
+            this.uiManager.playSound('upgrade');
+            this.uiManager.renderView();
         }
     }
 
@@ -1157,8 +1184,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.cast-spell-btn').forEach(btn => { btn.addEventListener('click', () => this.game.castSpell(btn.dataset.spellId)); });
             // Shop
             document.querySelectorAll('.buy-chest-btn').forEach(btn => { btn.addEventListener('click', () => this.game.buyChest(btn.dataset.chestId)); });
-            // Army
-            document.querySelectorAll('.hire-army-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireArmyUnit(btn.dataset.unitId)); });
+            // Army (bindings added later alongside formation/warhorn)
 
             // Workers - generic
             document.querySelectorAll('.hire-worker-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireWorker(btn.dataset.skillId)); });
@@ -1198,6 +1224,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.renderView();
                 });
             });
+
+            // Army
+            document.querySelectorAll('.hire-army-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireArmyUnit(btn.dataset.unitId)); });
+            document.querySelectorAll('.set-formation-btn').forEach(btn => { btn.addEventListener('click', () => this.game.setArmyFormation(btn.dataset.formation)); });
+            const horn = document.getElementById('sound-warhorn-btn'); if (horn) horn.addEventListener('click', (e) => { this.juiceBurst('upgrade', e.clientX, e.clientY); this.game.soundWarhorn(); });
         }
 
         showModal(title, content) {
@@ -1416,6 +1447,68 @@ document.addEventListener('DOMContentLoaded', () => {
             const name = item?.name || itemId; const icon = item?.icon || '❔';
             const key = `item:${itemId}`;
             this.createOrUpdateNotification(key, { increment: qty, icon: icon, label: name, kind: 'item' });
+        }
+
+        renderArmyView() {
+            const defs = GAME_DATA.ARMY_CLASSES;
+            const owned = this.game.state.army.units;
+            const out = this.game.calculateArmyOutputPerSecond();
+            const hungry = this.game.state.army.upkeep.hungry;
+            const formation = this.game.state.army.formation || 'balanced';
+            const morale = Math.max(0.7, Math.min(1.25, this.game.state.army.morale || 1.0));
+            const hornActive = this.game.hasBuff('warhorn');
+            const hornRemaining = hornActive ? Math.max(0, Math.ceil((this.game.state.player.activeBuffs['warhorn'] - Date.now()) / 1000)) : 0;
+            const cards = Object.keys(defs).map(id => {
+                const d = defs[id];
+                const qty = owned[id] || 0;
+                const cost = this.game.getArmyUnitCost(id);
+                const stats = [];
+                if (d.dps) stats.push(`DPS ${d.dps}`);
+                if (d.hps) stats.push(`HPS ${d.hps}`);
+                stats.push(`Food/min ${d.foodPerMin}`);
+                return `
+                    <div class="block p-4 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold">${d.emoji} ${d.name} <span class="text-xs text-secondary">(${d.role})</span></h3>
+                            <p class="text-secondary text-xs">${d.description}</p>
+                            <p class="text-secondary text-xs mt-1">${stats.join(' • ')}</p>
+                            <p class="text-white text-sm mt-2">Hired: <span class="font-mono">${qty}</span></p>
+                        </div>
+                        <button class="hire-army-btn chimera-button px-3 py-2 rounded-md mt-3" data-unit-id="${id}">Recruit — Cost: ${cost} gold</button>
+                    </div>
+                `;
+            }).join('');
+            const formBtn = (id, label, icon) => `<button class="set-formation-btn chimera-button px-3 py-2 rounded-md ${formation===id?'ring-1 ring-green-400':''}" data-formation="${id}">${icon} ${label}</button>`;
+            const moralePct = Math.round((morale - 0.7) / (1.25 - 0.7) * 100);
+            return `
+                <h1 class="text-2xl font-semibold text-white mb-4">Army</h1>
+                <div class="block p-4 mb-4">
+                    <h2 class="text-lg font-bold">Logistics</h2>
+                    <p class="text-secondary text-sm">Allied Output: <span class="text-white">DPS ${out.dps.toFixed(1)} • HPS ${out.hps.toFixed(1)}</span> • Upkeep: <span class="text-white">${out.foodPerMin.toFixed(1)} food/min</span> ${hungry ? '<span class="ml-2 text-red-400">Hungry (-50% effectiveness)</span>' : ''}</p>
+                    <div class="mt-2 grid grid-cols-1 lg:grid-cols-3 gap-3">
+                        <div class="p-3 rounded-md border border-border-color">
+                            <div class="text-secondary text-xs mb-1">Formation</div>
+                            <div class="flex flex-wrap gap-2">${formBtn('balanced','Balanced','⚖️')}${formBtn('aggressive','Aggressive','⚔️')}${formBtn('defensive','Defensive','🛡️')}</div>
+                        </div>
+                        <div class="p-3 rounded-md border border-border-color">
+                            <div class="text-secondary text-xs mb-1">Morale</div>
+                            <div class="w-full xp-bar-bg rounded-full h-2">
+                                <div class="xp-bar-fill h-2 rounded-full" style="width:${moralePct}%"></div>
+                            </div>
+                            <div class="text-[11px] text-secondary mt-1">${(morale*100).toFixed(0)}% effectiveness bonus</div>
+                        </div>
+                        <div class="p-3 rounded-md border border-border-color flex items-center justify-between">
+                            <div>
+                                <div class="text-secondary text-xs mb-1">Warhorn</div>
+                                ${hornActive ? `<div class="text-purple-300 text-sm">Echoing • ${hornRemaining}s</div>` : `<div class="text-secondary text-sm">+30% Allies for 2m</div>`}
+                            </div>
+                            <button id="sound-warhorn-btn" class="chimera-button px-3 py-2 rounded-md" ${hornActive ? 'disabled' : ''}>Sound — 250 gold</button>
+                        </div>
+                    </div>
+                    <p class="text-xs text-secondary mt-2">Cook food in Cooking to sustain a larger army. Upkeep consumes cooked items from your Bank automatically.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${cards}</div>
+            `;
         }
     }
 
