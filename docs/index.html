@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project Chimera - Melvor x Runescape x Cookie Clicker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="text-sm">
+    <div id="game-container" class="w-full h-screen flex">
+        <nav id="sidebar" class="w-64 bg-secondary flex-shrink-0 flex flex-col border-r border-border-color">
+            <div class="p-4 text-center border-b border-border-color">
+                <h1 class="text-xl font-bold text-white">Project Chimera</h1>
+                <p class="text-xs text-secondary">Melvor x Runescape x Cookie Clicker</p>
+            </div>
+            <div class="flex-grow overflow-y-auto">
+                <h2 class="p-2 pt-4 text-xs font-bold tracking-wider uppercase text-secondary">Core</h2>
+                <a href="#" class="sidebar-link active flex items-center p-3" data-view="dashboard"><i class="fas fa-tachometer-alt w-6 text-center"></i><span>Dashboard</span></a>
+                <a href="#" class="sidebar-link flex items-center p-3" data-view="bank"><i class="fas fa-box w-6 text-center"></i><span>Bank</span></a>
+                <a href="#" class="sidebar-link flex items-center p-3" data-view="combat"><i class="fas fa-skull w-6 text-center"></i><span>Combat</span></a>
+                <a href="#" class="sidebar-link flex items-center p-3" data-view="clicker"><i class="fas fa-hand-pointer w-6 text-center"></i><span>Clicker</span></a>
+                <a href="#" class="sidebar-link flex items-center p-3" data-view="spellbook"><i class="fas fa-hat-wizard w-6 text-center"></i><span>Spellbook</span></a>
+                <a href="#" class="sidebar-link flex items-center p-3" data-view="shop"><i class="fas fa-store w-6 text-center"></i><span>Shop</span></a>
+                <h2 class="p-2 pt-4 text-xs font-bold tracking-wider uppercase text-secondary">Gathering</h2>
+                <div id="gathering-skills-nav"></div>
+                <h2 class="p-2 pt-4 text-xs font-bold tracking-wider uppercase text-secondary">Artisan</h2>
+                <div id="artisan-skills-nav"></div>
+                <h2 class="p-2 pt-4 text-xs font-bold tracking-wider uppercase text-secondary">Meta</h2>
+                <a href="#" class="sidebar-link flex items-center p-3" data-view="meta_skills"><i class="fas fa-star w-6 text-center"></i><span>Meta Skills</span></a>
+            </div>
+        </nav>
+        <div class="flex-grow flex flex-col">
+            <header class="flex-shrink-0 p-3 bg-secondary border-b border-border-color grid grid-cols-2 gap-4">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2"><i class="fas fa-coins text-yellow-400"></i><span id="gold-display">0</span></div>
+                    <div class="flex items-center space-x-2"><i class="fas fa-gem text-purple-300"></i><span id="runes-display" class="font-mono">0</span></div>
+                    <div class="flex items-center space-x-2 w-full">
+                        <i class="fas fa-bolt text-green-400"></i>
+                        <div class="w-full bg-black/50 rounded-full h-5 border border-border-color overflow-hidden"><div id="stamina-bar-fill" class="stamina-bar-fill h-full rounded-full"></div></div>
+                        <span id="stamina-value" class="font-mono">0/100</span>
+                    </div>
+                </div>
+                <div id="mastery-progress-bar" class="block"></div>
+            </header>
+            <main id="main-content" class="flex-grow p-4 overflow-y-auto"></main>
+        </div>
+    </div>
+
+    <div id="modal-backdrop" class="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden">
+        <div id="modal-content" class="block p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"></div>
+    </div>
+    <div id="floating-text-container" class="absolute inset-0 pointer-events-none"></div>
+
+    <script src="./js/app.js"></script>
+</body>
+</html>
