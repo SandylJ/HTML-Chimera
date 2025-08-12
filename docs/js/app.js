@@ -445,16 +445,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.state.empire.lastTick = now;
                 const totals = this.calculateEmpireProductionPerSecond();
                 // Fractional buffers for smooth accrual
-                this.state.empire.buffers.gold += totals.goldPerSec * empireDeltaSec;
+                // Apply gold multiplier to match effective income from empire workers
+                const effectiveGoldPerSec = (totals.goldPerSec || 0) * this.goldMultiplier();
+                this.state.empire.buffers.gold += effectiveGoldPerSec * empireDeltaSec;
                 const goldWhole = Math.floor(this.state.empire.buffers.gold);
-                if (goldWhole > 0) { this.addGold(goldWhole); this.state.empire.buffers.gold -= goldWhole; }
+                if (goldWhole > 0) { this.addGoldRaw(goldWhole); this.state.empire.buffers.gold -= goldWhole; }
                 this.state.empire.buffers.runes += (totals.runesPerSec || 0) * empireDeltaSec;
                 const runeWhole = Math.floor(this.state.empire.buffers.runes);
                 if (runeWhole > 0) { this.state.player.runes += runeWhole; this.state.empire.buffers.runes -= runeWhole; }
                 this.state.empire.buffers.essence += (totals.essencePerSec || 0) * empireDeltaSec;
                 const essWhole = Math.floor(this.state.empire.buffers.essence);
                 if (essWhole > 0) { this.addToBank('rune_essence', essWhole); this.state.empire.buffers.essence -= essWhole; }
-                this.state.empire.production = totals;
+                // Store effective production for UI
+                this.state.empire.production = { goldPerSec: effectiveGoldPerSec, runesPerSec: totals.runesPerSec || 0, essencePerSec: totals.essencePerSec || 0 };
             }
             // Empire auto-hiring
             this.processEmpireAutoHire(now);
@@ -650,6 +653,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Economy helpers
         addGold(amount) { const final = Math.floor(amount * this.goldMultiplier()); this.state.player.gold += final; if (final > 0) this.uiManager.notifyResource('gold', final); }
+        // Add raw gold without applying global multipliers (used where rates already include multipliers)
+        addGoldRaw(amount) { const final = Math.floor(amount); this.state.player.gold += final; if (final > 0) this.uiManager.notifyResource('gold', final); }
         spendGold(amount) { if (this.state.player.gold < amount) return false; this.state.player.gold -= amount; return true; }
 
         addToBank(itemId, quantity) { this.state.bank[itemId] = (this.state.bank[itemId] || 0) + quantity; if (quantity > 0) this.uiManager.notifyItem(itemId, quantity); }
@@ -1685,7 +1690,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h1 class="text-2xl font-semibold text-white mb-4">Empire Command</h1>
                 <div class="block p-4 mb-4">
                     <h2 class="text-lg font-bold">Production</h2>
-                    <p class="text-secondary text-sm">Gold: <span class="text-white">+${prod.goldPerSec.toFixed(1)}/s</span> • Runes: <span class="text-white">+${(prod.runesPerSec||0).toFixed(2)}/s</span> • Essence: <span class="text-white">+${(prod.essencePerSec||0).toFixed(2)}/s</span></p>
+                    <p class="text-secondary text-sm">Gold: <span class="text-white">+${(prod.goldPerSec * this.game.goldMultiplier()).toFixed(1)}/s</span> • Runes: <span class="text-white">+${(prod.runesPerSec||0).toFixed(2)}/s</span> • Essence: <span class="text-white">+${(prod.essencePerSec||0).toFixed(2)}/s</span></p>
                 </div>
                 <div class="block p-4 mb-4">
                     <div class="flex items-center justify-between gap-3">
@@ -1699,22 +1704,17 @@ document.addEventListener('DOMContentLoaded', () => {
                             <select id="auto-hire-mode" class="chimera-button px-2 py-1 rounded">
                                 <option value="cheapest" ${auto.mode==='cheapest'?'selected':''}>Cheapest</option>
                                 <option value="roi" ${auto.mode==='roi'?'selected':''}>Best ROI</option>
-                                <option value="miner_only" ${auto.mode==='miner_only'?'selected':''}>Gold Miners Only</option>
+                                <option value="miner_only" ${auto.mode==='miner_only'?'selected':''}>Miner only</option>
                             </select>
                             <label class="flex items-center gap-2 text-xs"><input id="auto-hire-toggle" type="checkbox" ${auto.enabled?'checked':''}/> Enable</label>
                         </div>
                     </div>
                 </div>
-                <div class="block p-4 mb-4 medieval-glow gradient-workforce">
-                    <div class="flex items-center justify-between gap-3">
-                        <div>
-                            <h2 class="text-lg font-bold">Workforce Overview</h2>
-                            <p class="text-secondary text-sm">Workers: <span class="text-white font-mono">${totals.total}</span> • Assigned: <span class="text-white font-mono">${totals.assigned}</span> • Free: <span class="text-green-300 font-mono">${free}</span></p>
-                        </div>
-                        <button id="goto-workforce" class="chimera-button juicy-button px-3 py-2 rounded-md"><i class="fas fa-people-group"></i> Manage Workforce</button>
-                    </div>
-                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${cards}</div>
+                <div class="block p-4 mt-4">
+                    <h2 class="text-lg font-bold">Workforce Summary</h2>
+                    <p class="text-secondary text-sm">Workers: <span class="text-white">${totals.total}</span> • Assigned: <span class="text-white">${totals.assigned}</span> • Free: <span class="text-green-300">${free}</span></p>
+                </div>
             `;
         }
 
