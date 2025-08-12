@@ -1033,27 +1033,181 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         renderDashboardView() {
-            const prod = this.game.state.empire.production || { goldPerSec: 0, runesPerSec: 0, essencePerSec: 0 };
-            const units = this.game.state.empire.units || {};
-            const unitList = Object.keys(GAME_DATA.UNITS).map(id => {
-                const u = GAME_DATA.UNITS[id];
-                const qty = units[id] || 0;
-                return `<div class="flex items-center justify-between"><span>${u.emoji} ${u.name}</span><span class="font-mono text-white">${qty}</span></div>`;
+            // Empire metrics
+            const gold = Math.floor(this.game.state.player.gold).toLocaleString();
+            const totalRunes = (this.game.state.player.runes || 0) + this.game.getTotalRuneItemCount();
+            const stamina = Math.floor(this.game.state.player.stamina);
+            const staminaMax = this.game.state.player.staminaMax;
+
+            // Empire production
+            const prod = this.game.calculateEmpireProductionPerSecond();
+
+            // Inhabitants breakdown
+            this.game.ensureWorkerState();
+            const gatheringIds = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'gathering');
+            const workerTotals = gatheringIds.reduce((acc, id) => acc + (this.game.state.workers[id]?.total || 0), 0);
+            const empireUnitsTotal = Object.values(this.game.state.empire.units || {}).reduce((a,b)=>a+(b||0),0);
+            const armyUnitsTotal = Object.values(this.game.state.army.units || {}).reduce((a,b)=>a+(b||0),0);
+            const huntersTotal = (this.game.state.hunter?.roster || []).length;
+            const inhabitantsTotal = workerTotals + empireUnitsTotal + armyUnitsTotal + huntersTotal;
+
+            // Army summary
+            const armyOut = this.game.calculateArmyOutputPerSecond();
+            const edible = Object.entries(this.game.state.bank).filter(([id,q]) => GAME_DATA.ITEMS[id]?.heals).reduce((a,[,q])=>a+q,0);
+            const minutesLeft = (armyOut.foodPerMin || 0) > 0 ? Math.floor(edible / armyOut.foodPerMin) : '∞';
+            const buffs = this.game.state.player.activeBuffs || {};
+            const rallyActive = buffs['armyRally'] && Date.now() < buffs['armyRally'];
+            const rallyRemaining = rallyActive ? Math.ceil((buffs['armyRally'] - Date.now())/1000) : 0;
+
+            // Workforce mini-cards
+            const wfCards = gatheringIds.map(skillId => {
+                const skill = GAME_DATA.SKILLS[skillId];
+                const ws = this.game.state.workers[skillId];
+                const assigned = Object.values(ws.assigned || {}).reduce((a,b)=>a+b,0);
+                const free = Math.max(0, (ws.total||0) - assigned);
+                return `
+                    <div class="glass-card rounded-md p-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <div class="text-base"><i class="fas ${skill.icon}"></i></div>
+                                <div class="text-sm font-semibold">${skill.name}</div>
+                            </div>
+                            <div class="text-xs text-secondary">Lvl ${this.game.state.player.skills[skillId].level}</div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 mt-2 text-center">
+                            <div><div class="text-[10px] text-secondary uppercase">Total</div><div class="font-mono">${ws.total}</div></div>
+                            <div><div class="text-[10px] text-secondary uppercase">Assigned</div><div class="font-mono">${assigned}</div></div>
+                            <div><div class="text-[10px] text-secondary uppercase">Free</div><div class="font-mono text-green-300">${free}</div></div>
+                        </div>
+                    </div>`;
             }).join('');
-            const wc = this.game.state.workers.woodcutting;
-            const wcAssigned = Object.values(wc.assigned || {}).reduce((a,b)=>a+b,0);
+
+            // Army parade (emoji caps to avoid DOM bloat)
+            const paradeCells = Object.keys(GAME_DATA.ARMY_CLASSES).map(id => {
+                const def = GAME_DATA.ARMY_CLASSES[id];
+                const owned = this.game.state.army.units[id] || 0;
+                if (owned <= 0) return '';
+                const icons = Math.min(12, Math.max(1, Math.floor(owned))); // show up to 12 per class
+                return `
+                    <div class="unit-chip">
+                        <span>${def.emoji}</span>
+                        <span class="text-xs">${def.name}</span>
+                        <span class="font-mono text-white">x${owned}</span>
+                    </div>
+                `;
+            }).join('');
+
+            // Empire unit chips
+            const empireChips = Object.keys(GAME_DATA.UNITS).map(id => {
+                const u = GAME_DATA.UNITS[id]; const qty = this.game.state.empire.units[id] || 0; if (!qty) return '';
+                return `<div class="unit-chip"><span>${u.emoji||'🏛️'}</span><span class="text-xs">${u.name}</span><span class="font-mono text-white">x${qty}</span></div>`;
+            }).join('');
+
+            // Achievements (computed, no persistence needed)
+            const ms = this.game.state.player.meta_skills;
+            const metaMax = Math.max(ms.Strength.level, ms.Intellect.level, ms.Stewardship.level, ms.Resilience.level, ms.Artistry.level);
+            const totalRunesAll = totalRunes;
+            const achievements = [
+                { id:'ach_first_steps', name:'First Decree', desc:'Hire any worker or unit.', done: (workerTotals+empireUnitsTotal+armyUnitsTotal) > 0, icon:'🏰' },
+                { id:'ach_workforce_10', name:'Workforce Online', desc:'Reach 10 total workers.', done: workerTotals >= 10, icon:'🏗️' },
+                { id:'ach_legion_10', name:'Legion Rising', desc:'Recruit 10 total army units.', done: armyUnitsTotal >= 10, icon:'⚔️' },
+                { id:'ach_dps_20', name:'War Machine', desc:'Reach 20+ Army DPS.', done: (armyOut.dps||0) >= 20, icon:'🔥' },
+                { id:'ach_gold_1k', name:'Prosperity', desc:'Hold 1,000+ Gold.', done: this.game.state.player.gold >= 1000, icon:'💰' },
+                { id:'ach_meta_10', name:'Cultured Court', desc:'Any Meta Skill to 10.', done: metaMax >= 10, icon:'📜' },
+                { id:'ach_runes_50', name:'Rune Lord', desc:'Own 50+ runes (any).', done: totalRunesAll >= 50, icon:'🔮' },
+                { id:'ach_hunter_1', name:"Hunter's Call", desc:'Hire a special hunter.', done: huntersTotal >= 1, icon:'🦊' },
+                { id:'ach_empire_10', name:'Empire Builder', desc:'Own 10+ empire units.', done: empireUnitsTotal >= 10, icon:'🏛️' },
+                { id:'ach_legion_50', name:'Grand Marshal', desc:'Recruit 50+ army units.', done: armyUnitsTotal >= 50, icon:'🛡️' },
+            ];
+            const doneCount = achievements.filter(a => a.done).length;
+            const achCards = achievements.map(a => `
+                <div class="ach-card ${a.done ? 'medieval-glow' : 'ach-locked'}">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="text-lg">${a.icon}</div>
+                            <div class="font-semibold">${a.name}</div>
+                        </div>
+                        ${a.done ? '<span class="badge"><i class="fas fa-trophy text-yellow-300"></i> Claimed</span>' : '<span class="badge"><i class="fas fa-lock"></i> Locked</span>'}
+                    </div>
+                    <div class="text-xs text-secondary mt-1">${a.desc}</div>
+                </div>`).join('');
+
             return `
-                <h1 class="text-2xl font-semibold text-white mb-4">Dashboard</h1>
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <div class="block p-4">
-                        <h2 class="text-lg font-bold">Getting Started</h2>
-                        <p class="text-secondary text-sm">Use Stamina to perform actions. Train Meta Skills to speed up and boost your economy.</p>
-                        <ol class="text-secondary list-decimal list-inside space-y-1">
-                            <li>Complete real-life tasks here to earn <strong>Stamina</strong>.</li>
-                            <li>Use Gathering to gain resources; Artisan to craft gear and boosts.</li>
-                            <li>Fight in <strong>Combat</strong> using your crafted gear and food.</li>
-                            <li>Click in <strong>Clicker</strong> to generate Gold and unlock upgrades.</li>
-                        </ol>
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                    <div class="xl:col-span-3 block p-5 medieval-glow gradient-empire">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div>
+                                <h1 class="text-2xl font-extrabold tracking-wide">Imperial Dashboard</h1>
+                                <p class="text-secondary text-sm">A grand overview of your dominion.</p>
+                            </div>
+                            <div class="flex items-center gap-2 flex-wrap text-sm">
+                                <div class="unit-chip"><i class="fas fa-users text-blue-300"></i><span>Inhabitants</span><span class="font-mono text-white">${inhabitantsTotal.toLocaleString()}</span></div>
+                                <div class="unit-chip"><i class="fas fa-coins text-yellow-300"></i><span>Gold</span><span class="font-mono text-white">${gold}</span></div>
+                                <div class="unit-chip"><i class="fas fa-gem text-purple-300"></i><span>Runes</span><span class="font-mono text-white">${totalRunes.toLocaleString()}</span></div>
+                                <div class="unit-chip"><i class="fas fa-bolt text-green-400"></i><span>Stamina</span><span class="font-mono text-white">${stamina}/${staminaMax}</span></div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                            <div class="glass-card rounded-md p-3 text-center shine"><div class="text-[11px] text-secondary uppercase tracking-wider">Gold/s</div><div class="text-2xl font-mono text-white">${prod.goldPerSec.toFixed(1)}</div></div>
+                            <div class="glass-card rounded-md p-3 text-center"><div class="text-[11px] text-secondary uppercase tracking-wider">Runes/s</div><div class="text-2xl font-mono text-white">${(prod.runesPerSec||0).toFixed(2)}</div></div>
+                            <div class="glass-card rounded-md p-3 text-center"><div class="text-[11px] text-secondary uppercase tracking-wider">Essence/s</div><div class="text-2xl font-mono text-white">${(prod.essencePerSec||0).toFixed(2)}</div></div>
+                            <div class="glass-card rounded-md p-3 text-center"><div class="text-[11px] text-secondary uppercase tracking-wider">Hunters</div><div class="text-2xl font-mono text-white">${huntersTotal}</div></div>
+                        </div>
+                    </div>
+
+                    <div class="xl:col-span-2 block p-5 medieval-glow gradient-workforce">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="text-2xl">🏗️</div>
+                                <div>
+                                    <h2 class="text-xl font-extrabold tracking-wide">Workforce Command</h2>
+                                    <p class="text-secondary text-sm">${workerTotals} workers across all camps.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button id="all-systems-go" class="chimera-button juicy-button imperial-button px-3 py-2 rounded-md font-extrabold tracking-wide">Deploy All</button>
+                                <button id="goto-workforce" class="chimera-button px-3 py-2 rounded-md"><i class="fas fa-people-group"></i> Manage</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">${wfCards}</div>
+                        <div class="mt-3 text-xs text-secondary">Tip: Use Deploy All to auto-assign free workers.</div>
+                    </div>
+
+                    <div class="block p-5 medieval-glow gradient-army">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="text-2xl">🛡️⚔️</div>
+                                <div>
+                                    <h2 class="text-xl font-extrabold tracking-wide">War Council</h2>
+                                    <p class="text-secondary text-sm">${armyUnitsTotal} troops stand ready.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button id="army-rally" class="chimera-button juicy-button imperial-button px-3 py-2 rounded-md font-extrabold tracking-wide">${rallyActive ? `Rally Active • ${rallyRemaining}s` : 'Rally'}</button>
+                                <button id="goto-army" class="chimera-button px-3 py-2 rounded-md"><i class="fas fa-users"></i> Army</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mt-3">
+                            <div class="glass-card rounded-md p-3 text-center shine"><div class="text-[11px] text-secondary uppercase tracking-wider">DPS</div><div class="text-2xl font-mono text-white">${armyOut.dps.toFixed(1)}</div></div>
+                            <div class="glass-card rounded-md p-3 text-center"><div class="text-[11px] text-secondary uppercase tracking-wider">HPS</div><div class="text-2xl font-mono text-white">${armyOut.hps.toFixed(1)}</div></div>
+                            <div class="glass-card rounded-md p-3 text-center"><div class="text-[11px] text-secondary uppercase tracking-wider">Upkeep</div><div class="text-xl font-mono text-white">${(armyOut.foodPerMin||0).toFixed(1)}/m</div></div>
+                            <div class="glass-card rounded-md p-3 text-center"><div class="text-[11px] text-secondary uppercase tracking-wider">Rations</div><div class="text-xl font-mono text-white">${edible} items • ${minutesLeft}m</div></div>
+                        </div>
+                        <div class="parade-grid mt-3">${paradeCells || '<span class="text-secondary text-xs">No troops yet. Recruit from the Army tab.</span>'}</div>
+                    </div>
+
+                    <div class="block p-5">
+                        <h3 class="text-lg font-bold mb-2">Guild & Industry</h3>
+                        <div class="flex flex-wrap gap-2">${empireChips || '<span class="text-secondary text-xs">No guild workers yet. Visit Empire.</span>'}</div>
+                        <button id="goto-empire" class="chimera-button px-3 py-2 rounded-md mt-3"><i class="fas fa-chess-rook"></i> Go to Empire</button>
+                    </div>
+
+                    <div class="xl:col-span-3 block p-5">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold">Achievements</h3>
+                            <div class="text-xs text-secondary">${doneCount}/${achievements.length} completed</div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mt-2">${achCards}</div>
                     </div>
                 </div>
             `;
@@ -1533,6 +1687,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const gc = document.getElementById('goto-combat'); if (gc) gc.addEventListener('click', () => { this.currentView = 'combat'; this.render(); });
             const gs = document.getElementById('goto-shop'); if (gs) gs.addEventListener('click', () => { this.currentView = 'shop'; this.render(); });
             const gwf = document.getElementById('goto-workforce'); if (gwf) gwf.addEventListener('click', () => { this.currentView = 'workforce'; this.render(); });
+            const gar = document.getElementById('goto-army'); if (gar) gar.addEventListener('click', () => { this.currentView = 'army'; this.render(); });
             const asg = document.getElementById('all-systems-go'); if (asg) asg.addEventListener('click', (e) => { const rect = e.currentTarget.getBoundingClientRect(); this.juiceBurst('upgrade', rect.left + rect.width/2, rect.top + rect.height/2); this.pulseAt(e.currentTarget); this.game.activateAllWorkers(); });
             document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => { const sel = this.mainContent.querySelector(`.action-duration-select[data-skill-id="${btn.dataset.skillId}"][data-action-id="${btn.dataset.actionId}"]`); const duration = sel ? parseInt(sel.value, 10) : 15; if (isNaN(duration) || duration <= 0) return; this.game.startAction(btn.dataset.skillId, btn.dataset.actionId, duration); }); });
             document.querySelectorAll('.craft-action-btn, .light-action-btn').forEach(btn => { btn.addEventListener('click', () => {

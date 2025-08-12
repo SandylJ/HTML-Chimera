@@ -191,6 +191,15 @@ body {
 /* Army hero gradient */
 .gradient-army { background: radial-gradient(120% 120% at 0% 0%, rgba(255,215,0,0.14), rgba(80,50,10,0.12)), linear-gradient(180deg, rgba(255,215,0,0.08), rgba(0,0,0,0)); }
 
+/* Empire hero gradient */
+.gradient-empire { background: radial-gradient(120% 120% at 0% 0%, rgba(88,166,255,0.12), rgba(10,20,30,0.12)), linear-gradient(180deg, rgba(88,166,255,0.06), rgba(0,0,0,0)); }
+
+.unit-chip { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:9999px; background: rgba(2,6,23,0.5); border:1px solid var(--border-color); }
+.parade-grid { display:grid; grid-template-columns: repeat( auto-fill, minmax(160px, 1fr) ); gap:8px; }
+.ach-card { border:1px solid var(--border-color); border-radius:8px; padding:10px; background: rgba(2,6,23,0.35); transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease; }
+.ach-card:hover { transform: translateY(-2px); border-color: rgba(255,215,0,0.25); background: rgba(2,6,23,0.5); }
+.ach-locked { opacity: 0.7; filter: grayscale(0.1); }
+
 .confetti-piece { position:absolute; width:8px; height:12px; opacity:0; transform: translate3d(0,0,0) rotate(0deg); border-radius:2px; will-change: transform, opacity; }
 .coin-piece { position:absolute; font-size:16px; opacity:0; will-change: transform, opacity; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5)); }
 
