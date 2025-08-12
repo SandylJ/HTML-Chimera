@@ -692,7 +692,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     <div class="block p-4 space-y-3">
                         <h2 class="text-lg font-bold">Equipment & Food</h2>
-                        <p class="text-secondary">Weapon: <span class="text-white">${equipped}</span></p>
+                        <p class="text-secondary">Weapon: <span id="weapon-equipped-text" class="text-white">${equipped}</span></p>
                         <div class="space-x-2">${weapons || '<span class="text-secondary">Craft a weapon in Smithing.</span>'}</div>
                         <div class="space-x-2">${foodList || '<span class="text-secondary">Cook food to heal.</span>'}</div>
                         <div class="mt-4">
@@ -712,6 +712,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const fin = document.getElementById('btn-finisher'); if (fin) fin.disabled = !(c.ultimateCharge >= 100);
             const q = document.getElementById('btn-quick'); if (q) q.disabled = !(Date.now() > c.cooldowns.quickStrike);
             const g = document.getElementById('btn-guard'); if (g) g.disabled = !(Date.now() > c.cooldowns.guard);
+            const we = document.getElementById('weapon-equipped-text'); if (we) we.textContent = this.game.state.player.weapon ? GAME_DATA.ITEMS[this.game.state.player.weapon].name : 'None';
         }
         renderCombatFooter() { /* placeholder for potential dynamic footer updates */ }
         logBattle(text, mood = 'neutral') {
