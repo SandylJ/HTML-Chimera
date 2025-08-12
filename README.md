@@ -17,3 +17,7 @@ Open `docs/index.html` in your browser.
 ## GitHub Pages
 
 Ensure your repository Settings → Pages is configured to serve from the `docs/` folder. Relative paths are used (`./styles.css`, `./js/app.js`, `./assets/...`) so the site works under your repo subpath.
+
+## Currency
+
+- The in-game currency is Gold Pieces (`GP`). UI labels, costs, rewards, and notifications display amounts as `GP`. Internal state continues to use `player.gold` for value storage.

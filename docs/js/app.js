@@ -138,8 +138,8 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         SPELLS: [ // mirrored subset
             { id: 'spell_double_xp', name: 'Double XP', description: 'Earn double XP for a short time', requiredLevel: 1, runeCost: 1, effect: 'doubleXP', durationMs: 10 * 60 * 1000 },
-            { id: 'spell_double_gold', name: 'Double Gold', description: 'Earn double gold for a short time', requiredLevel: 1, runeCost: 1, effect: 'doubleGold', durationMs: 10 * 60 * 1000 },
-            { id: 'spell_golden_harvest', name: 'Golden Harvest', description: '+25% gold for 10m', requiredLevel: 7, runeCost: 3, effect: 'goldBoost', magnitude: 0.25, durationMs: 10 * 60 * 1000 },
+            { id: 'spell_double_gold', name: 'Double Gold', description: 'Earn double GP for a short time', requiredLevel: 1, runeCost: 1, effect: 'doubleGold', durationMs: 10 * 60 * 1000 },
+            { id: 'spell_golden_harvest', name: 'Golden Harvest', description: '+25% GP for 10m', requiredLevel: 7, runeCost: 3, effect: 'goldBoost', magnitude: 0.25, durationMs: 10 * 60 * 1000 },
         ],
         CHESTS: [
             { id: 'chest_common', name: 'Common Chest', description: 'Contains a few simple rewards.', cost: 250, keyItemID: null, rarity: 'common', icon: 'shippingbox', lootTable: [ {type:'currency', amount:100}, {type:'item', id:'seed_vigor', qty:1}, {type:'item', id:'material_joyful_ember', qty:2} ], rewardCount: [1,2] },
@@ -551,7 +551,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (r.type === 'gold') {
                             const amt = Math.floor(Math.random() * (r.max - r.min + 1)) + r.min;
                             this.addGold(amt);
-                            rewards.push(`+${amt} Gold`);
+                            rewards.push(`+${amt} GP`);
                         } else if (r.type === 'item') {
                             const qty = Math.floor(Math.random() * (r.max - r.min + 1)) + r.min;
                             this.addToBank(r.id, qty);
@@ -571,7 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const def = GAME_DATA.HUNTERS[classId]; if (!def) return;
             const ownedOfClass = (this.state.hunter?.roster || []).filter(h => h.classId === classId).length;
             const cost = Math.floor(def.baseCost * Math.pow(1.22, ownedOfClass));
-            if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold to hire a ${def.name}.</p>`); return; }
+            if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient GP', `<p>You need ${cost} GP to hire a ${def.name}.</p>`); return; }
             const instanceId = `H${this.state.hunter.nextHunterId++}`;
             const hunter = { instanceId, classId, name: `${def.name} #${ownedOfClass+1}`, busy: false };
             this.state.hunter.roster.push(hunter);
@@ -675,7 +675,7 @@ document.addEventListener('DOMContentLoaded', () => {
         hireWorker(skillId) {
             this.ensureWorkerState();
             const cost = this.getHireCost(skillId);
-            if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold to hire a worker.</p>`); return; }
+            if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient GP', `<p>You need ${cost} GP to hire a worker.</p>`); return; }
             this.state.workers[skillId].total = (this.state.workers[skillId].total || 0) + 1;
             this.uiManager.playSound('hire');
             this.uiManager.showFloatingText(`+1 ${GAME_DATA.SKILLS[skillId]?.name || 'Worker'}`, 'text-green-300');
@@ -684,7 +684,7 @@ document.addEventListener('DOMContentLoaded', () => {
         upgradeWorkers(skillId, type) {
             this.ensureWorkerState();
             const cost = this.getUpgradeCost(skillId, type);
-            if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold to upgrade.</p>`); return; }
+            if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient GP', `<p>You need ${cost} GP to upgrade.</p>`); return; }
             const key = `${type}Level`;
             const ws = this.state.workers[skillId]; if (typeof ws.upgrades[key] !== 'number') ws.upgrades[key] = 0;
             ws.upgrades[key] += 1;
@@ -699,7 +699,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         hireEmpireUnit(id) {
             const cost = this.getEmpireUnitCost(id);
-            if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold to hire a ${GAME_DATA.UNITS[id].name}.</p>`); return; }
+            if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient GP', `<p>You need ${cost} GP to hire a ${GAME_DATA.UNITS[id].name}.</p>`); return; }
             this.state.empire.units[id] = (this.state.empire.units[id] || 0) + 1;
             this.uiManager.playSound('hire');
             this.uiManager.renderView();
@@ -871,13 +871,13 @@ document.addEventListener('DOMContentLoaded', () => {
         buyChest(chestId) {
             const chest = GAME_DATA.CHESTS.find(c => c.id === chestId); if (!chest) return;
             if (chest.keyItemID && !(this.state.bank[chest.keyItemID] > 0)) { this.uiManager.showModal('Locked Chest', '<p>You need a special key to open this chest.</p>'); return; }
-            const price = chest.cost; if (price > 0 && !this.spendGold(price)) { this.uiManager.showModal('Not Enough Gold', '<p>You cannot afford this chest.</p>'); return; }
+            const price = chest.cost; if (price > 0 && !this.spendGold(price)) { this.uiManager.showModal('Not Enough GP', '<p>You cannot afford this chest.</p>'); return; }
             if (chest.keyItemID) this.removeFromBank(chest.keyItemID, 1);
             const [minR, maxR] = chest.rewardCount; const rolls = Math.floor(Math.random() * (maxR - minR + 1)) + minR;
             const rewards = [];
             for (let i = 0; i < rolls; i++) {
                 const pick = chest.lootTable[Math.floor(Math.random() * chest.lootTable.length)];
-                if (pick.type === 'currency') { const amt = pick.amount; this.addGold(amt); rewards.push(`+${amt} Gold`); }
+                if (pick.type === 'currency') { const amt = pick.amount; this.addGold(amt); rewards.push(`+${amt} GP`); }
                 if (pick.type === 'item') { const q = Array.isArray(pick.qty) ? (Math.floor(Math.random() * (pick.qty[1] - pick.qty[0] + 1)) + pick.qty[0]) : (pick.qty || 1); this.addToBank(pick.id, q); rewards.push(`+${q} ${GAME_DATA.ITEMS[pick.id]?.name || pick.id}`); }
                 if (pick.type === 'runes') { const amt = pick.amount; this.state.player.runes += amt; this.uiManager.notifyResource('runes', amt); rewards.push(`+${amt} Runes`); }
             }
@@ -962,7 +962,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Army helpers
         getArmyUnitCost(id) { const data = GAME_DATA.ARMY_CLASSES[id]; const owned = this.state.army.units[id] || 0; return Math.floor(data.baseCost * Math.pow(data.costGrowth, owned)); }
-        hireArmyUnit(id) { const cost = this.getArmyUnitCost(id); if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold to hire a ${GAME_DATA.ARMY_CLASSES[id].name}.</p>`); return; } this.state.army.units[id] = (this.state.army.units[id] || 0) + 1; this.uiManager.showFloatingText(`+1 ${GAME_DATA.ARMY_CLASSES[id].name}`, 'text-green-300'); this.uiManager.renderView(); }
+        hireArmyUnit(id) { const cost = this.getArmyUnitCost(id); if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient GP', `<p>You need ${cost} GP to hire a ${GAME_DATA.ARMY_CLASSES[id].name}.</p>`); return; } this.state.army.units[id] = (this.state.army.units[id] || 0) + 1; this.uiManager.showFloatingText(`+1 ${GAME_DATA.ARMY_CLASSES[id].name}`, 'text-green-300'); this.uiManager.renderView(); }
         calculateArmyOutputPerSecond() {
             const units = this.state.army.units || {};
             let dps = 0, hps = 0, foodPerMin = 0;
@@ -1028,7 +1028,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!this.state.army.upgrades) this.state.army.upgrades = { offenseLevel: 0, supportLevel: 0, logisticsLevel: 0 };
             const key = `${type}Level`;
             const cost = this.getArmyUpgradeCost(type);
-            if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold for this upgrade.</p>`); return; }
+            if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient GP', `<p>You need ${cost} GP for this upgrade.</p>`); return; }
             if (typeof this.state.army.upgrades[key] !== 'number') this.state.army.upgrades[key] = 0;
             this.state.army.upgrades[key] += 1;
             this.uiManager.playSound('upgrade');
@@ -1055,7 +1055,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const price = this.getItemPrice(itemId, 'buy');
             if (price == null) return false;
             const total = Math.max(0, Math.floor(price * qty));
-            if (!this.spendGold(total)) { this.uiManager.showModal('Not Enough Gold', `<p>You need ${total} gold to buy this.</p>`); return false; }
+            if (!this.spendGold(total)) { this.uiManager.showModal('Not Enough GP', `<p>You need ${total} GP to buy this.</p>`); return false; }
             this.addToBank(itemId, qty);
             this.uiManager.showFloatingText(`+${qty} ${GAME_DATA.ITEMS[itemId]?.name || itemId}`, 'text-yellow-300');
             this.uiManager.playSound('upgrade');
@@ -1069,7 +1069,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const total = Math.max(0, Math.floor(price * sellable));
             this.removeFromBank(itemId, sellable);
             this.addGold(total);
-            this.uiManager.showFloatingText(`+${total}g`, 'text-yellow-300');
+            this.uiManager.showFloatingText(`+${total} GP`, 'text-yellow-300');
             this.uiManager.playSound('hire');
             this.uiManager.renderView();
             return true;
@@ -1105,7 +1105,7 @@ document.addEventListener('DOMContentLoaded', () => {
         attachSidebarEventListeners() { document.querySelectorAll('.sidebar-link').forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); this.currentView = link.dataset.view; this.render(); }); }); }
 
         updateHeaderBars() {
-            const goldDisplay = document.getElementById('gold-display'); if (goldDisplay) goldDisplay.textContent = Math.floor(this.game.state.player.gold).toLocaleString();
+            const goldDisplay = document.getElementById('gold-display'); if (goldDisplay) goldDisplay.textContent = Math.floor(this.game.state.player.gold).toLocaleString() + ' GP';
             const runesDisplay = document.getElementById('runes-display'); if (runesDisplay) runesDisplay.textContent = Math.floor(this.game.state.player.runes).toLocaleString();
             const staminaFill = document.getElementById('stamina-bar-fill'); const staminaValue = document.getElementById('stamina-value'); if (staminaFill && staminaValue) { const s = this.game.state.player; staminaFill.style.width = `${(s.stamina / s.staminaMax) * 100}%`; staminaValue.textContent = `${Math.floor(s.stamina)}/${s.staminaMax}`; }
             const armyLpEl = document.getElementById('army-lp-display'); if (armyLpEl && this.game.calculateArmyLifePoints) { const lp = this.game.calculateArmyLifePoints(); armyLpEl.textContent = `${lp.toLocaleString()} LP`; }
@@ -1113,9 +1113,9 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSidebarActive() { document.querySelectorAll('.sidebar-link').forEach(link => { link.classList.toggle('active', link.dataset.view === this.currentView); }); }
 
         updateDynamicElements() {
-            document.getElementById('gold-display').textContent = Math.floor(this.game.state.player.gold).toLocaleString();
+            document.getElementById('gold-display').textContent = Math.floor(this.game.state.player.gold).toLocaleString() + ' GP';
             const gps = this.game.state.empire?.production?.goldPerSec || 0;
-            const gpsEl = document.getElementById('gps-display'); if (gpsEl) gpsEl.textContent = `(+${gps.toFixed(1)}/s)`;
+            const gpsEl = document.getElementById('gps-display'); if (gpsEl) gpsEl.textContent = `(+${gps.toFixed(1)} GP/s)`;
             const runesEl = document.getElementById('runes-display'); if (runesEl) { const totalRunes = (this.game.state.player.runes || 0) + this.game.getTotalRuneItemCount(); runesEl.textContent = totalRunes.toLocaleString(); }
             const stamina = this.game.state.player.stamina; const staminaMax = this.game.state.player.staminaMax;
             const staminaValueEl = document.getElementById('stamina-value'); const staminaFillEl = document.getElementById('stamina-bar-fill'); if (staminaValueEl && staminaFillEl) { staminaValueEl.textContent = `${Math.floor(stamina)}/${staminaMax}`; staminaFillEl.style.width = `${(stamina / staminaMax) * 100}%`; }
@@ -1246,7 +1246,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 { id:'ach_workforce_10', name:'Workforce Online', desc:'Reach 10 total workers.', done: workerTotals >= 10, icon:'🏗️' },
                 { id:'ach_legion_10', name:'Legion Rising', desc:'Recruit 10 total army units.', done: armyUnitsTotal >= 10, icon:'⚔️' },
                 { id:'ach_dps_20', name:'War Machine', desc:'Reach 20+ Army DPS.', done: (armyOut.dps||0) >= 20, icon:'🔥' },
-                { id:'ach_gold_1k', name:'Prosperity', desc:'Hold 1,000+ Gold.', done: this.game.state.player.gold >= 1000, icon:'💰' },
+                { id:'ach_gold_1k', name:'Prosperity', desc:'Hold 1,000+ GP.', done: this.game.state.player.gold >= 1000, icon:'💰' },
                 { id:'ach_meta_10', name:'Cultured Court', desc:'Any Meta Skill to 10.', done: metaMax >= 10, icon:'📜' },
                 { id:'ach_runes_50', name:'Rune Lord', desc:'Own 50+ runes (any).', done: totalRunesAll >= 50, icon:'🔮' },
                 { id:'ach_hunter_1', name:"Hunter's Call", desc:'Hire a special hunter.', done: huntersTotal >= 1, icon:'🦊' },
@@ -1276,13 +1276,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                             <div class="flex items-center gap-2 flex-wrap text-sm">
                                 <div class="unit-chip"><i class="fas fa-users text-blue-300"></i><span>Inhabitants</span><span class="font-mono text-white">${inhabitantsTotal.toLocaleString()}</span></div>
-                                <div class="unit-chip"><i class="fas fa-coins text-yellow-300"></i><span>Gold</span><span class="font-mono text-white">${gold}</span></div>
+                                <div class="unit-chip"><i class="fas fa-coins text-yellow-300"></i><span>GP</span><span class="font-mono text-white">${gold}</span></div>
                                 <div class="unit-chip"><i class="fas fa-gem text-purple-300"></i><span>Runes</span><span class="font-mono text-white">${totalRunes.toLocaleString()}</span></div>
                                 <div class="unit-chip"><i class="fas fa-bolt text-green-400"></i><span>Stamina</span><span class="font-mono text-white">${stamina}/${staminaMax}</span></div>
                             </div>
                         </div>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-                            <div class="glass-card rounded-md p-3 text-center shine"><div class="text-[11px] text-secondary uppercase tracking-wider">Gold/s</div><div class="text-2xl font-mono text-white">${prod.goldPerSec.toFixed(1)}</div></div>
+                            <div class="glass-card rounded-md p-3 text-center shine"><div class="text-[11px] text-secondary uppercase tracking-wider">GP/s</div><div class="text-2xl font-mono text-white">${prod.goldPerSec.toFixed(1)}</div></div>
                             <div class="glass-card rounded-md p-3 text-center"><div class="text-[11px] text-secondary uppercase tracking-wider">Runes/s</div><div class="text-2xl font-mono text-white">${(prod.runesPerSec||0).toFixed(2)}</div></div>
                             <div class="glass-card rounded-md p-3 text-center"><div class="text-[11px] text-secondary uppercase tracking-wider">Essence/s</div><div class="text-2xl font-mono text-white">${(prod.essencePerSec||0).toFixed(2)}</div></div>
                             <div class="glass-card rounded-md p-3 text-center"><div class="text-[11px] text-secondary uppercase tracking-wider">Hunters</div><div class="text-2xl font-mono text-white">${huntersTotal}</div></div>
@@ -1413,11 +1413,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class="text-secondary text-xs">Depth L${wm.upgrades.depthLevel} • Carts L${wm.upgrades.cartLevel}</p>
                         </div>
                         <div class="flex flex-col sm:flex-row gap-2">
-                            <button id="hire-miner" class="chimera-button px-3 py-2 rounded-md">Hire Miner — Cost: ${hireCost} gold</button>
-                            <button id="upgrade-mining-speed" class="chimera-button px-3 py-2 rounded-md">Sharper Picks (Speed L${wm.upgrades.speedLevel}) — Cost: ${speedCost} gold</button>
-                            <button id="upgrade-mining-yield" class="chimera-button px-3 py-2 rounded-md">Ore Sacks (Yield L${wm.upgrades.yieldLevel}) — Cost: ${yieldCost} gold</button>
-                            <button id="upgrade-mining-depth" class="chimera-button px-3 py-2 rounded-md">Deeper Shafts (L${wm.upgrades.depthLevel}) — Cost: ${depthCost} gold</button>
-                            <button id="upgrade-mining-cart" class="chimera-button px-3 py-2 rounded-md">Mine Carts (L${wm.upgrades.cartLevel}) — Cost: ${cartCost} gold</button>
+                            <button id="hire-miner" class="chimera-button px-3 py-2 rounded-md">Hire Miner — Cost: ${hireCost} GP</button>
+                            <button id="upgrade-mining-speed" class="chimera-button px-3 py-2 rounded-md">Sharper Picks (Speed L${wm.upgrades.speedLevel}) — Cost: ${speedCost} GP</button>
+                            <button id="upgrade-mining-yield" class="chimera-button px-3 py-2 rounded-md">Ore Sacks (Yield L${wm.upgrades.yieldLevel}) — Cost: ${yieldCost} GP</button>
+                            <button id="upgrade-mining-depth" class="chimera-button px-3 py-2 rounded-md">Deeper Shafts (L${wm.upgrades.depthLevel}) — Cost: ${depthCost} GP</button>
+                            <button id="upgrade-mining-cart" class="chimera-button px-3 py-2 rounded-md">Mine Carts (L${wm.upgrades.cartLevel}) — Cost: ${cartCost} GP</button>
                         </div>
                     </div>
                 </div>
@@ -1447,11 +1447,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class="text-secondary text-xs">Irrigation L${wf.upgrades.irrigationLevel} • Tools L${wf.upgrades.toolsLevel} • Compost L${wf.upgrades.compostLevel} • Tractor L${wf.upgrades.tractorLevel}</p>
                         </div>
                         <div class="flex flex-col sm:flex-row gap-2">
-                            <button id="hire-farmhand" class="chimera-button px-3 py-2 rounded-md">Hire Farmhand — Cost: ${hireCost} gold</button>
-                            <button id="upgrade-farming-irrigation" class="chimera-button px-3 py-2 rounded-md">Irrigation (L${wf.upgrades.irrigationLevel}) — Cost: ${irrCost} gold</button>
-                            <button id="upgrade-farming-tools" class="chimera-button px-3 py-2 rounded-md">Steel Tools (L${wf.upgrades.toolsLevel}) — Cost: ${toolsCost} gold</button>
-                            <button id="upgrade-farming-compost" class="chimera-button px-3 py-2 rounded-md">Compost Bins (L${wf.upgrades.compostLevel}) — Cost: ${compCost} gold</button>
-                            <button id="upgrade-farming-tractor" class="chimera-button px-3 py-2 rounded-md">Tractor (L${wf.upgrades.tractorLevel}) — Cost: ${tractCost} gold</button>
+                            <button id="hire-farmhand" class="chimera-button px-3 py-2 rounded-md">Hire Farmhand — Cost: ${hireCost} GP</button>
+                            <button id="upgrade-farming-irrigation" class="chimera-button px-3 py-2 rounded-md">Irrigation (L${wf.upgrades.irrigationLevel}) — Cost: ${irrCost} GP</button>
+                            <button id="upgrade-farming-tools" class="chimera-button px-3 py-2 rounded-md">Steel Tools (L${wf.upgrades.toolsLevel}) — Cost: ${toolsCost} GP</button>
+                            <button id="upgrade-farming-compost" class="chimera-button px-3 py-2 rounded-md">Compost Bins (L${wf.upgrades.compostLevel}) — Cost: ${compCost} GP</button>
+                            <button id="upgrade-farming-tractor" class="chimera-button px-3 py-2 rounded-md">Tractor (L${wf.upgrades.tractorLevel}) — Cost: ${tractCost} GP</button>
                         </div>
                     </div>
                 </div>
@@ -1553,7 +1553,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class=\"text-secondary text-xs mt-1\">Success +${Math.round((c.successBonus||0)*100)}% • Speed ${Math.round((c.speedBonus||0)*100)}%</p>
                             <p class=\"text-white text-sm mt-2\">Owned: <span class=\"font-mono\">${owned}</span></p>
                         </div>
-                        <button class=\"hire-hunter-class-btn chimera-button px-3 py-2 rounded-md mt-3\" data-class-id=\"${id}\">Hire — Cost: ${cost} gold</button>
+                        <button class=\"hire-hunter-class-btn chimera-button px-3 py-2 rounded-md mt-3\" data-class-id=\"${id}\">Hire — Cost: ${cost} GP</button>
                     </div>
                 `;
             }).join('');
@@ -1616,7 +1616,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     case META_SKILLS.INTELLECT: bonusText = `Increases Artisan skill XP gain.`; break;
                     case META_SKILLS.STEWARDSHIP: bonusText = `- ${(skill.level - 1).toFixed(1)}% Gathering action time.`; break;
                     case META_SKILLS.RESILIENCE: bonusText = `+${((skill.level - 1) * 5).toFixed(1)}% Stamina regeneration.`; break;
-                    case META_SKILLS.ARTISTRY: bonusText = `Increases Gold from all sources.`; break;
+                    case META_SKILLS.ARTISTRY: bonusText = `Increases GP from all sources.`; break;
                 }
                 return `<div class="block p-4"><h3 class="text-lg font-bold text-white">${skill.name} - Level ${skill.level}</h3><div class="w-full xp-bar-bg rounded-full h-2 my-2"><div class="xp-bar-fill h-2 rounded-full" style="width:${(skill.currentXP / skill.xpToNextLevel) * 100}%"></div></div><p class="text-xs text-secondary text-right">${Math.floor(skill.currentXP)} / ${skill.xpToNextLevel} XP</p><p class="text-sm text-accent-blue mt-2">${bonusText}</p></div>`;
             }).join('');
@@ -1732,7 +1732,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const qty = owned[id] || 0;
                 const cost = this.game.getEmpireUnitCost(id);
                 const lines = [];
-                if (u.goldPerSec) lines.push(`Gold: +${u.goldPerSec}/s each`);
+                if (u.goldPerSec) lines.push(`GP: +${u.goldPerSec}/s each`);
                 if (u.runesPerSec) lines.push(`Runes: +${u.runesPerSec}/s each`);
                 if (u.essencePerSec) lines.push(`Essence: +${u.essencePerSec}/s each`);
                 return `
@@ -1743,7 +1743,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class="text-secondary text-xs mt-1">${lines.join(' • ')}</p>
                             <p class="text-white text-sm mt-2">Owned: <span class="font-mono">${qty}</span></p>
                         </div>
-                        <button class="hire-unit-btn chimera-button px-3 py-2 rounded-md mt-3" data-unit-id="${id}">Hire — Cost: ${cost} gold</button>
+                        <button class="hire-unit-btn chimera-button px-3 py-2 rounded-md mt-3" data-unit-id="${id}">Hire — Cost: ${cost} GP</button>
                     </div>
                 `;
             }).join('');
@@ -1757,13 +1757,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h1 class="text-2xl font-semibold text-white mb-4">Empire Command</h1>
                 <div class="block p-4 mb-4">
                     <h2 class="text-lg font-bold">Production</h2>
-                    <p class="text-secondary text-sm">Gold: <span class="text-white">+${(prod.goldPerSec * this.game.goldMultiplier()).toFixed(1)}/s</span> • Runes: <span class="text-white">+${(prod.runesPerSec||0).toFixed(2)}/s</span> • Essence: <span class="text-white">+${(prod.essencePerSec||0).toFixed(2)}/s</span></p>
+                    <p class="text-secondary text-sm">GP: <span class="text-white">+${(prod.goldPerSec * this.game.goldMultiplier()).toFixed(1)}/s</span> • Runes: <span class="text-white">+${(prod.runesPerSec||0).toFixed(2)}/s</span> • Essence: <span class="text-white">+${(prod.essencePerSec||0).toFixed(2)}/s</span></p>
                 </div>
                 <div class="block p-4 mb-4">
                     <div class="flex items-center justify-between gap-3">
                         <div>
                             <h2 class="text-lg font-bold">Automation</h2>
-                            <p class="text-secondary text-xs">Auto-hire guild workers that generate gold.</p>
+                            <p class="text-secondary text-xs">Auto-hire guild workers that generate GP.</p>
                         </div>
                         <div class="flex items-center gap-2">
                             <label class="text-xs text-secondary">Reserve</label>
@@ -1811,7 +1811,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div>
                         <h3 class="text-lg font-bold">${c.name}</h3>
                         <p class="text-secondary text-xs">${c.description}</p>
-                        <p class="text-secondary text-xs">${c.keyItemID ? 'Requires Key' : 'Cost: ' + c.cost + ' gold'}</p>
+                        <p class="text-secondary text-xs">${c.keyItemID ? 'Requires Key' : 'Cost: ' + c.cost + ' GP'}</p>
                     </div>
                     <button class="buy-chest-btn chimera-button px-3 py-2 rounded-md mt-3" data-chest-id="${c.id}">${c.keyItemID ? 'Open' : 'Buy & Open'}</button>
                 </div>
@@ -1890,9 +1890,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             </div>
                             <div class="flex flex-col sm:flex-row gap-2 mt-4">
-                                <button class="hire-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}"><span class="mr-1">${skillId==='woodcutting'?'🪵':headerEmoji}</span> Hire ${workerName} — <span class="text-yellow-300 font-mono">${hireCost}g</span></button>
-                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}" data-type="speed"><span class="mr-1">⚙️</span> Speed <span class="text-secondary ml-1">(L${speedLvl})</span> — <span class="text-yellow-300 font-mono">${speedCost}g</span></button>
-                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}" data-type="yield"><span class="mr-1">📦</span> Yield <span class="text-secondary ml-1">(L${yieldLvl})</span> — <span class="text-yellow-300 font-mono">${yieldCost}g</span></button>
+                                <button class="hire-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}"><span class="mr-1">${skillId==='woodcutting'?'🪵':headerEmoji}</span> Hire ${workerName} — <span class="text-yellow-300 font-mono">${hireCost} GP</span></button>
+                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}" data-type="speed"><span class="mr-1">⚙️</span> Speed <span class="text-secondary ml-1">(L${speedLvl})</span> — <span class="text-yellow-300 font-mono">${speedCost} GP</span></button>
+                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}" data-type="yield"><span class="mr-1">📦</span> Yield <span class="text-secondary ml-1">(L${yieldLvl})</span> — <span class="text-yellow-300 font-mono">${yieldCost} GP</span></button>
                             </div>
                             <p class="text-[11px] text-secondary mt-2">Current bonuses: <span class="text-green-300">+${(yieldLvl*10).toFixed(0)}% yield</span> • <span class="text-blue-300">${Math.round(100 - (Math.pow(0.92, speedLvl)*100))}% faster</span></p>
                         </div>
@@ -1917,7 +1917,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="flex items-center justify-between">
                             <div>
                                 <h3 class="text-lg font-bold">${item?.icon || '❔'} ${item?.name || entry.itemId}</h3>
-                                <p class="text-secondary text-xs">Buy ${entry.buy}g • Sell ${entry.sell}g</p>
+                                <p class="text-secondary text-xs">Buy ${entry.buy} GP • Sell ${entry.sell} GP</p>
                                 <p class="text-secondary text-xs">Owned: <span class="text-white font-mono">${have}</span></p>
                             </div>
                             <span class="badge"><i class="fas fa-sack-dollar"></i> ${stall.name}</span>
@@ -2187,9 +2187,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             </div>
                             <div class="flex flex-col sm:flex-row gap-2 mt-4">
-                                <button class="hire-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="woodcutting"><span class="mr-1">🪵</span> Hire Timberhand — <span class="text-yellow-300 font-mono">${hireCost}g</span></button>
-                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="woodcutting" data-type="speed"><span class="mr-1">🪓</span> Upgrade Axes <span class="text-secondary ml-1">(L${speedLvl})</span> — <span class="text-yellow-300 font-mono">${speedCost}g</span></button>
-                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="woodcutting" data-type="yield"><span class="mr-1">🛷</span> Lumber Sleds <span class="text-secondary ml-1">(L${yieldLvl})</span> — <span class="text-yellow-300 font-mono">${yieldCost}g</span></button>
+                                <button class="hire-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="woodcutting"><span class="mr-1">🪵</span> Hire Timberhand — <span class="text-yellow-300 font-mono">${hireCost} GP</span></button>
+                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="woodcutting" data-type="speed"><span class="mr-1">🪓</span> Upgrade Axes <span class="text-secondary ml-1">(L${speedLvl})</span> — <span class="text-yellow-300 font-mono">${speedCost} GP</span></button>
+                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="woodcutting" data-type="yield"><span class="mr-1">🛷</span> Lumber Sleds <span class="text-secondary ml-1">(L${yieldLvl})</span> — <span class="text-yellow-300 font-mono">${yieldCost} GP</span></button>
                             </div>
                             <p class="text-[11px] text-secondary mt-2">Current bonuses: <span class="text-green-300">+${(yieldLvl*10).toFixed(0)}% yield</span> • <span class="text-blue-300">${Math.round(100 - (Math.pow(0.92, speedLvl)*100))}% faster</span></p>
                         </div>
@@ -2237,9 +2237,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             </div>
                             <div class="flex flex-col sm:flex-row gap-2 mt-4">
-                                <button class="hire-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}"><span class="mr-1">👷</span> Hire ${meta.worker} — <span class="text-yellow-300 font-mono">${hireCost}g</span></button>
-                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}" data-type="speed"><span class="mr-1">⚙️</span> Speed <span class="text-secondary ml-1">(L${speedLvl||0})</span> — <span class="text-yellow-300 font-mono">${speedCost}g</span></button>
-                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}" data-type="yield"><span class="mr-1">📦</span> Yield <span class="text-secondary ml-1">(L${yieldLvl||0})</span> — <span class="text-yellow-300 font-mono">${yieldCost}g</span></button>
+                                <button class="hire-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}"><span class="mr-1">👷</span> Hire ${meta.worker} — <span class="text-yellow-300 font-mono">${hireCost} GP</span></button>
+                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}" data-type="speed"><span class="mr-1">⚙️</span> Speed <span class="text-secondary ml-1">(L${speedLvl||0})</span> — <span class="text-yellow-300 font-mono">${speedCost} GP</span></button>
+                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}" data-type="yield"><span class="mr-1">📦</span> Yield <span class="text-secondary ml-1">(L${yieldLvl||0})</span> — <span class="text-yellow-300 font-mono">${yieldCost} GP</span></button>
                             </div>
                             <p class="text-[11px] text-secondary mt-2">Current bonuses: <span class="text-green-300">+${((yieldLvl||0)*10).toFixed(0)}% yield</span> • <span class="text-blue-300">${Math.round(100 - (Math.pow(0.92, (speedLvl||0))*100))}% faster</span></p>
                         </div>
@@ -2256,9 +2256,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class="text-white text-sm mt-1">Workers: <span class="font-bold">${ws.total}</span></p>
                         </div>
                         <div class="flex flex-col sm:flex-row gap-2">
-                            <button class="hire-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}">Hire Worker — Cost: ${hireCost} gold</button>
-                            <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-type="speed">Upgrade Tools (Speed L${speedLvl}) — Cost: ${speedCost} gold</button>
-                            <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-type="yield">Logistics (Yield L${yieldLvl}) — Cost: ${yieldCost} gold</button>
+                            <button class="hire-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}">Hire Worker — Cost: ${hireCost} GP</button>
+                            <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-type="speed">Upgrade Tools (Speed L${speedLvl}) — Cost: ${speedCost} GP</button>
+                            <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-type="yield">Logistics (Yield L${yieldLvl}) — Cost: ${yieldCost} GP</button>
                         </div>
                     </div>
                 </div>
@@ -2326,7 +2326,7 @@ document.addEventListener('DOMContentLoaded', () => {
         notifyResource(type, amount) {
             if (!amount || amount <= 0) return;
             const icons = { gold: '<i class="fas fa-coins text-yellow-300"></i>', runes: '<i class="fas fa-gem text-purple-300"></i>', stamina: '<i class="fas fa-bolt text-green-400"></i>' };
-            const labels = { gold: 'Gold', runes: 'Runes', stamina: 'Stamina' };
+            const labels = { gold: 'GP', runes: 'Runes', stamina: 'Stamina' };
             const key = `res:${type}`;
             this.createOrUpdateNotification(key, { increment: amount, icon: icons[type] || '', label: labels[type] || type, kind: type });
         }
@@ -2367,7 +2367,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class="text-secondary text-xs mt-1">${lines.join(' • ')}</p>
                             <p class="text-white text-sm mt-2">Owned: <span class="font-mono">${owned}</span></p>
                         </div>
-                        <button class="hire-army-btn chimera-button juicy-button px-3 py-2 rounded-md mt-3" data-unit-id="${id}">Recruit — ${cost}g</button>
+                        <button class="hire-army-btn chimera-button juicy-button px-3 py-2 rounded-md mt-3" data-unit-id="${id}">Recruit — ${cost} GP</button>
                     </div>
                 `;
             }).join('');
@@ -2399,17 +2399,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="block p-3 flex flex-col">
                             <div class="flex items-center justify-between"><div class="font-semibold">Offense Drills</div><div class="text-xs text-secondary">L${up.offenseLevel||0}</div></div>
                             <p class="text-xs text-secondary mt-1">+8% Army DPS per level.</p>
-                            <button class="army-upgrade-btn chimera-button juicy-button px-3 py-2 rounded-md mt-2" data-type="offense">Upgrade — ${offenseCost}g</button>
+                            <button class="army-upgrade-btn chimera-button juicy-button px-3 py-2 rounded-md mt-2" data-type="offense">Upgrade — ${offenseCost} GP</button>
                         </div>
                         <div class="block p-3 flex flex-col">
                             <div class="flex items-center justify-between"><div class="font-semibold">Field Medics</div><div class="text-xs text-secondary">L${up.supportLevel||0}</div></div>
                             <p class="text-xs text-secondary mt-1">+8% Army HPS per level.</p>
-                            <button class="army-upgrade-btn chimera-button juicy-button px-3 py-2 rounded-md mt-2" data-type="support">Upgrade — ${supportCost}g</button>
+                            <button class="army-upgrade-btn chimera-button juicy-button px-3 py-2 rounded-md mt-2" data-type="support">Upgrade — ${supportCost} GP</button>
                         </div>
                         <div class="block p-3 flex flex-col">
                             <div class="flex items-center justify-between"><div class="font-semibold">Supply Lines</div><div class="text-xs text-secondary">L${up.logisticsLevel||0}</div></div>
                             <p class="text-xs text-secondary mt-1">-6% Upkeep per level.</p>
-                            <button class="army-upgrade-btn chimera-button juicy-button px-3 py-2 rounded-md mt-2" data-type="logistics">Upgrade — ${logisticsCost}g</button>
+                            <button class="army-upgrade-btn chimera-button juicy-button px-3 py-2 rounded-md mt-2" data-type="logistics">Upgrade — ${logisticsCost} GP</button>
                         </div>
                     </div>
                     <div class="mt-4">
