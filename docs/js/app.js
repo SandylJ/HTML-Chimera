@@ -1880,8 +1880,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div class="block p-3 rounded-md">
                             <h3 class="text-md font-bold mb-2">War Spoils</h3>
-                            <div class="text-sm mb-1">Gold: <span class="font-mono text-yellow-300">${Math.floor(auto.buffers?.gold||0).toLocaleString()}</span></div>
-                            <div class="flex flex-wrap gap-2 mb-2">${itemsHtml}</div>
+                            <div class="text-sm mb-1">Gold: <span id="war-spoils-gold" class="font-mono text-yellow-300">${Math.floor(auto.buffers?.gold||0).toLocaleString()}</span></div>
+                            <div id="war-spoils-items" class="flex flex-wrap gap-2 mb-2">${itemsHtml}</div>
                             <div class="flex items-center gap-2">
                                 <button id="claim-war-spoils" class="chimera-button juicy-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Claim All</button>
                                 <button id="clear-war-spoils" class="chimera-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Clear</button>
@@ -1891,7 +1891,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         }
-        renderCombatFooter() { /* placeholder for potential dynamic footer updates */ }
+        renderCombatFooter() {
+            if (this.currentView !== 'combat') return;
+            const auto = this.game.state.combat?.auto; if (!auto) return;
+            // Update gold
+            const goldEl = document.getElementById('war-spoils-gold');
+            if (goldEl) {
+                const goldAmt = Math.floor(auto.buffers?.gold || 0);
+                goldEl.textContent = goldAmt.toLocaleString();
+            }
+            // Update items list
+            const itemsContainer = document.getElementById('war-spoils-items');
+            if (itemsContainer) {
+                const entries = Object.entries(auto.buffers?.items || {});
+                const html = entries.length
+                    ? entries.map(([id, q]) => `<span class="badge">${GAME_DATA.ITEMS[id]?.icon||'❔'} ${GAME_DATA.ITEMS[id]?.name||id} x${q}</span>`).join(' ')
+                    : '<span class="text-secondary text-xs">No items yet.</span>';
+                itemsContainer.innerHTML = html;
+            }
+            // Toggle buttons
+            const claimBtn = document.getElementById('claim-war-spoils');
+            const clearBtn = document.getElementById('clear-war-spoils');
+            const spoilsEmpty = (Math.floor(auto.buffers?.gold || 0) <= 0) && Object.keys(auto.buffers?.items || {}).length === 0;
+            if (claimBtn) claimBtn.disabled = spoilsEmpty;
+            if (clearBtn) clearBtn.disabled = spoilsEmpty;
+        }
 
         renderClickerView() {
             const units = GAME_DATA.UNITS;
@@ -2615,7 +2639,31 @@ document.addEventListener('DOMContentLoaded', () => {
             const recruits = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${unitCards}</div>`;
             return `<h1 class="text-2xl font-semibold text-white mb-4">Army</h1>${hero}${upgrades}${recruits}`;
         }
-        renderCombatFooter() { /* placeholder for potential dynamic footer updates */ }
+        renderCombatFooter() {
+            if (this.currentView !== 'combat') return;
+            const auto = this.game.state.combat?.auto; if (!auto) return;
+            // Update gold
+            const goldEl = document.getElementById('war-spoils-gold');
+            if (goldEl) {
+                const goldAmt = Math.floor(auto.buffers?.gold || 0);
+                goldEl.textContent = goldAmt.toLocaleString();
+            }
+            // Update items list
+            const itemsContainer = document.getElementById('war-spoils-items');
+            if (itemsContainer) {
+                const entries = Object.entries(auto.buffers?.items || {});
+                const html = entries.length
+                    ? entries.map(([id, q]) => `<span class="badge">${GAME_DATA.ITEMS[id]?.icon||'❔'} ${GAME_DATA.ITEMS[id]?.name||id} x${q}</span>`).join(' ')
+                    : '<span class="text-secondary text-xs">No items yet.</span>';
+                itemsContainer.innerHTML = html;
+            }
+            // Toggle buttons
+            const claimBtn = document.getElementById('claim-war-spoils');
+            const clearBtn = document.getElementById('clear-war-spoils');
+            const spoilsEmpty = (Math.floor(auto.buffers?.gold || 0) <= 0) && Object.keys(auto.buffers?.items || {}).length === 0;
+            if (claimBtn) claimBtn.disabled = spoilsEmpty;
+            if (clearBtn) clearBtn.disabled = spoilsEmpty;
+        }
     }
 
     const game = new GameManager(); game.init(); window.chimeraGame = game;
