@@ -1217,9 +1217,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 const yieldLvl = ws.upgrades.yieldLevel || 0;
                 const icon = skill.icon;
                 const theme = skill.theme;
-                const title = skillId === 'woodcutting' ? 'Timber Lodge' : (skillId === 'mining' ? 'Mining Camp' : `${skill.name} Camp`);
-                const workerName = skillId === 'woodcutting' ? 'Timberhand' : (skillId === 'mining' ? 'Miner' : 'Worker');
-                const headerEmoji = skillId === 'woodcutting' ? '🪓' : (skillId === 'mining' ? '⛏️' : '🏕️');
+                const metaMap = {
+                    woodcutting: { title: 'Timber Lodge', worker: 'Timberhand', emoji: '🪓' },
+                    mining: { title: 'Mining Camp', worker: 'Miner', emoji: '⛏️' },
+                    fishing: { title: 'Fishing Harbor', worker: 'Angler', emoji: '🎣' },
+                    farming: { title: 'Farming Estate', worker: 'Farmhand', emoji: '🚜' },
+                    hunter: { title: "Trapper's Outpost", worker: 'Trapper', emoji: '🪤' },
+                    archaeology: { title: 'Ancient Digsite', worker: 'Excavator', emoji: '🏺' },
+                    divination: { title: "Diviner's Grove", worker: 'Diviner', emoji: '🔮' },
+                };
+                const meta = metaMap[skillId] || { title: `${skill.name} Camp`, worker: 'Worker', emoji: '🏕️' };
+                const title = meta.title;
+                const workerName = meta.worker;
+                const headerEmoji = meta.emoji;
 
                 return `
                     <div class="block p-0 border border-${theme} overflow-hidden medieval-glow ${skillId==='woodcutting'?'gradient-wood':'gradient-workforce'}">
@@ -1247,7 +1257,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             </div>
                             <div class="flex flex-col sm:flex-row gap-2 mt-4">
-                                <button class="hire-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}"><span class="mr-1">${skillId==='woodcutting'?'🪵':'👷'}</span> Hire ${workerName} — <span class="text-yellow-300 font-mono">${hireCost}g</span></button>
+                                <button class="hire-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}"><span class="mr-1">${skillId==='woodcutting'?'🪵':headerEmoji}</span> Hire ${workerName} — <span class="text-yellow-300 font-mono">${hireCost}g</span></button>
                                 <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}" data-type="speed"><span class="mr-1">⚙️</span> Speed <span class="text-secondary ml-1">(L${speedLvl})</span> — <span class="text-yellow-300 font-mono">${speedCost}g</span></button>
                                 <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}" data-type="yield"><span class="mr-1">📦</span> Yield <span class="text-secondary ml-1">(L${yieldLvl})</span> — <span class="text-yellow-300 font-mono">${yieldCost}g</span></button>
                             </div>
@@ -1492,6 +1502,56 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="woodcutting" data-type="yield"><span class="mr-1">🛷</span> Lumber Sleds <span class="text-secondary ml-1">(L${yieldLvl})</span> — <span class="text-yellow-300 font-mono">${yieldCost}g</span></button>
                             </div>
                             <p class="text-[11px] text-secondary mt-2">Current bonuses: <span class="text-green-300">+${(yieldLvl*10).toFixed(0)}% yield</span> • <span class="text-blue-300">${Math.round(100 - (Math.pow(0.92, speedLvl)*100))}% faster</span></p>
+                        </div>
+                    </div>
+                `;
+            }
+            // Themed panels for other gathering skills
+            const skill = GAME_DATA.SKILLS[skillId];
+            const assigned = Object.values(ws.assigned || {}).reduce((a,b)=>a+b,0);
+            const free = Math.max(0, (ws.total||0) - assigned);
+            const icon = skill.icon;
+            const headerMeta = {
+                mining: { title: 'Mining Camp', emoji: '⛏️', worker: 'Miner' },
+                fishing: { title: 'Fishing Harbor', emoji: '🎣', worker: 'Angler' },
+                farming: { title: 'Farming Estate', emoji: '🚜', worker: 'Farmhand' },
+                hunter: { title: "Trapper's Outpost", emoji: '🪤', worker: 'Trapper' },
+                archaeology: { title: 'Ancient Digsite', emoji: '🏺', worker: 'Excavator' },
+                divination: { title: "Diviner's Grove", emoji: '🔮', worker: 'Diviner' },
+            };
+            if (headerMeta[skillId]) {
+                const meta = headerMeta[skillId];
+                return `
+                    <div class="block p-0 mb-5 border border-${theme} overflow-hidden medieval-glow gradient-workforce">
+                        <div class="relative p-5 pb-4">
+                            <div class="absolute right-4 -top-3 text-4xl opacity-20 select-none">${meta.emoji}</div>
+                            <div class="flex items-center gap-3">
+                                <div class="text-2xl"><i class="fas ${icon}"></i></div>
+                                <div>
+                                    <h2 class="text-xl font-extrabold tracking-wide">${meta.title}</h2>
+                                    <p class="text-secondary text-sm">Command your ${meta.worker.toLowerCase()}s. Assign, upgrade, and prosper.</p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3 mt-4">
+                                <div class="glass-card rounded-md p-3 text-center shine">
+                                    <div class="text-[11px] text-secondary uppercase tracking-wider">Workers</div>
+                                    <div class="text-2xl font-mono text-white">${ws.total}</div>
+                                </div>
+                                <div class="glass-card rounded-md p-3 text-center">
+                                    <div class="text-[11px] text-secondary uppercase tracking-wider">Assigned</div>
+                                    <div class="text-xl font-mono text-white">${assigned}</div>
+                                </div>
+                                <div class="glass-card rounded-md p-3 text-center">
+                                    <div class="text-[11px] text-secondary uppercase tracking-wider">Free</div>
+                                    <div class="text-xl font-mono text-green-300">${free}</div>
+                                </div>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-2 mt-4">
+                                <button class="hire-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}"><span class="mr-1">👷</span> Hire ${meta.worker} — <span class="text-yellow-300 font-mono">${hireCost}g</span></button>
+                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}" data-type="speed"><span class="mr-1">⚙️</span> Speed <span class="text-secondary ml-1">(L${speedLvl||0})</span> — <span class="text-yellow-300 font-mono">${speedCost}g</span></button>
+                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}" data-type="yield"><span class="mr-1">📦</span> Yield <span class="text-secondary ml-1">(L${yieldLvl||0})</span> — <span class="text-yellow-300 font-mono">${yieldCost}g</span></button>
+                            </div>
+                            <p class="text-[11px] text-secondary mt-2">Current bonuses: <span class="text-green-300">+${((yieldLvl||0)*10).toFixed(0)}% yield</span> • <span class="text-blue-300">${Math.round(100 - (Math.pow(0.92, (speedLvl||0))*100))}% faster</span></p>
                         </div>
                     </div>
                 `;
