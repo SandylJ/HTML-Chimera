@@ -845,6 +845,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'combat': html = this.renderCombatView(); break;
                     case 'army': html = this.renderArmyView(); break;
                     case 'clicker': html = this.renderClickerView(); break;
+                    case 'workforce': html = this.renderWorkforceView(); break;
                     case 'spellbook': html = this.renderSpellbookView(); break;
                     case 'shop': html = this.renderShopView(); break;
                 }
@@ -1075,11 +1076,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
             }).join('');
+            // Workforce summary
+            this.game.ensureWorkerState();
+            const gIds = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'gathering');
+            const totals = gIds.reduce((acc, id) => { const ws = this.game.state.workers[id]; const assigned = Object.values(ws.assigned||{}).reduce((a,b)=>a+b,0); acc.total += (ws.total||0); acc.assigned += assigned; return acc; }, { total: 0, assigned: 0 });
+            const free = Math.max(0, totals.total - totals.assigned);
             return `
                 <h1 class="text-2xl font-semibold text-white mb-4">Empire Command</h1>
                 <div class="block p-4 mb-4">
                     <h2 class="text-lg font-bold">Production</h2>
                     <p class="text-secondary text-sm">Gold: <span class="text-white">+${prod.goldPerSec.toFixed(1)}/s</span> • Runes: <span class="text-white">+${(prod.runesPerSec||0).toFixed(2)}/s</span> • Essence: <span class="text-white">+${(prod.essencePerSec||0).toFixed(2)}/s</span></p>
+                </div>
+                <div class="block p-4 mb-4 medieval-glow gradient-workforce">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h2 class="text-lg font-bold">Workforce Overview</h2>
+                            <p class="text-secondary text-sm">Workers: <span class="text-white font-mono">${totals.total}</span> • Assigned: <span class="text-white font-mono">${totals.assigned}</span> • Free: <span class="text-green-300 font-mono">${free}</span></p>
+                        </div>
+                        <button id="goto-workforce" class="chimera-button juicy-button px-3 py-2 rounded-md"><i class="fas fa-people-group"></i> Manage Workforce</button>
+                    </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${cards}</div>
             `;
@@ -1119,6 +1134,100 @@ document.addEventListener('DOMContentLoaded', () => {
             return `<h1 class="text-2xl font-semibold text-white mb-4">Shop</h1><div class="grid grid-cols-1 md:grid-cols-3 gap-4">${chestCards}</div>`;
         }
 
+        renderWorkforceView() {
+            this.game.ensureWorkerState();
+            const gatheringSkillIds = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'gathering');
+            const hero = `
+                <div class="block p-5 mb-5 medieval-glow gradient-workforce">
+                    <div class="flex items-center gap-3">
+                        <div class="text-2xl">🏗️</div>
+                        <div>
+                            <h1 class="text-xl font-extrabold tracking-wide">Workforce Command</h1>
+                            <p class="text-secondary text-sm">Hire, assign, and upgrade workers across all camps.</p>
+                        </div>
+                    </div>
+                </div>`;
+
+            const cards = gatheringSkillIds.map(skillId => {
+                const skill = GAME_DATA.SKILLS[skillId];
+                const ws = this.game.state.workers[skillId];
+                const assigned = Object.values(ws.assigned || {}).reduce((a,b)=>a+b,0);
+                const free = Math.max(0, (ws.total||0) - assigned);
+                const hireCost = this.game.getHireCost(skillId);
+                const speedCost = this.game.getUpgradeCost(skillId, 'speed');
+                const yieldCost = this.game.getUpgradeCost(skillId, 'yield');
+                const speedLvl = ws.upgrades.speedLevel || 0;
+                const yieldLvl = ws.upgrades.yieldLevel || 0;
+                const icon = skill.icon;
+                const theme = skill.theme;
+                const title = skillId === 'woodcutting' ? 'Timber Lodge' : (skillId === 'mining' ? 'Mining Camp' : `${skill.name} Camp`);
+                const workerName = skillId === 'woodcutting' ? 'Timberhand' : (skillId === 'mining' ? 'Miner' : 'Worker');
+                const headerEmoji = skillId === 'woodcutting' ? '🪓' : (skillId === 'mining' ? '⛏️' : '🏕️');
+
+                return `
+                    <div class="block p-0 border border-${theme} overflow-hidden medieval-glow ${skillId==='woodcutting'?'gradient-wood':'gradient-workforce'}">
+                        <div class="relative p-5 pb-4">
+                            <div class="absolute right-4 -top-3 text-4xl opacity-20 select-none">${headerEmoji}</div>
+                            <div class="flex items-center gap-3">
+                                <div class="text-2xl"><i class="fas ${icon}"></i></div>
+                                <div>
+                                    <h2 class="text-lg font-extrabold tracking-wide">${title}</h2>
+                                    <p class="text-secondary text-sm">Manage ${workerName}${workerName.endsWith('s')?'':'s'}. Assign, upgrade, and prosper.</p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3 mt-4">
+                                <div class="glass-card rounded-md p-3 text-center shine">
+                                    <div class="text-[11px] text-secondary uppercase tracking-wider">Workers</div>
+                                    <div class="text-2xl font-mono text-white">${ws.total}</div>
+                                </div>
+                                <div class="glass-card rounded-md p-3 text-center">
+                                    <div class="text-[11px] text-secondary uppercase tracking-wider">Assigned</div>
+                                    <div class="text-xl font-mono text-white">${assigned}</div>
+                                </div>
+                                <div class="glass-card rounded-md p-3 text-center">
+                                    <div class="text-[11px] text-secondary uppercase tracking-wider">Free</div>
+                                    <div class="text-xl font-mono text-green-300">${free}</div>
+                                </div>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-2 mt-4">
+                                <button class="hire-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}"><span class="mr-1">${skillId==='woodcutting'?'🪵':'👷'}</span> Hire ${workerName} — <span class="text-yellow-300 font-mono">${hireCost}g</span></button>
+                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}" data-type="speed"><span class="mr-1">⚙️</span> Speed <span class="text-secondary ml-1">(L${speedLvl})</span> — <span class="text-yellow-300 font-mono">${speedCost}g</span></button>
+                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}" data-type="yield"><span class="mr-1">📦</span> Yield <span class="text-secondary ml-1">(L${yieldLvl})</span> — <span class="text-yellow-300 font-mono">${yieldCost}g</span></button>
+                            </div>
+                            <p class="text-[11px] text-secondary mt-2">Current bonuses: <span class="text-green-300">+${(yieldLvl*10).toFixed(0)}% yield</span> • <span class="text-blue-300">${Math.round(100 - (Math.pow(0.92, speedLvl)*100))}% faster</span></p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Optional: quick assignment overview per first action of each skill
+            const assigns = gatheringSkillIds.map(skillId => {
+                const ws = this.game.state.workers[skillId];
+                const actions = (GAME_DATA.ACTIONS[skillId] || []);
+                if (!actions.length) return '';
+                const first = actions[0];
+                const assigned = ws.assigned[first.id] || 0;
+                const total = ws.total || 0; const sumAssigned = Object.values(ws.assigned).reduce((a,b)=>a+b,0); const free = Math.max(0, total - sumAssigned);
+                const names = { woodcutting:'Timberhands', mining:'Miners', fishing:'Anglers', farming:'Farmhands', hunter:'Trappers', archaeology:'Excavators', divination:'Diviners' };
+                const label = names[skillId] || 'Workers';
+                const speedMult = this.game.getWorkerSpeedMultiplier(skillId, first);
+                const yieldMult = this.game.getWorkerYieldMultiplier(skillId, first);
+                return `
+                    <div class="p-2 rounded-md bg-black/20 border border-border-color">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-secondary">${label} on ${first.name}: <span class="text-white font-mono">${assigned}</span> • Free: <span class="text-white font-mono">${free}</span></span>
+                            <div class="space-x-1">
+                                <button class="assign-worker-btn chimera-button juicy-button px-2 py-1 rounded" data-skill-id="${skillId}" data-action-id="${first.id}" data-dir="-1">-</button>
+                                <button class="assign-worker-btn chimera-button juicy-button px-2 py-1 rounded" data-skill-id="${skillId}" data-action-id="${first.id}" data-dir="+1">+</button>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-secondary mt-1">Eff: x${yieldMult.toFixed(2)} yield, ${Math.round(100 - speedMult*100)}% faster</p>
+                    </div>`;
+            }).join('');
+
+            return `${hero}<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-4">${cards}</div><div class="mt-6">${assigns}</div>`;
+        }
+
         attachViewEventListeners() {
             const addTaskBtn = document.getElementById('add-task-btn'); if (addTaskBtn) { addTaskBtn.addEventListener('click', () => { const category = document.getElementById('task-category-select').value; const difficulty = document.getElementById('task-difficulty-select').value; this.game.completeRealLifeTask(category, difficulty); const n = document.getElementById('task-name-input'); if (n) n.value = ''; }); }
             const ge = document.getElementById('goto-empire'); if (ge) ge.addEventListener('click', () => { this.currentView = 'clicker'; this.render(); });
@@ -1126,6 +1235,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const gr = document.getElementById('goto-runecrafting'); if (gr) gr.addEventListener('click', () => { this.currentView = 'runecrafting'; this.render(); });
             const gc = document.getElementById('goto-combat'); if (gc) gc.addEventListener('click', () => { this.currentView = 'combat'; this.render(); });
             const gs = document.getElementById('goto-shop'); if (gs) gs.addEventListener('click', () => { this.currentView = 'shop'; this.render(); });
+            const gwf = document.getElementById('goto-workforce'); if (gwf) gwf.addEventListener('click', () => { this.currentView = 'workforce'; this.render(); });
             document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => { const sel = this.mainContent.querySelector(`.action-duration-select[data-skill-id="${btn.dataset.skillId}"][data-action-id="${btn.dataset.actionId}"]`); const duration = sel ? parseInt(sel.value, 10) : 15; if (isNaN(duration) || duration <= 0) return; this.game.startAction(btn.dataset.skillId, btn.dataset.actionId, duration); }); });
             document.querySelectorAll('.craft-action-btn, .light-action-btn').forEach(btn => { btn.addEventListener('click', () => {
                 const s = btn.dataset.skillId; const a = btn.dataset.actionId;
@@ -1151,7 +1261,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.equip-weapon-btn').forEach(btn => { btn.addEventListener('click', () => this.game.equipWeapon(btn.dataset.itemId)); });
 
             // Empire hiring events
-            document.querySelectorAll('.hire-unit-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireEmpireUnit(btn.dataset.unitId)); });
+            document.querySelectorAll('.hire-unit-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.hireEmpireUnit(btn.dataset.unitId); this.pulseAt(btn); this.game.uiManager.playSound('hire'); }); });
 
             // Spells
             document.querySelectorAll('.cast-spell-btn').forEach(btn => { btn.addEventListener('click', () => this.game.castSpell(btn.dataset.spellId)); });
@@ -1161,26 +1271,11 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.hire-army-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireArmyUnit(btn.dataset.unitId)); });
 
             // Workers - generic
-            document.querySelectorAll('.hire-worker-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireWorker(btn.dataset.skillId)); });
-            document.querySelectorAll('.upgrade-worker-btn').forEach(btn => { btn.addEventListener('click', () => this.game.upgradeWorkers(btn.dataset.skillId, btn.dataset.type)); });
-
-            // Workers - Woodcutting (legacy ids supported if present)
-            const hire = document.getElementById('hire-wood-worker'); if (hire) hire.addEventListener('click', () => this.game.hireWorker('woodcutting'));
-            const upS = document.getElementById('upgrade-wood-speed'); if (upS) upS.addEventListener('click', () => this.game.upgradeWorkers('woodcutting', 'speed'));
-            const upY = document.getElementById('upgrade-wood-yield'); if (upY) upY.addEventListener('click', () => this.game.upgradeWorkers('woodcutting', 'yield'));
-            document.querySelectorAll('.assign-worker-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const id = btn.dataset.actionId; const dir = btn.dataset.dir;
-                    const skill = btn.dataset.skillId;
-                    const ws = this.game.state.workers[skill];
-                    const sumAssigned = Object.values(ws.assigned).reduce((a,b)=>a+b,0);
-                    if (dir === '+1') {
-                        if (sumAssigned < ws.total) { ws.assigned[id] = (ws.assigned[id] || 0) + 1; this.renderView(); }
-                    } else {
-                        if ((ws.assigned[id] || 0) > 0) { ws.assigned[id] -= 1; this.renderView(); }
-                    }
-                });
-            });
+            document.querySelectorAll('.hire-worker-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.hireWorker(btn.dataset.skillId); this.pulseAt(btn); this.game.uiManager.playSound('hire'); }); });
+            document.querySelectorAll('.upgrade-worker-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.upgradeWorkers(btn.dataset.skillId, btn.dataset.type); this.pulseAt(btn); this.game.uiManager.playSound('upgrade'); }); });
+            document.querySelectorAll('.assign-worker-btn').forEach(btn => { btn.addEventListener('click', () => {
+                const id = btn.dataset.actionId; const dir = btn.dataset.dir; const skill = btn.dataset.skillId; const ws = this.game.state.workers[skill]; const sumAssigned = Object.values(ws.assigned).reduce((a,b)=>a+b,0); if (dir === '+1') { if (sumAssigned < ws.total) ws.assigned[id] = (ws.assigned[id]||0)+1; } else { ws.assigned[id] = Math.max(0,(ws.assigned[id]||0)-1); } this.render();
+            }); });
 
             // Farming estate
             const hireFarm = document.getElementById('hire-farmhand'); if (hireFarm) hireFarm.addEventListener('click', () => this.game.hireWorker('farming'));
