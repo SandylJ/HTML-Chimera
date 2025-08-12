@@ -612,6 +612,32 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        activateAllWorkers() {
+            this.ensureWorkerState();
+            const gatheringSkillIds = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'gathering');
+            let newlyAssigned = 0;
+            for (const skillId of gatheringSkillIds) {
+                const ws = this.state.workers[skillId];
+                const actions = (GAME_DATA.ACTIONS[skillId] || []).filter(a => a && a.id);
+                if (!ws || !actions.length) continue;
+                const sumAssigned = Object.values(ws.assigned || {}).reduce((a, b) => a + (b || 0), 0);
+                const free = Math.max(0, (ws.total || 0) - sumAssigned);
+                for (let i = 0; i < free; i++) {
+                    const pick = actions[Math.floor(Math.random() * actions.length)];
+                    ws.assigned[pick.id] = (ws.assigned[pick.id] || 0) + 1;
+                    if (typeof ws.progress[pick.id] !== 'number') ws.progress[pick.id] = 0;
+                    newlyAssigned++;
+                }
+            }
+            if (newlyAssigned > 0) {
+                this.uiManager.playSound('upgrade');
+                this.uiManager.showFloatingText(`All systems go! +${newlyAssigned} deployed`, 'text-yellow-300');
+                this.uiManager.renderView();
+            } else {
+                this.uiManager.showFloatingText('All workers already deployed', 'text-secondary');
+            }
+        }
+
         // Rune helpers
         getRuneItemIds() { return Object.keys(GAME_DATA.ITEMS).filter(id => id.endsWith('_rune')); }
         getTotalRuneItemCount() { return this.getRuneItemIds().reduce((sum, id) => sum + (this.state.bank[id] || 0), 0); }
@@ -1196,12 +1222,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const gatheringSkillIds = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'gathering');
             const hero = `
                 <div class="block p-5 mb-5 medieval-glow gradient-workforce">
-                    <div class="flex items-center gap-3">
-                        <div class="text-2xl">🏗️</div>
-                        <div>
-                            <h1 class="text-xl font-extrabold tracking-wide">Workforce Command</h1>
-                            <p class="text-secondary text-sm">Hire, assign, and upgrade workers across all camps.</p>
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="text-2xl">🏗️</div>
+                            <div>
+                                <h1 class="text-xl font-extrabold tracking-wide">Workforce Command</h1>
+                                <p class="text-secondary text-sm">Hire, upgrade, and deploy your labor across all camps.</p>
+                            </div>
                         </div>
+                        <button id="all-systems-go" class="chimera-button juicy-button imperial-button px-4 py-3 rounded-md font-extrabold tracking-wide">
+                            <span class="mr-2">🛡️⚔️</span> ALL SYSTEMS GO
+                        </button>
                     </div>
                 </div>`;
 
@@ -1267,32 +1298,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             }).join('');
 
-            // Optional: quick assignment overview per first action of each skill
-            const assigns = gatheringSkillIds.map(skillId => {
-                const ws = this.game.state.workers[skillId];
-                const actions = (GAME_DATA.ACTIONS[skillId] || []);
-                if (!actions.length) return '';
-                const first = actions[0];
-                const assigned = ws.assigned[first.id] || 0;
-                const total = ws.total || 0; const sumAssigned = Object.values(ws.assigned).reduce((a,b)=>a+b,0); const free = Math.max(0, total - sumAssigned);
-                const names = { woodcutting:'Timberhands', mining:'Miners', fishing:'Anglers', farming:'Farmhands', hunter:'Trappers', archaeology:'Excavators', divination:'Diviners' };
-                const label = names[skillId] || 'Workers';
-                const speedMult = this.game.getWorkerSpeedMultiplier(skillId, first);
-                const yieldMult = this.game.getWorkerYieldMultiplier(skillId, first);
-                return `
-                    <div class="p-2 rounded-md bg-black/20 border border-border-color">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs text-secondary">${label} on ${first.name}: <span class="text-white font-mono">${assigned}</span> • Free: <span class="text-white font-mono">${free}</span></span>
-                            <div class="space-x-1">
-                                <button class="assign-worker-btn chimera-button juicy-button px-2 py-1 rounded" data-skill-id="${skillId}" data-action-id="${first.id}" data-dir="-1">-</button>
-                                <button class="assign-worker-btn chimera-button juicy-button px-2 py-1 rounded" data-skill-id="${skillId}" data-action-id="${first.id}" data-dir="+1">+</button>
-                            </div>
-                        </div>
-                        <p class="text-[11px] text-secondary mt-1">Eff: x${yieldMult.toFixed(2)} yield, ${Math.round(100 - speedMult*100)}% faster</p>
-                    </div>`;
-            }).join('');
-
-            return `${hero}<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-4">${cards}</div><div class="mt-6">${assigns}</div>`;
+            // Emperor decree: assignments happen automatically via All Systems Go
+            return `${hero}<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-4">${cards}</div>`;
         }
 
         attachViewEventListeners() {
@@ -1303,6 +1310,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const gc = document.getElementById('goto-combat'); if (gc) gc.addEventListener('click', () => { this.currentView = 'combat'; this.render(); });
             const gs = document.getElementById('goto-shop'); if (gs) gs.addEventListener('click', () => { this.currentView = 'shop'; this.render(); });
             const gwf = document.getElementById('goto-workforce'); if (gwf) gwf.addEventListener('click', () => { this.currentView = 'workforce'; this.render(); });
+            const asg = document.getElementById('all-systems-go'); if (asg) asg.addEventListener('click', (e) => { const rect = e.currentTarget.getBoundingClientRect(); this.juiceBurst('upgrade', rect.left + rect.width/2, rect.top + rect.height/2); this.pulseAt(e.currentTarget); this.game.activateAllWorkers(); });
             document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => { const sel = this.mainContent.querySelector(`.action-duration-select[data-skill-id="${btn.dataset.skillId}"][data-action-id="${btn.dataset.actionId}"]`); const duration = sel ? parseInt(sel.value, 10) : 15; if (isNaN(duration) || duration <= 0) return; this.game.startAction(btn.dataset.skillId, btn.dataset.actionId, duration); }); });
             document.querySelectorAll('.craft-action-btn, .light-action-btn').forEach(btn => { btn.addEventListener('click', () => {
                 const s = btn.dataset.skillId; const a = btn.dataset.actionId;
