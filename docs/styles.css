@@ -175,3 +175,7 @@ body {
 
 .confetti-piece { position:absolute; width:8px; height:12px; opacity:0; transform: translate3d(0,0,0) rotate(0deg); border-radius:2px; will-change: transform, opacity; }
 .coin-piece { position:absolute; font-size:16px; opacity:0; will-change: transform, opacity; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5)); }
+
+.bg-secondary { background-color: var(--bg-secondary); }
+.text-secondary { color: var(--text-secondary); }
+.border-border-color { border-color: var(--border-color); }

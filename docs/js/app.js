@@ -703,23 +703,49 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     const parsedData = JSON.parse(savedData);
                     Object.assign(this.state, parsedData);
+                    // Ensure essential roots exist before rehydration to avoid crashes from old saves
+                    if (!this.state.player) this.state.player = { gold: 0, runes: 0, stamina: 100, staminaMax: 100, hp: 100, hpMax: 100, weapon: null, skills: {}, meta_skills: {}, mastery: {}, activeBuffs: {} };
+                    if (!this.state.player.skills) this.state.player.skills = {};
+                    if (!this.state.player.meta_skills) this.state.player.meta_skills = {};
+                    if (!this.state.player.mastery) this.state.player.mastery = {};
+                    if (!this.state.player.activeBuffs) this.state.player.activeBuffs = {};
+                    if (!this.state.bank) this.state.bank = {};
+
                     // Rehydrate skill objects
-                    Object.keys(GAME_DATA.SKILLS).forEach(id => { const skill = new Skill(id, GAME_DATA.SKILLS[id].name); if (parsedData.player.skills?.[id]) Object.assign(skill, parsedData.player.skills[id]); this.state.player.skills[id] = skill; });
-                    Object.values(META_SKILLS).forEach(name => { const skill = new Skill(name, name); if (parsedData.player.meta_skills?.[name]) Object.assign(skill, parsedData.player.meta_skills[name]); this.state.player.meta_skills[name] = skill; });
-                    // Rehydrate mastery
-                    Object.keys(parsedData.player.mastery || {}).forEach(skillId => {
-                        if (!this.state.player.mastery[skillId]) this.state.player.mastery[skillId] = {};
-                        Object.keys(parsedData.player.mastery[skillId]).forEach(actionId => { const mastery = new Mastery(); Object.assign(mastery, parsedData.player.mastery[skillId][actionId]); this.state.player.mastery[skillId][actionId] = mastery; });
+                    Object.keys(GAME_DATA.SKILLS).forEach(id => {
+                        const skill = new Skill(id, GAME_DATA.SKILLS[id].name);
+                        if (parsedData.player && parsedData.player.skills && parsedData.player.skills[id]) {
+                            Object.assign(skill, parsedData.player.skills[id]);
+                        }
+                        this.state.player.skills[id] = skill;
                     });
+                    Object.values(META_SKILLS).forEach(name => {
+                        const skill = new Skill(name, name);
+                        if (parsedData.player && parsedData.player.meta_skills && parsedData.player.meta_skills[name]) {
+                            Object.assign(skill, parsedData.player.meta_skills[name]);
+                        }
+                        this.state.player.meta_skills[name] = skill;
+                    });
+                    // Rehydrate mastery (guard old saves without player/mastery)
+                    if (parsedData.player && parsedData.player.mastery) {
+                        Object.keys(parsedData.player.mastery).forEach(skillId => {
+                            if (!this.state.player.mastery[skillId]) this.state.player.mastery[skillId] = {};
+                            Object.keys(parsedData.player.mastery[skillId] || {}).forEach(actionId => {
+                                const mastery = new Mastery();
+                                Object.assign(mastery, parsedData.player.mastery[skillId][actionId]);
+                                this.state.player.mastery[skillId][actionId] = mastery;
+                            });
+                        });
+                    }
                     this.state.lastUpdate = Date.now();
                     // Backfill worker system defaults if missing
-                    if (!this.state.workers) {
-                        this.state.workers = {};
-                    }
+                    if (!this.state.workers) { this.state.workers = {}; }
                     Object.keys(GAME_DATA.SKILLS)
                         .filter(id => GAME_DATA.SKILLS[id].type === 'gathering')
                         .forEach(skillId => {
-                            if (!this.state.workers[skillId]) { this.state.workers[skillId] = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} }; }
+                            if (!this.state.workers[skillId]) {
+                                this.state.workers[skillId] = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} };
+                            }
                             (GAME_DATA.ACTIONS[skillId] || []).forEach(a => {
                                 if (typeof this.state.workers[skillId].assigned[a.id] !== 'number') this.state.workers[skillId].assigned[a.id] = 0;
                                 if (typeof this.state.workers[skillId].progress[a.id] !== 'number') this.state.workers[skillId].progress[a.id] = 0;
@@ -733,6 +759,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!this.state.army) { this.state.army = { units: {}, lastTick: Date.now(), production: { dps: 0, hps: 0, hungry: false }, upkeep: { foodBuffer: 0, hungry: false }, fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() } }; }
                     if (!this.state.army.units) this.state.army.units = {};
                     Object.keys(GAME_DATA.ARMY_CLASSES).forEach(id => { if (typeof this.state.army.units[id] !== 'number') this.state.army.units[id] = 0; });
+
+                    // Validate any persisted active action against current dataset; clear if invalid
+                    if (this.state.activeAction) {
+                        const aa = this.state.activeAction;
+                        const sid = aa.skillId;
+                        const id = aa.id;
+                        const exists = (
+                            (GAME_DATA.ACTIONS[sid] && GAME_DATA.ACTIONS[sid].some(a => a.id === id)) ||
+                            (GAME_DATA.RECIPES[sid] && GAME_DATA.RECIPES[sid].some(r => r.id === id))
+                        );
+                        if (!exists) {
+                            this.state.activeAction = null;
+                        } else {
+                            // Ensure runtime fields exist
+                            if (typeof aa.progress !== 'number') aa.progress = 0;
+                            if (!aa.startTime) aa.startTime = Date.now();
+                            if (typeof aa.endTime === 'undefined') aa.endTime = null;
+                        }
+                    }
                  } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
              }
          }
@@ -1322,6 +1367,55 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="woodcutting" data-type="yield"><span class="mr-1">🛷</span> Lumber Sleds <span class="text-secondary ml-1">(L${yieldLvl})</span> — <span class="text-yellow-300 font-mono">${yieldCost}g</span></button>
                             </div>
                             <p class="text-[11px] text-secondary mt-2">Current bonuses: <span class="text-green-300">+${(yieldLvl*10).toFixed(0)}% yield</span> • <span class="text-blue-300">${Math.round(100 - (Math.pow(0.92, speedLvl)*100))}% faster</span></p>
+                        </div>
+                    </div>
+                `;
+            }
+            if (skillId === 'mining') {
+                const depthLvl = ws.upgrades.depthLevel || 0; const cartLvl = ws.upgrades.cartLevel || 0;
+                const depthCost = this.game.getUpgradeCost('mining', 'depth'); const cartCost = this.game.getUpgradeCost('mining', 'cart');
+                return `
+                    <div class="block p-4 mb-4 border border-mining">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div>
+                                <h2 class="text-lg font-bold">Mine Overseer</h2>
+                                <p class="text-secondary text-sm">Assign Miners to rock veins. Upgrade depth, carts and tools for efficiency.</p>
+                                <p class="text-white text-sm mt-1">Miners: <span class="font-bold">${ws.total}</span></p>
+                                <p class="text-secondary text-xs">Depth L${depthLvl} • Carts L${cartLvl}</p>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <button class="hire-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="mining">Hire Miner — Cost: ${hireCost} gold</button>
+                                <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="mining" data-type="speed">Sharper Picks (Speed L${speedLvl}) — Cost: ${speedCost} gold</button>
+                                <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="mining" data-type="yield">Ore Sacks (Yield L${yieldLvl}) — Cost: ${yieldCost} gold</button>
+                                <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="mining" data-type="depth">Deeper Shafts (L${depthLvl}) — Cost: ${depthCost} gold</button>
+                                <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="mining" data-type="cart">Mine Carts (L${cartLvl}) — Cost: ${cartCost} gold</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            if (skillId === 'farming') {
+                const irrLvl = ws.upgrades.irrigationLevel || 0; const toolsLvl = ws.upgrades.toolsLevel || 0; const compLvl = ws.upgrades.compostLevel || 0; const tractLvl = ws.upgrades.tractorLevel || 0;
+                const irrCost = this.game.getUpgradeCost('farming', 'irrigation');
+                const toolsCost = this.game.getUpgradeCost('farming', 'tools');
+                const compCost = this.game.getUpgradeCost('farming', 'compost');
+                const tractCost = this.game.getUpgradeCost('farming', 'tractor');
+                return `
+                    <div class="block p-4 mb-4 border border-farming">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div>
+                                <h2 class="text-lg font-bold">Farming Estate</h2>
+                                <p class="text-secondary text-sm">Hire Farmhands. Irrigation and tractors speed growth; tools and compost increase yields.</p>
+                                <p class="text-white text-sm mt-1">Farmhands: <span class="font-bold">${ws.total}</span></p>
+                                <p class="text-secondary text-xs">Irrigation L${irrLvl} • Tools L${toolsLvl} • Compost L${compLvl} • Tractor L${tractLvl}</p>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <button class="hire-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="farming">Hire Farmhand — Cost: ${hireCost} gold</button>
+                                <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="farming" data-type="irrigation">Irrigation (L${irrLvl}) — Cost: ${irrCost} gold</button>
+                                <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="farming" data-type="tools">Steel Tools (L${toolsLvl}) — Cost: ${toolsCost} gold</button>
+                                <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="farming" data-type="compost">Compost Bins (L${compLvl}) — Cost: ${compCost} gold</button>
+                                <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="farming" data-type="tractor">Tractor (L${tractLvl}) — Cost: ${tractCost} gold</button>
+                            </div>
                         </div>
                     </div>
                 `;
