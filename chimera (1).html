@@ -63,6 +63,8 @@
         .tooltip .tooltiptext { visibility: hidden; width: 220px; background-color: #010409; color: #fff; text-align: left; border-radius: 6px; padding: 8px; position: absolute; z-index: 50; bottom: 125%; left: 50%; margin-left: -110px; opacity: 0; transition: opacity 0.3s; border: 1px solid var(--border-color); font-size: 0.8rem; }
         .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
         .border-woodcutting { border-color: #654321; } .bg-woodcutting { background-color: #654321; }
+        .badge { display:inline-flex; align-items:center; gap:6px; background-color:#1f2937; border:1px solid var(--border-color); border-radius:9999px; padding:2px 8px; font-size:11px; }
+        .badge i { opacity:0.9; }
         .border-mining { border-color: #808080; } .bg-mining { background-color: #808080; }
         .border-fishing { border-color: #00bfff; } .bg-fishing { background-color: #00bfff; }
         .border-firemaking { border-color: #ff4500; } .bg-firemaking { background-color: #ff4500; }
@@ -280,11 +282,19 @@
                 // Clicker state
                 this.clicker = { goldPerClick: 1, autoClickers: 0, autoRateMs: 1000, lastAutoTick: Date.now(), upgrades: { clickPowerLevel: 0, autoClickerLevel: 0, multiplierLevel: 0 } };
 
-                Object.keys(GAME_DATA.SKILLS).forEach(id => {
-                    this.player.skills[id] = new Skill(id, GAME_DATA.SKILLS[id].name);
-                    this.player.mastery[id] = {};
-                });
+                Object.keys(GAME_DATA.SKILLS).forEach(id => { this.player.skills[id] = new Skill(id, GAME_DATA.SKILLS[id].name); this.player.mastery[id] = {}; });
                 Object.values(META_SKILLS).forEach(name => { this.player.meta_skills[name] = new Skill(name, name); });
+                
+                // Worker systems (Timber Camp for Woodcutting)
+                this.workers = {
+                    woodcutting: {
+                        total: 0,
+                        upgrades: { speedLevel: 0, yieldLevel: 0 },
+                        assigned: {},
+                        progress: {}
+                    }
+                };
+                (GAME_DATA.ACTIONS.woodcutting || []).forEach(a => { this.workers.woodcutting.assigned[a.id] = 0; this.workers.woodcutting.progress[a.id] = 0; });
             }
         }
 
@@ -313,6 +323,9 @@
                     if (action.progress >= actionTime) { const loops = Math.floor(action.progress / actionTime); this.gainActionRewards(action, loops); action.progress %= actionTime; }
                     if (now >= action.endTime) { this.stopAction(); }
                 }
+
+                // Worker processing (e.g., Timber Lodge for Woodcutting)
+                this.processWorkers(delta);
 
                 // Combat loop
                 if (this.state.combat.inCombat && this.state.combat.enemy) {
@@ -347,6 +360,50 @@
                 const mastery = this.getMastery(action.skillId, action.id); const masteryBonus = 1 - (mastery.level * 0.002); time *= masteryBonus;
                 return time;
             }
+            
+            // Worker helpers
+            getWorkerSpeedMultiplier(skillId, action) {
+                if (skillId !== 'woodcutting') return 1;
+                const speedLevel = this.state.workers.woodcutting.upgrades.speedLevel || 0;
+                // 8% faster per level multiplicative
+                return Math.pow(0.92, speedLevel);
+            }
+            getWorkerYieldMultiplier(skillId, action) {
+                if (skillId !== 'woodcutting') return 1;
+                const yieldLevel = this.state.workers.woodcutting.upgrades.yieldLevel || 0;
+                // 10% more per level
+                return 1 + (0.10 * yieldLevel);
+            }
+            
+            processWorkers(deltaMs) {
+                const wc = this.state.workers?.woodcutting; if (!wc) return;
+                const actions = GAME_DATA.ACTIONS.woodcutting || [];
+                for (const action of actions) {
+                    const assigned = wc.assigned[action.id] || 0; if (assigned <= 0) continue;
+                    const perCycleTime = this.calculateActionTime({ ...action, skillId: 'woodcutting' }) * this.getWorkerSpeedMultiplier('woodcutting', action);
+                    wc.progress[action.id] += deltaMs * assigned;
+                    const cycles = Math.floor(wc.progress[action.id] / perCycleTime);
+                    if (cycles > 0) {
+                        wc.progress[action.id] %= perCycleTime;
+                        const totalQty = (action.output?.quantity || 0) * cycles * this.getWorkerYieldMultiplier('woodcutting', action);
+                        if (action.output?.itemId && totalQty > 0) {
+                            this.addToBank(action.output.itemId, Math.floor(totalQty));
+                            // Worker XP to player skill, reduced rate (50%)
+                            const xpGain = (action.xp || 0) * cycles * 0.5;
+                            this.state.player.skills['woodcutting'].addXP(xpGain, this);
+                        }
+                        // Rare drops (each cycle independently, reduced chance)
+                        if (action.rareDrop) {
+                            for (let i = 0; i < cycles; i++) {
+                                if (Math.random() * 100 < (action.rareDrop.chance * 0.6)) {
+                                    this.addToBank(action.rareDrop.itemId, 1);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             getMastery(skillId, actionId) { if (!this.state.player.mastery[skillId][actionId]) { this.state.player.mastery[skillId][actionId] = new Mastery(); } return this.state.player.mastery[skillId][actionId]; }
 
             gainActionRewards(action, loops) {
@@ -407,6 +464,37 @@
             // Economy helpers
             addGold(amount) { const final = Math.floor(amount * this.goldMultiplier()); this.state.player.gold += final; }
             spendGold(amount) { if (this.state.player.gold < amount) return false; this.state.player.gold -= amount; return true; }
+
+            // Worker economy
+            getHireCost(skillId) {
+                if (skillId !== 'woodcutting') return Infinity;
+                const base = 150;
+                const owned = this.state.workers.woodcutting.total || 0;
+                return Math.floor(base * Math.pow(1.35, owned));
+            }
+            getUpgradeCost(skillId, type) {
+                if (skillId !== 'woodcutting') return Infinity;
+                const base = type === 'speed' ? 250 : 300;
+                const level = type === 'speed' ? (this.state.workers.woodcutting.upgrades.speedLevel || 0) : (this.state.workers.woodcutting.upgrades.yieldLevel || 0);
+                return Math.floor(base * Math.pow(1.55, level));
+            }
+            hireWorker(skillId) {
+                if (skillId !== 'woodcutting') return;
+                const cost = this.getHireCost(skillId);
+                if (!this.spendGold(cost)) { this.uiManager.showModal('Not Enough Gold', `<p>You need ${cost} gold to hire a worker.</p>`); return; }
+                this.state.workers.woodcutting.total += 1;
+                this.uiManager.showFloatingText('+1 Timberhand Hired', 'text-green-400');
+                this.uiManager.renderView();
+            }
+            upgradeWorkers(skillId, type) {
+                if (skillId !== 'woodcutting') return;
+                const cost = this.getUpgradeCost(skillId, type);
+                if (!this.spendGold(cost)) { this.uiManager.showModal('Not Enough Gold', `<p>You need ${cost} gold to upgrade.</p>`); return; }
+                if (type === 'speed') this.state.workers.woodcutting.upgrades.speedLevel += 1;
+                if (type === 'yield') this.state.workers.woodcutting.upgrades.yieldLevel += 1;
+                this.uiManager.showFloatingText('Timber Lodge Upgraded!', 'text-yellow-300');
+                this.uiManager.renderView();
+            }
 
             addToBank(itemId, quantity) { this.state.bank[itemId] = (this.state.bank[itemId] || 0) + quantity; }
             removeFromBank(itemId, quantity) { this.state.bank[itemId] -= quantity; if (this.state.bank[itemId] <= 0) { delete this.state.bank[itemId]; } }
@@ -514,9 +602,16 @@
                             Object.keys(parsedData.player.mastery[skillId]).forEach(actionId => { const mastery = new Mastery(); Object.assign(mastery, parsedData.player.mastery[skillId][actionId]); this.state.player.mastery[skillId][actionId] = mastery; });
                         });
                         this.state.lastUpdate = Date.now();
-                    } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
-                }
-            }
+                        // Backfill worker system defaults if missing
+                        if (!this.state.workers) { this.state.workers = { woodcutting: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} } }; }
+                        if (!this.state.workers.woodcutting) { this.state.workers.woodcutting = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} }; }
+                        (GAME_DATA.ACTIONS.woodcutting || []).forEach(a => {
+                            if (typeof this.state.workers.woodcutting.assigned[a.id] !== 'number') this.state.workers.woodcutting.assigned[a.id] = 0;
+                            if (typeof this.state.workers.woodcutting.progress[a.id] !== 'number') this.state.workers.woodcutting.progress[a.id] = 0;
+                        });
+                     } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
+                 }
+             }
         }
 
         class UIManager {
@@ -619,7 +714,8 @@
                     actionType = 'Craft'; if (skillId === 'firemaking') { contentHtml = this.renderFiremakingView(); }
                     else { contentHtml = GAME_DATA.RECIPES[skillId].map(recipe => this.renderActionCard(skillId, recipe, actionType)).join(''); }
                 }
-                return `<h1 class="text-2xl font-semibold text-white mb-4">${skillData.name} <span class="text-base text-secondary">(Level ${playerSkill.level})</span></h1><div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">${contentHtml}</div>`;
+                const workerPanel = skillId === 'woodcutting' ? this.renderWorkerPanel() : '';
+                return `<h1 class="text-2xl font-semibold text-white mb-4">${skillData.name} <span class="text-base text-secondary">(Level ${playerSkill.level})</span></h1>${workerPanel}<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">${contentHtml}</div>`;
             }
 
             renderActionCard(skillId, action, actionType) {
@@ -629,6 +725,7 @@
                 let yieldMult = 1;
                 if (skillId === 'runecrafting') { yieldMult = Math.max(1, 1 + Math.floor((playerSkill.level - action.level) / 11)); }
                 const inputList = action.input ? action.input.map(inp => { const has = (this.game.state.bank[inp.itemId] || 0) >= inp.quantity; return `<span class="${has ? 'text-green-400' : 'text-red-400'}">${inp.quantity}x ${GAME_DATA.ITEMS[inp.itemId].name}</span>`; }).join(', ') : '';
+                const workerAssign = skillId === 'woodcutting' ? this.renderWorkerAssign(action) : '';
                 return `
                     <div class="block p-4 flex flex-col justify-between ${!hasLevel ? 'opacity-50' : ''}">
                         <div>
@@ -638,10 +735,13 @@
                             ${action.input ? `<p class="text-secondary text-xs mt-1">Requires: ${inputList}</p>`: ''}
                             ${skillId === 'runecrafting' ? `<p class="text-blue-300 text-xs mt-1">Yield at Lvl ${playerSkill.level}: x${yieldMult} per essence</p>` : ''}
                             <div class="mt-2">
-                                <p class="text-xs text-yellow-400">Mastery Lvl ${mastery.level}</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="badge"><i class="fa-solid fa-hat-wizard"></i> Mastery Lvl ${mastery.level}</span>
+                                </div>
                                 <div class="w-full xp-bar-bg rounded-full h-2 my-1"><div class="mastery-bar-fill h-2 rounded-full" style="width:${(mastery.currentXP / mastery.xpToNextLevel) * 100}%"></div></div>
                                 <p class="text-xs text-secondary text-right">${Math.floor(mastery.currentXP)} / ${mastery.xpToNextLevel} XP</p>
                             </div>
+                            ${workerAssign}
                         </div>
                         <button class="${actionType.toLowerCase()}-action-btn chimera-button px-4 py-2 rounded-md mt-4" data-skill-id="${skillId}" data-action-id="${action.id}" ${!hasLevel || !canAfford || this.game.state.activeAction ? 'disabled' : ''}>${actionType}</button>
                     </div>
@@ -800,6 +900,23 @@
                 document.querySelectorAll('.cast-spell-btn').forEach(btn => { btn.addEventListener('click', () => this.game.castSpell(btn.dataset.spellId)); });
                 // Shop
                 document.querySelectorAll('.buy-chest-btn').forEach(btn => { btn.addEventListener('click', () => this.game.buyChest(btn.dataset.chestId)); });
+
+                // Workers - Woodcutting
+                const hire = document.getElementById('hire-wood-worker'); if (hire) hire.addEventListener('click', () => this.game.hireWorker('woodcutting'));
+                const upS = document.getElementById('upgrade-wood-speed'); if (upS) upS.addEventListener('click', () => this.game.upgradeWorkers('woodcutting', 'speed'));
+                const upY = document.getElementById('upgrade-wood-yield'); if (upY) upY.addEventListener('click', () => this.game.upgradeWorkers('woodcutting', 'yield'));
+                document.querySelectorAll('.assign-worker-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.dataset.actionId; const dir = btn.dataset.dir;
+                        const wc = this.game.state.workers.woodcutting;
+                        const sumAssigned = Object.values(wc.assigned).reduce((a,b)=>a+b,0);
+                        if (dir === '+1') {
+                            if (sumAssigned < wc.total) { wc.assigned[id] = (wc.assigned[id] || 0) + 1; this.renderView(); }
+                        } else {
+                            if ((wc.assigned[id] || 0) > 0) { wc.assigned[id] -= 1; this.renderView(); }
+                        }
+                    });
+                });
             }
 
             showModal(title, content) {
@@ -840,6 +957,51 @@
                 this.floatingTextContainer.appendChild(floatText);
                 const duration = typeClass === 'fly-crit' || typeClass === 'fly-level' ? 1900 : (typeClass === 'fly-loot' ? 1800 : 1600);
                 setTimeout(() => floatText.remove(), duration);
+            }
+
+            renderWorkerPanel() {
+                const wc = this.game.state.workers.woodcutting;
+                const hireCost = this.game.getHireCost('woodcutting');
+                const speedCost = this.game.getUpgradeCost('woodcutting', 'speed');
+                const yieldCost = this.game.getUpgradeCost('woodcutting', 'yield');
+                const speedLvl = wc.upgrades.speedLevel;
+                const yieldLvl = wc.upgrades.yieldLevel;
+                return `
+                    <div class="block p-4 mb-4 border border-woodcutting">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div>
+                                <h2 class="text-lg font-bold">Timber Lodge</h2>
+                                <p class="text-secondary text-sm">Timberhands harvest trees in the background. Assign them to specific tree types.</p>
+                                <p class="text-white text-sm mt-1">Workers: <span class="font-bold">${wc.total}</span></p>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <button id="hire-wood-worker" class="chimera-button px-3 py-2 rounded-md">Hire Timberhand — Cost: ${hireCost} gold</button>
+                                <button id="upgrade-wood-speed" class="chimera-button px-3 py-2 rounded-md">Upgrade Axes (Speed L${speedLvl}) — Cost: ${speedCost} gold</button>
+                                <button id="upgrade-wood-yield" class="chimera-button px-3 py-2 rounded-md">Lumber Sleds (Yield L${yieldLvl}) — Cost: ${yieldCost} gold</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderWorkerAssign(action) {
+                const wc = this.game.state.workers.woodcutting; const assigned = wc.assigned[action.id] || 0;
+                const total = wc.total; const sumAssigned = Object.values(wc.assigned).reduce((a,b)=>a+b,0);
+                const free = Math.max(0, total - sumAssigned);
+                const speedMult = this.game.getWorkerSpeedMultiplier('woodcutting', action);
+                const yieldMult = this.game.getWorkerYieldMultiplier('woodcutting', action);
+                return `
+                    <div class="mt-3 p-2 rounded-md bg-black/30 border border-border-color">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-secondary">Timberhands Assigned: <span class="text-white font-mono">${assigned}</span> / Free: <span class="text-white font-mono">${free}</span></span>
+                            <div class="space-x-1">
+                                <button class="assign-worker-btn chimera-button px-2 py-1 rounded" data-action-id="${action.id}" data-dir="-1">-</button>
+                                <button class="assign-worker-btn chimera-button px-2 py-1 rounded" data-action-id="${action.id}" data-dir="+1">+</button>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-secondary mt-1">Eff: x${yieldMult.toFixed(2)} yield, ${Math.round(100 - speedMult*100)}% faster</p>
+                    </div>
+                `;
             }
         }
 
