@@ -450,7 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.removeFromBank(itemId, 1); this.state.player.hp = Math.min(this.state.player.hpMax, this.state.player.hp + item.heals); this.uiManager.showFloatingText(`+${item.heals} HP`, 'text-green-300');
             if (this.state.combat.inCombat) { this.uiManager.updateCombatArena(); } else { this.uiManager.renderView(); }
         }
-        equipWeapon(itemId) { if (!GAME_DATA.ITEMS[itemId]) return; if ((this.state.bank[itemId] || 0) <= 0) return; this.state.player.weapon = itemId; if (this.state.combat.inCombat) { this.uiManager.updateCombatArena(); } this.uiManager.renderView(); }
+        equipWeapon(itemId) { if (!GAME_DATA.ITEMS[itemId]) return; if ((this.state.bank[itemId] || 0) <= 0) return; this.state.player.weapon = itemId; if (this.state.combat.inCombat) { this.uiManager.updateCombatArena(); } else { this.uiManager.renderView(); } }
 
         saveGame() { try { localStorage.setItem('chimeraSaveData_web_v1', JSON.stringify(this.state)); } catch (e) { console.error('Failed to save game:', e); } }
         loadGame() {
