@@ -421,8 +421,9 @@
                         const upkeep = this.consumeArmyUpkeep(armyDeltaSec);
                         const base = this.calculateArmyOutputPerSecond();
                         const hungryPenalty = upkeep.hungry ? 0.5 : 1.0;
-                        const dps = base.dps * hungryPenalty;
-                        const hps = base.hps * hungryPenalty;
+                        const rallyMult = this.hasBuff('armyRally') ? 2 : 1;
+                        const dps = base.dps * hungryPenalty * rallyMult;
+                        const hps = base.hps * hungryPenalty * rallyMult;
                         this.state.army.production = { dps, hps, hungry: upkeep.hungry };
                         // Apply damage to enemy and heals to player
                         const dmg = dps * armyDeltaSec;
@@ -792,9 +793,19 @@
                         if (!this.state.army) { this.state.army = { units: {}, lastTick: Date.now(), production: { dps: 0, hps: 0, hungry: false }, upkeep: { foodBuffer: 0, hungry: false }, fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() } }; }
                         if (!this.state.army.units) this.state.army.units = {};
                         Object.keys(GAME_DATA.ARMY_CLASSES).forEach(id => { if (typeof this.state.army.units[id] !== 'number') this.state.army.units[id] = 0; });
+                        if (!this.state.army.production) this.state.army.production = { dps: 0, hps: 0, hungry: false };
+                        if (!this.state.army.upkeep) this.state.army.upkeep = { foodBuffer: 0, hungry: false };
+                        if (!this.state.army.fly) this.state.army.fly = { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() };
+                        if (!this.state.army.lastTick) this.state.army.lastTick = Date.now();
                      } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
                  }
              }
++            resetSave() {
++                try { localStorage.removeItem('chimeraSaveData_web_v1'); } catch (e) { console.error('Failed to clear save:', e); }
++                this.state = new GameState();
++                this.uiManager.showFloatingText('Save reset', 'text-red-300');
++                this.uiManager.render();
++            }
 
             // Army helpers
             getArmyUnitCost(id) {
@@ -843,6 +854,14 @@
                 const hungry = needed > 0; // unmet demand
                 this.state.army.upkeep.hungry = hungry;
                 return { hungry, out };
+            }
+            rallyArmy() {
+                if (this.hasBuff('armyRally')) { this.uiManager.showModal('Rally Active', '<p>Your allies are already rallied!</p>'); return; }
+                if ((this.state.player.runes || 0) < 1) { this.uiManager.showModal('Not Enough Runes', '<p>You need 1 rune to blow the rally horn.</p>'); return; }
+                this.state.player.runes -= 1;
+                this.state.player.activeBuffs['armyRally'] = Date.now() + (20 * 1000);
+                this.uiManager.showFloatingText('Rally!', 'text-yellow-300');
+                this.uiManager.renderView();
             }
         }
 
@@ -939,6 +958,7 @@
                                 <button id="goto-runecrafting" class="chimera-button px-3 py-2 rounded-md"><i class="fas fa-circle-nodes"></i> Runecrafting</button>
                                 <button id="goto-combat" class="chimera-button px-3 py-2 rounded-md"><i class="fas fa-skull"></i> Combat</button>
                                 <button id="goto-shop" class="chimera-button px-3 py-2 rounded-md"><i class="fas fa-store"></i> Shop</button>
+                                <button id="reset-save" class="chimera-button px-3 py-2 rounded-md"><i class="fas fa-trash"></i> Reset Save</button>
                             </div>
                         </div>
                     </div>
@@ -1219,6 +1239,8 @@
                 document.querySelectorAll('.buy-chest-btn').forEach(btn => { btn.addEventListener('click', () => this.game.buyChest(btn.dataset.chestId)); });
                 // Army
                 document.querySelectorAll('.hire-army-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireArmyUnit(btn.dataset.unitId)); });
+                const rallyBtn = document.getElementById('rally-army-btn'); if (rallyBtn) rallyBtn.addEventListener('click', () => this.game.rallyArmy());
+                const resetBtn = document.getElementById('reset-save'); if (resetBtn) resetBtn.addEventListener('click', () => this.game.resetSave());
 
                 // Workers - generic per skill
                 document.querySelectorAll('.hire-worker-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireWorker(btn.dataset.skillId)); });
@@ -1328,9 +1350,10 @@
 
             renderArmyView() {
                 const defs = GAME_DATA.ARMY_CLASSES;
-                const owned = this.game.state.army.units;
+                const owned = this.game.state.army.units || {};
                 const out = this.game.calculateArmyOutputPerSecond();
-                const hungry = this.game.state.army.upkeep.hungry;
+                const hungry = this.game.state.army.upkeep?.hungry || false;
+                const canRally = (this.game.state.player.runes || 0) >= 1 && !this.game.hasBuff('armyRally');
                 const cards = Object.keys(defs).map(id => {
                     const d = defs[id];
                     const qty = owned[id] || 0;
@@ -1357,6 +1380,10 @@
                         <h2 class="text-lg font-bold">Logistics</h2>
                         <p class="text-secondary text-sm">Allied Output: <span class="text-white">DPS ${out.dps.toFixed(1)} • HPS ${out.hps.toFixed(1)}</span> • Upkeep: <span class="text-white">${out.foodPerMin.toFixed(1)} food/min</span> ${hungry ? '<span class="ml-2 text-red-400">Hungry (-50% effectiveness)</span>' : ''}</p>
                         <p class="text-xs text-secondary mt-1">Cook food in Cooking to sustain a larger army. Upkeep consumes cooked items from your Bank automatically.</p>
+                        <div class="mt-2 flex items-center gap-2">
+                            <button id="rally-army-btn" class="chimera-button px-3 py-2 rounded-md" ${canRally ? '' : 'disabled'}><i class="fas fa-bullhorn"></i> Rally Horn — Cost: 1 Rune</button>
+                            ${this.game.hasBuff('armyRally') ? '<span class="badge"><i class="fas fa-fire"></i> Rally Active</span>' : ''}
+                        </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${cards}</div>
                 `;
