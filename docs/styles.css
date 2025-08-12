@@ -120,6 +120,20 @@ body {
 }
 .badge i { opacity: 0.9; }
 
+/* New gathering themes */
+.border-farming { border-color: #6b8e23; }
+.bg-farming { background-color: #6b8e23; }
+.border-hunter { border-color: #556b2f; }
+.bg-hunter { background-color: #556b2f; }
+.border-archaeology { border-color: #c2b280; }
+.bg-archaeology { background-color: #c2b280; }
+.border-divination { border-color: #7b68ee; }
+.bg-divination { background-color: #7b68ee; }
+
+/* Badges */
+.badge { display:inline-flex; align-items:center; gap:6px; background-color:#1f2937; border:1px solid var(--border-color); border-radius:9999px; padding:2px 8px; font-size:11px; }
+.badge i { opacity:0.9; }
+
 /* Meta Skills interactive UI */
 .meskill-card { transition: transform 120ms ease-out, box-shadow 200ms ease; will-change: transform; }
 .meskill-card:hover { box-shadow: 0 12px 24px rgba(0,0,0,0.3); }
@@ -138,3 +152,26 @@ body {
     background: linear-gradient(135deg, rgba(107,142,35,0.25), rgba(34,197,94,0.15));
     border: 1px solid var(--border-color);
 }
+/* Spectacular dopamine/juice styles */
+.juicy-button {
+  background: linear-gradient(180deg, rgba(255,214,153,0.12), rgba(255,214,153,0));
+  border: 1px solid rgba(255,214,153,0.18);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+  transition: transform 120ms ease, box-shadow 180ms ease, filter 180ms ease;
+  transform: translateZ(0);
+}
+.juicy-button:hover { transform: translateY(-1px) scale(1.02); box-shadow: 0 10px 22px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08); filter: brightness(1.04); }
+.juicy-button:active { transform: translateY(0) scale(0.98); filter: brightness(0.98); }
+.pulse-pop { animation: pop 220ms cubic-bezier(.17,.67,.32,1.31); }
+@keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.06)} 100%{transform:scale(1)} }
+
+.gradient-wood { background: radial-gradient(120% 120% at 0% 0%, rgba(120,80,40,0.25), rgba(20,12,6,0.15)), linear-gradient(180deg, rgba(255,196,120,0.06), rgba(0,0,0,0)); }
+.glass-card { backdrop-filter: blur(4px); background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0)); border: 1px solid rgba(255,255,255,0.06); }
+.shine { position: relative; overflow: hidden; }
+.shine:before { content: ""; position: absolute; top: -120%; left: -30%; width: 60%; height: 340%; transform: rotate(25deg); background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent); animation: shimmer 3.5s ease-in-out infinite; }
+@keyframes shimmer { 0%{left:-60%} 100%{left:140%} }
+
+.medieval-glow { box-shadow: 0 0 0 1px rgba(255,215,0,0.08) inset, 0 0 24px rgba(255,215,0,0.06); }
+
+.confetti-piece { position:absolute; width:8px; height:12px; opacity:0; transform: translate3d(0,0,0) rotate(0deg); border-radius:2px; will-change: transform, opacity; }
+.coin-piece { position:absolute; font-size:16px; opacity:0; will-change: transform, opacity; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5)); }
