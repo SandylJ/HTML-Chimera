@@ -104,3 +104,16 @@ body {
 .bg-smithing { background-color: #a9a9a9; }
 .border-cooking { border-color: #d2691e; }
 .bg-cooking { background-color: #d2691e; }
+
+/* Meta Skills interactive UI */
+.meskill-card { transition: transform 120ms ease-out, box-shadow 200ms ease; will-change: transform; }
+.meskill-card:hover { box-shadow: 0 12px 24px rgba(0,0,0,0.3); }
+.meskill-badge { display:inline-block; background:#111827; border:1px solid var(--border-color); padding:2px 8px; border-radius:9999px; font-size:12px; color:var(--text-secondary); }
+
+/* Animated progress ring using conic-gradient */
+.ring { --size: 82px; --thickness: 8px; width: var(--size); height: var(--size); position: relative; border-radius: 9999px; background:
+    conic-gradient(var(--ring-color, var(--accent-blue)) calc(var(--ring-pct, 0) * 360deg), #111827 0);
+    box-shadow: inset 0 0 0 1px var(--border-color);
+}
+.ring::before { content: ""; position: absolute; inset: var(--thickness); background: var(--bg-secondary); border-radius: inherit; box-shadow: inset 0 0 0 1px var(--border-color); }
+.ring-center { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; }

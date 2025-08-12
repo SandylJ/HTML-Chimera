@@ -316,6 +316,27 @@ document.addEventListener('DOMContentLoaded', () => {
             this.uiManager.render();
         }
 
+        // Meta Skill training (interactive)
+        trainMetaSkill(skillName, intensity) {
+            const intensityMap = {
+                spark: { stamina: 5, xp: 15 },
+                focus: { stamina: 12, xp: 40 },
+                surge: { stamina: 25, xp: 100 },
+            };
+            const config = intensityMap[intensity];
+            if (!config) return;
+            if (this.state.player.stamina < config.stamina) {
+                this.uiManager.showModal('Not Enough Stamina', '<p>You need more stamina to train this skill.</p>');
+                return;
+            }
+            this.state.player.stamina -= config.stamina;
+            const skill = this.state.player.meta_skills[skillName];
+            if (!skill) return;
+            skill.addXP(config.xp, this);
+            this.uiManager.showFloatingText(`${skillName} +${config.xp} XP`, 'text-blue-300');
+            this.uiManager.renderView();
+        }
+
         // Spells
         castSpell(spellId) {
             const spell = GAME_DATA.SPELLS.find(s => s.id === spellId); if (!spell) return;
@@ -543,18 +564,60 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         renderMetaSkillsView() {
-            const skillsHtml = Object.values(this.game.state.player.meta_skills).map(skill => {
-                let bonusText = '';
+            const colorFor = (name) => ({
+                [META_SKILLS.STRENGTH]: 'var(--accent-green)',
+                [META_SKILLS.INTELLECT]: 'var(--accent-blue)',
+                [META_SKILLS.STEWARDSHIP]: '#ffc107',
+                [META_SKILLS.RESILIENCE]: '#2dd4bf',
+                [META_SKILLS.ARTISTRY]: '#a78bfa',
+            })[name] || 'var(--accent-blue)';
+
+            const bonusFor = (skill) => {
                 switch (skill.name) {
-                    case META_SKILLS.STRENGTH: bonusText = `Increases combat damage.`; break;
-                    case META_SKILLS.INTELLECT: bonusText = `Increases Artisan skill XP gain.`; break;
-                    case META_SKILLS.STEWARDSHIP: bonusText = `- ${(skill.level - 1).toFixed(1)}% Gathering action time.`; break;
-                    case META_SKILLS.RESILIENCE: bonusText = `+${((skill.level - 1) * 5).toFixed(1)}% Stamina regeneration.`; break;
-                    case META_SKILLS.ARTISTRY: bonusText = `Increases Gold from all sources.`; break;
+                    case META_SKILLS.STRENGTH: return 'Increases combat damage';
+                    case META_SKILLS.INTELLECT: return 'Boosts Artisan XP gain';
+                    case META_SKILLS.STEWARDSHIP: return `-${(skill.level - 1).toFixed(1)}% Gathering time`;
+                    case META_SKILLS.RESILIENCE: return `+${((skill.level - 1) * 5).toFixed(1)}% Stamina regen`;
+                    case META_SKILLS.ARTISTRY: return 'More Gold from all sources';
+                    default: return '';
                 }
-                return `<div class="block p-4"><h3 class="text-lg font-bold text-white">${skill.name} - Level ${skill.level}</h3><div class="w-full xp-bar-bg rounded-full h-2 my-2"><div class="xp-bar-fill h-2 rounded-full" style="width:${(skill.currentXP / skill.xpToNextLevel) * 100}%"></div></div><p class="text-xs text-secondary text-right">${Math.floor(skill.currentXP)} / ${skill.xpToNextLevel} XP</p><p class="text-sm text-accent-blue mt-2">${bonusText}</p></div>`;
+            };
+
+            const skillsHtml = Object.values(this.game.state.player.meta_skills).map(skill => {
+                const pct = skill.xpToNextLevel > 0 ? (skill.currentXP / skill.xpToNextLevel) : 0;
+                const ringColor = colorFor(skill.name);
+                const bonusText = bonusFor(skill);
+                return `
+                <div class="block p-4 meskill-card" data-skill-name="${skill.name}">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-lg font-bold">${skill.name}</h3>
+                        <span class="meskill-badge">Lvl ${skill.level}</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="ring" style="--ring-pct:${pct}; --ring-color:${ringColor}">
+                            <div class="ring-center">
+                                <div class="text-base font-bold">L${skill.level}</div>
+                                <div class="text-[10px] text-secondary">${Math.floor(skill.currentXP)} / ${skill.xpToNextLevel}</div>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm text-secondary">${bonusText}</p>
+                            <div class="w-full xp-bar-bg rounded-full h-2 my-2"><div class="xp-bar-fill h-2 rounded-full" style="width:${pct * 100}%"></div></div>
+                            <div class="mt-2 grid grid-cols-3 gap-2">
+                                <button class="meskill-train-btn chimera-button px-2 py-1 rounded-md" data-skill="${skill.name}" data-intensity="spark">Spark</button>
+                                <button class="meskill-train-btn chimera-button px-2 py-1 rounded-md" data-skill="${skill.name}" data-intensity="focus">Focus</button>
+                                <button class="meskill-train-btn chimera-button px-2 py-1 rounded-md" data-skill="${skill.name}" data-intensity="surge">Surge</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
             }).join('');
-            return `<h1 class="text-2xl font-semibold text-white mb-4">Meta Skills</h1><p class="text-secondary mb-4">These skills are leveled up by completing real-life tasks. They provide passive bonuses to your in-game actions.</p><div class="grid grid-cols-1 md:grid-cols-2 gap-4">${skillsHtml}</div>`;
+
+            return `
+                <h1 class="text-2xl font-semibold text-white mb-2">Meta Skills</h1>
+                <p class="text-secondary mb-4">Complete real-life tasks or spend Stamina to actively train these skills.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">${skillsHtml}</div>
+            `;
         }
 
         renderCombatView() {
@@ -664,6 +727,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.game.craftItem(s, a, 1);
                 }
             }); });
+
+            // Meta Skills interactions
+            document.querySelectorAll('.meskill-train-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    this.game.trainMetaSkill(btn.dataset.skill, btn.dataset.intensity);
+                });
+            });
+
+            // 3D tilt on Meta Skill cards
+            document.querySelectorAll('.meskill-card').forEach(card => {
+                const onMove = (e) => {
+                    const r = card.getBoundingClientRect();
+                    const px = (e.clientX - r.left) / r.width;
+                    const py = (e.clientY - r.top) / r.height;
+                    const rotY = (px - 0.5) * 10;
+                    const rotX = (0.5 - py) * 10;
+                    card.style.transform = `perspective(800px) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+                };
+                card.addEventListener('mousemove', onMove);
+                card.addEventListener('mouseleave', () => { card.style.transform = ''; });
+            });
 
             // Combat
             document.querySelectorAll('.start-combat-btn').forEach(btn => { btn.addEventListener('click', () => this.game.startCombat(btn.dataset.enemyId)); });
