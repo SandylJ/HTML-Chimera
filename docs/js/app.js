@@ -349,8 +349,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const remaining = spell.runeCost - spendFromGeneric;
             if (remaining > 0) this.consumeRuneItems(remaining);
             this.state.player.activeBuffs[spell.effect] = Date.now() + spell.durationMs;
-            this.uiManager.showFloatingText(`${spell.name} activated!`, 'text-purple-300');
-            this.uiManager.renderView();
+            this.uiManager.showFloatingText(`${spell.name} activated!`, 'text-purple-300 fly-xp');
+            if (this.uiManager.currentView === 'combat') {
+                this.uiManager.logBattle(`${spell.name} activated!`, 'neutral');
+                this.uiManager.updateCombatArena();
+            } else {
+                this.uiManager.renderView();
+            }
         }
 
         // Chests
