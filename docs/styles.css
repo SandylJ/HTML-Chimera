@@ -16,6 +16,12 @@ body {
     color: var(--text-primary);
 }
 
+/* Added utilities to match HTML markup */
+.bg-primary { background-color: var(--bg-primary); }
+.bg-secondary { background-color: var(--bg-secondary); }
+.border-border-color { border-color: var(--border-color); }
+.text-secondary { color: var(--text-secondary); }
+
 .block {
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -69,7 +75,7 @@ body {
 .fly-heal { animation: fly-rise 1.6s ease-out forwards, fly-wiggle 1.6s ease-out; filter: drop-shadow(0 0 6px rgba(63,185,80,0.7)); }
 .fly-xp { animation: fly-rise 1.6s ease-out forwards, fly-wiggle 1.6s ease-out; filter: drop-shadow(0 0 6px rgba(88,166,255,0.7)); }
 .fly-loot { animation: fly-rise 1.8s ease-out forwards, fly-wiggle 1.8s ease-out, fly-shine 1.2s ease-in-out; filter: drop-shadow(0 0 8px rgba(255,214,10,0.6)); }
-.fly-level { animation: fly-pop 0.25s ease-out, fly-rise 1.9s ease-out 0.05s forwards, fly-wiggle 1.9s ease-out 0.05s, fly-shine 1.8s ease-in-out; filter: drop-shadow(0 0 10px rgba(63,185,80,0.85)); }
+.fly-level { animation: fly-pop 0.25s ease-out, fly-rise 1.9s ease-out 0.05s, fly-wiggle 1.9s ease-out 0.05s, fly-shine 1.8s ease-in-out; filter: drop-shadow(0 0 10px rgba(63,185,80,0.85)); }
 
 /* Animations */
 @keyframes fly-rise {
