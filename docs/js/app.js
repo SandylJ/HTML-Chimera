@@ -64,6 +64,13 @@ document.addEventListener('DOMContentLoaded', () => {
             pale_energy: { name: 'Pale Energy', icon: '✨' },
             flickering_energy: { name: 'Flickering Energy', icon: '🔮' },
             feather: { name: 'Feather', icon: '🪶' },
+
+            // Army consumables
+            healing_potion_minor: { name: 'Minor Healing Potion', icon: '🧪', heals: 35, isPotion: true },
+            healing_potion: { name: 'Healing Potion', icon: '🧪', heals: 75, isPotion: true },
+            healing_potion_greater: { name: 'Greater Healing Potion', icon: '🧪', heals: 150, isPotion: true },
+            mana_potion: { name: 'Mana Potion', icon: '🔷', manaPotion: 1 },
+            mana_potion_greater: { name: 'Greater Mana Potion', icon: '🔹', manaPotion: 2 },
         },
         ACTIONS: {
             woodcutting: [
@@ -147,12 +154,21 @@ document.addEventListener('DOMContentLoaded', () => {
             ]
         },
         ARMY_CLASSES: {
-            knight: { id: 'knight', name: 'Knight', emoji: '🛡️', role: 'Defender', description: 'Armored vanguard that holds the line.', baseCost: 150, costGrowth: 1.22, dps: 3, hps: 0.0, foodPerMin: 0.6 },
-            wizard: { id: 'wizard', name: 'Wizard', emoji: '🪄', role: 'Caster', description: 'Arcane glass cannon raining destruction.', baseCost: 220, costGrowth: 1.24, dps: 5, hps: 0.0, foodPerMin: 0.5 },
-            warlock: { id: 'warlock', name: 'Warlock', emoji: '☯️', role: 'Hexer', description: 'Curses enemies and siphons life.', baseCost: 260, costGrowth: 1.26, dps: 3.5, hps: 0.5, foodPerMin: 0.6 },
-            cleric: { id: 'cleric', name: 'Cleric', emoji: '⛪', role: 'Healer', description: 'Faithful healer mending wounds.', baseCost: 200, costGrowth: 1.22, dps: 1, hps: 2.5, foodPerMin: 0.7 },
-            druid: { id: 'druid', name: 'Druid', emoji: '🌿', role: 'Support', description: "Nature's embrace with heals and thorns.", baseCost: 240, costGrowth: 1.25, dps: 2, hps: 1.5, foodPerMin: 0.6 },
-            goblin_merc: { id: 'goblin_merc', name: 'Goblin Merc', emoji: '🗡️', role: 'Rogue', description: 'Cheap hire, rowdy appetite.', baseCost: 100, costGrowth: 1.30, dps: 2, hps: 0, foodPerMin: 0.8 }
+            knight: { id: 'knight', name: 'Knight', emoji: '🛡️', role: 'Defender', description: 'Armored vanguard that holds the line.', baseCost: 150, costGrowth: 1.22, dps: 3, hps: 0.0, foodPerMin: 0.6, manaPotionsPerMin: 0 },
+            wizard: { id: 'wizard', name: 'Wizard', emoji: '🪄', role: 'Caster', description: 'Arcane glass cannon raining destruction.', baseCost: 220, costGrowth: 1.24, dps: 5, hps: 0.0, foodPerMin: 0.5, manaPotionsPerMin: 0.10 },
+            warlock: { id: 'warlock', name: 'Warlock', emoji: '☯️', role: 'Hexer', description: 'Curses enemies and siphons life.', baseCost: 260, costGrowth: 1.26, dps: 3.5, hps: 0.5, foodPerMin: 0.6, manaPotionsPerMin: 0.08 },
+            cleric: { id: 'cleric', name: 'Cleric', emoji: '⛪', role: 'Healer', description: 'Faithful healer mending wounds.', baseCost: 200, costGrowth: 1.22, dps: 1, hps: 2.5, foodPerMin: 0.7, manaPotionsPerMin: 0 },
+            druid: { id: 'druid', name: 'Druid', emoji: '🌿', role: 'Support', description: "Nature's embrace with heals and thorns.", baseCost: 240, costGrowth: 1.25, dps: 2, hps: 1.5, foodPerMin: 0.6, manaPotionsPerMin: 0.06 },
+            goblin_merc: { id: 'goblin_merc', name: 'Goblin Merc', emoji: '🗡️', role: 'Rogue', description: 'Cheap hire, rowdy appetite.', baseCost: 100, costGrowth: 1.30, dps: 2, hps: 0, foodPerMin: 0.8, manaPotionsPerMin: 0 },
+            ranger: { id: 'ranger', name: 'Ranger', emoji: '🏹', role: 'Marksman', description: 'Archer with steady aim.', baseCost: 180, costGrowth: 1.23, dps: 3.8, hps: 0, foodPerMin: 0.55, manaPotionsPerMin: 0 },
+            assassin: { id: 'assassin', name: 'Assassin', emoji: '🗡️', role: 'Rogue', description: 'Silent blade, deadly burst.', baseCost: 260, costGrowth: 1.28, dps: 6.5, hps: 0, foodPerMin: 0.7, manaPotionsPerMin: 0 },
+            paladin: { id: 'paladin', name: 'Paladin', emoji: '⚔️', role: 'Crusader', description: 'Holy warrior balancing sword and salves.', baseCost: 320, costGrowth: 1.26, dps: 3.2, hps: 2.0, foodPerMin: 0.8, manaPotionsPerMin: 0.04 },
+            death_knight: { id: 'death_knight', name: 'Death Knight', emoji: '💀', role: 'Vanguard', description: 'Undying champion who drains life.', baseCost: 360, costGrowth: 1.28, dps: 4.5, hps: 1.0, foodPerMin: 0.9, manaPotionsPerMin: 0.05 },
+            priest: { id: 'priest', name: 'Priest', emoji: '🙏', role: 'Healer', description: 'Channeling restorative light.', baseCost: 260, costGrowth: 1.24, dps: 0.8, hps: 3.2, foodPerMin: 0.6, manaPotionsPerMin: 0.06 },
+            sorcerer: { id: 'sorcerer', name: 'Sorcerer', emoji: '🔮', role: 'Caster', description: 'Reality-bending elementalist.', baseCost: 340, costGrowth: 1.27, dps: 6.0, hps: 0.0, foodPerMin: 0.6, manaPotionsPerMin: 0.12 },
+            archmage: { id: 'archmage', name: 'Archmage', emoji: '🧙', role: 'Caster', description: 'Master of the arcane arts.', baseCost: 600, costGrowth: 1.30, dps: 8.0, hps: 0.2, foodPerMin: 0.65, manaPotionsPerMin: 0.18 },
+            shaman: { id: 'shaman', name: 'Shaman', emoji: '🌀', role: 'Support', description: 'Totems and chants empower allies.', baseCost: 300, costGrowth: 1.26, dps: 3.0, hps: 2.0, foodPerMin: 0.6, manaPotionsPerMin: 0.08 },
+            bard: { id: 'bard', name: 'Bard', emoji: '🎻', role: 'Support', description: 'Inspires the host with song.', baseCost: 220, costGrowth: 1.22, dps: 1.0, hps: 1.2, foodPerMin: 0.5, manaPotionsPerMin: 0 },
         }
     };
     
@@ -207,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.lastUpdate = Date.now();
 
             // Combat state
-            this.combat = { inCombat: false, enemy: null, lastPlayerAttack: 0, lastEnemyAttack: 0, playerAttackSpeedMs: 1600 };
+            this.combat = { inCombat: false, enemy: null, lastPlayerAttack: 0, lastEnemyAttack: 0, playerAttackSpeedMs: 1600, lastAutoHeal: 0 };
 
             // Clicker state
             this.clicker = { goldPerClick: 1, autoClickers: 0, autoRateMs: 1000, lastAutoTick: Date.now(), upgrades: { clickPowerLevel: 0, autoClickerLevel: 0, multiplierLevel: 0 } };
@@ -224,8 +240,9 @@ document.addEventListener('DOMContentLoaded', () => {
             this.army = {
                 units: {},
                 lastTick: Date.now(),
-                production: { dps: 0, hps: 0, hungry: false },
-                upkeep: { foodBuffer: 0, hungry: false },
+                production: { dps: 0, hps: 0, hungry: false, oom: false },
+                upkeep: { foodBuffer: 0, manaBuffer: 0, hungry: false, oom: false },
+                settings: { useFood: true, useManaPotions: true, usePotionsFirst: true, autoHealThreshold: 0.4 },
                 fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() }
             };
             Object.keys(GAME_DATA.ARMY_CLASSES || {}).forEach(id => { this.army.units[id] = 0; });
@@ -331,9 +348,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     const upkeep = this.consumeArmyUpkeep(armyDeltaSec);
                     const base = this.calculateArmyOutputPerSecond();
                     const hungryPenalty = upkeep.hungry ? 0.5 : 1.0;
-                    const dps = base.dps * hungryPenalty;
-                    const hps = base.hps * hungryPenalty;
-                    this.state.army.production = { dps, hps, hungry: upkeep.hungry };
+                    const casterPenalty = upkeep.oom ? 0.5 : 1.0;
+                    const dps = ((base.nonCaster.dps) + (base.caster.dps * casterPenalty)) * hungryPenalty;
+                    const hps = ((base.nonCaster.hps) + (base.caster.hps * casterPenalty)) * hungryPenalty;
+                    this.state.army.production = { dps, hps, hungry: upkeep.hungry, oom: upkeep.oom };
                     // Apply damage to enemy and heals to player
                     const dmg = dps * armyDeltaSec;
                     const heal = hps * armyDeltaSec;
@@ -366,6 +384,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.state.player.hp = Math.max(0, this.state.player.hp - enemyDmg); this.uiManager.showFloatingText(`-${enemyDmg} HP`, 'text-yellow-400');
                     if (this.state.player.hp <= 0) { this.endCombat(false); }
                 }
+                // Auto-heal (potions/food) if below threshold
+                this.autoHealIfNeeded(now);
             }
 
             // Clicker auto
@@ -730,9 +750,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!this.state.empire.units) this.state.empire.units = {};
                     Object.keys(GAME_DATA.UNITS).forEach(id => { if (typeof this.state.empire.units[id] !== 'number') this.state.empire.units[id] = 0; });
                     // Backfill army system defaults if missing
-                    if (!this.state.army) { this.state.army = { units: {}, lastTick: Date.now(), production: { dps: 0, hps: 0, hungry: false }, upkeep: { foodBuffer: 0, hungry: false }, fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() } }; }
+                    if (!this.state.army) { this.state.army = { units: {}, lastTick: Date.now(), production: { dps: 0, hps: 0, hungry: false, oom: false }, upkeep: { foodBuffer: 0, manaBuffer: 0, hungry: false, oom: false }, settings: { useFood: true, useManaPotions: true, usePotionsFirst: true, autoHealThreshold: 0.4 }, fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() } }; }
                     if (!this.state.army.units) this.state.army.units = {};
                     Object.keys(GAME_DATA.ARMY_CLASSES).forEach(id => { if (typeof this.state.army.units[id] !== 'number') this.state.army.units[id] = 0; });
+                    if (!this.state.army.upkeep) this.state.army.upkeep = { foodBuffer: 0, manaBuffer: 0, hungry: false, oom: false };
+                    if (!this.state.army.settings) this.state.army.settings = { useFood: true, useManaPotions: true, usePotionsFirst: true, autoHealThreshold: 0.4 };
+                    if (!this.state.combat) this.state.combat = { inCombat: false, enemy: null, lastPlayerAttack: 0, lastEnemyAttack: 0, playerAttackSpeedMs: 1600, lastAutoHeal: 0 };
                  } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
              }
          }
@@ -742,38 +765,107 @@ document.addEventListener('DOMContentLoaded', () => {
         hireArmyUnit(id) { const cost = this.getArmyUnitCost(id); if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold to hire a ${GAME_DATA.ARMY_CLASSES[id].name}.</p>`); return; } this.state.army.units[id] = (this.state.army.units[id] || 0) + 1; this.uiManager.showFloatingText(`+1 ${GAME_DATA.ARMY_CLASSES[id].name}`, 'text-green-300'); this.uiManager.renderView(); }
         calculateArmyOutputPerSecond() {
             const units = this.state.army.units || {};
-            let dps = 0, hps = 0, foodPerMin = 0;
+            let dpsNonCaster = 0, hpsNonCaster = 0, dpsCaster = 0, hpsCaster = 0, foodPerMin = 0, manaPotPerMin = 0;
             for (const id of Object.keys(GAME_DATA.ARMY_CLASSES)) {
                 const def = GAME_DATA.ARMY_CLASSES[id];
                 const count = units[id] || 0;
                 if (count <= 0) continue;
-                dps += (def.dps || 0) * count;
-                hps += (def.hps || 0) * count;
+                const isCaster = (def.manaPotionsPerMin || 0) > 0;
+                if (isCaster) {
+                    dpsCaster += (def.dps || 0) * count;
+                    hpsCaster += (def.hps || 0) * count;
+                    manaPotPerMin += (def.manaPotionsPerMin || 0) * count;
+                } else {
+                    dpsNonCaster += (def.dps || 0) * count;
+                    hpsNonCaster += (def.hps || 0) * count;
+                }
                 foodPerMin += (def.foodPerMin || 0) * count;
             }
-            return { dps, hps, foodPerMin };
+            return { dps: dpsNonCaster + dpsCaster, hps: hpsNonCaster + hpsCaster, foodPerMin, manaPotPerMin, caster: { dps: dpsCaster, hps: hpsCaster }, nonCaster: { dps: dpsNonCaster, hps: hpsNonCaster } };
         }
         consumeArmyUpkeep(deltaSec) {
-            // Use cooked foods first; each food heals value ~ treat 1 HP heal as 1 food unit
-            const foodIds = Object.keys(this.state.bank).filter(id => GAME_DATA.ITEMS[id]?.heals).sort((a,b) => (GAME_DATA.ITEMS[a].heals||0)-(GAME_DATA.ITEMS[b].heals||0));
+            const settings = this.state.army.settings || { useFood: true, useManaPotions: true };
             const out = this.calculateArmyOutputPerSecond();
-            const requiredFoodUnits = (out.foodPerMin / 60) * deltaSec; // food units per sec
-            this.state.army.upkeep.foodBuffer += requiredFoodUnits;
-            let needed = Math.floor(this.state.army.upkeep.foodBuffer);
-            if (needed > 0) {
-                for (const fid of foodIds) {
-                    if (needed <= 0) break;
-                    let have = this.state.bank[fid] || 0;
-                    if (have <= 0) continue;
-                    const take = Math.min(have, needed);
-                    this.removeFromBank(fid, take);
-                    needed -= take;
+            // Food consumption (heals-valued edibles)
+            let hungry = false; let oom = false;
+            if (settings.useFood) {
+                const foodIds = Object.keys(this.state.bank).filter(id => GAME_DATA.ITEMS[id]?.heals).sort((a,b) => (GAME_DATA.ITEMS[a].heals||0)-(GAME_DATA.ITEMS[b].heals||0));
+                const requiredFoodUnits = (out.foodPerMin / 60) * deltaSec; // food units per sec
+                this.state.army.upkeep.foodBuffer += requiredFoodUnits;
+                let needed = Math.floor(this.state.army.upkeep.foodBuffer);
+                if (needed > 0) {
+                    for (const fid of foodIds) {
+                        if (needed <= 0) break;
+                        let have = this.state.bank[fid] || 0;
+                        if (have <= 0) continue;
+                        const take = Math.min(have, needed);
+                        this.removeFromBank(fid, take);
+                        needed -= take;
+                    }
+                    this.state.army.upkeep.foodBuffer -= Math.floor(this.state.army.upkeep.foodBuffer);
                 }
-                this.state.army.upkeep.foodBuffer -= Math.floor(this.state.army.upkeep.foodBuffer);
+                hungry = needed > 0; // unmet demand
+            } else {
+                hungry = true;
             }
-            const hungry = needed > 0; // unmet demand
-            this.state.army.upkeep.hungry = hungry;
-            return { hungry, out };
+            // Mana potions consumption for casters
+            const manaRate = out.manaPotPerMin || 0;
+            if (settings.useManaPotions && manaRate > 0) {
+                const requiredPotions = (manaRate / 60) * deltaSec;
+                this.state.army.upkeep.manaBuffer += requiredPotions;
+                let need = Math.floor(this.state.army.upkeep.manaBuffer);
+                if (need > 0) {
+                    // Find mana potions, prefer smaller potency first to avoid waste
+                    const manaPotIds = Object.keys(this.state.bank).filter(id => GAME_DATA.ITEMS[id]?.manaPotion).sort((a,b) => (GAME_DATA.ITEMS[a].manaPotion||1)-(GAME_DATA.ITEMS[b].manaPotion||1));
+                    for (const pid of manaPotIds) {
+                        if (need <= 0) break;
+                        const potency = GAME_DATA.ITEMS[pid].manaPotion || 1;
+                        let have = this.state.bank[pid] || 0;
+                        if (have <= 0) continue;
+                        // number of items to take
+                        while (need > 0 && have > 0) {
+                            this.removeFromBank(pid, 1);
+                            have -= 1;
+                            need -= potency;
+                        }
+                    }
+                    this.state.army.upkeep.manaBuffer -= Math.floor(this.state.army.upkeep.manaBuffer);
+                }
+                oom = need > 0;
+            } else if (manaRate > 0) {
+                oom = true;
+            }
+            this.state.army.upkeep.hungry = hungry; this.state.army.upkeep.oom = oom;
+            return { hungry, oom, out };
+        }
+
+        // Player auto-heal during combat
+        autoHealIfNeeded(nowTs) {
+            const s = this.state.army.settings || {};
+            const threshold = Math.max(0.05, Math.min(0.95, s.autoHealThreshold || 0.4));
+            if (!this.state.combat.inCombat) return;
+            if (nowTs - (this.state.combat.lastAutoHeal || 0) < 600) return; // ~0.6s cooldown
+            const hp = this.state.player.hp; const max = this.state.player.hpMax;
+            if (hp <= 0) return;
+            if (hp / max >= threshold) return;
+            const need = Math.ceil(threshold * max - hp);
+            // Build candidate lists
+            const foods = Object.keys(this.state.bank).filter(id => (this.state.bank[id]||0) > 0 && GAME_DATA.ITEMS[id]?.heals && !GAME_DATA.ITEMS[id]?.isPotion).sort((a,b) => (GAME_DATA.ITEMS[a].heals||0)-(GAME_DATA.ITEMS[b].heals||0));
+            const potions = Object.keys(this.state.bank).filter(id => (this.state.bank[id]||0) > 0 && GAME_DATA.ITEMS[id]?.heals && GAME_DATA.ITEMS[id]?.isPotion).sort((a,b) => (GAME_DATA.ITEMS[a].heals||0)-(GAME_DATA.ITEMS[b].heals||0));
+            const order = (s.usePotionsFirst ? [potions, foods] : [foods, potions]);
+            for (const list of order) {
+                // pick the smallest that meets or the largest available
+                let pick = null; let pickHeal = 0;
+                for (const id of list) { const heal = GAME_DATA.ITEMS[id].heals || 0; if (heal >= need) { pick = id; pickHeal = heal; break; } if (heal > pickHeal) { pick = id; pickHeal = heal; } }
+                if (pick) {
+                    this.removeFromBank(pick, 1);
+                    this.state.player.hp = Math.min(max, this.state.player.hp + pickHeal);
+                    this.state.combat.lastAutoHeal = nowTs;
+                    this.uiManager.showFloatingText(`+${pickHeal} HP`, 'text-green-300');
+                    this.uiManager.renderView();
+                    return;
+                }
+            }
         }
     }
 
@@ -1082,6 +1174,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const foodList = Object.entries(this.game.state.bank).filter(([id, q]) => GAME_DATA.ITEMS[id]?.heals).map(([id, q]) => `<button class="eat-food-btn chimera-button px-2 py-1 rounded-md" data-item-id="${id}">${GAME_DATA.ITEMS[id].name} x${q}</button>`).join(' ');
             const weapons = Object.entries(this.game.state.bank).filter(([id, q]) => GAME_DATA.ITEMS[id]?.damage).map(([id, q]) => `<button class="equip-weapon-btn chimera-button px-2 py-1 rounded-md" data-item-id="${id}">${GAME_DATA.ITEMS[id].name}</button>`).join(' ');
             const combatStatus = this.game.state.combat.inCombat && this.game.state.combat.enemy ? `<p class="text-secondary">Fighting: <span class="text-white font-bold">${this.game.state.combat.enemy.name}</span></p>` : '<p class="text-secondary">Not in combat.</p>';
+            const badgets = `<span class="badge"><i class="fas fa-users"></i> Allies: DPS ${Math.max(0,(this.game.state.army.production?.dps||0)).toFixed(1)} • HPS ${Math.max(0,(this.game.state.army.production?.hps||0)).toFixed(1)} ${this.game.state.army.upkeep?.hungry ? '<span class="text-red-400 ml-1">Hungry</span>' : ''} ${this.game.state.army.upkeep?.oom ? '<span class="text-purple-300 ml-1">Low Mana</span>' : ''}</span>`;
             return `
                 <h1 class="text-2xl font-semibold text-white mb-4">Combat</h1>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -1094,7 +1187,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${combatStatus}
                         <p class="text-secondary">HP: <span class="font-mono">${Math.floor(this.game.state.player.hp)}/${this.game.state.player.hpMax}</span></p>
                         <div class="mt-2">
-                            <span class="badge"><i class="fas fa-users"></i> Allies: DPS ${Math.max(0,(this.game.state.army.production?.dps||0)).toFixed(1)} • HPS ${Math.max(0,(this.game.state.army.production?.hps||0)).toFixed(1)} ${this.game.state.army.upkeep?.hungry ? '<span class="text-red-400 ml-1">Hungry</span>' : ''}</span>
+                            ${badgets}
                         </div>
                         <button id="end-combat-btn" class="chimera-button px-3 py-2 rounded-md" ${this.game.state.combat.inCombat ? '' : 'disabled'}>Retreat</button>
                     </div>
@@ -1292,7 +1385,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>`;
             }).join('');
 
-            return `${hero}<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-4">${cards}</div><div class="mt-6">${assigns}</div>`;
+            return `${hero}<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">${cards}</div><div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">${assigns}</div>`;
         }
 
         attachViewEventListeners() {
@@ -1336,6 +1429,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.buy-chest-btn').forEach(btn => { btn.addEventListener('click', () => this.game.buyChest(btn.dataset.chestId)); });
             // Army
             document.querySelectorAll('.hire-army-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireArmyUnit(btn.dataset.unitId)); });
+            const healSlider = document.getElementById('heal-threshold-input'); if (healSlider) { healSlider.addEventListener('input', () => { const v = Math.max(0.1, Math.min(0.9, parseFloat(healSlider.value||'0.4'))); this.game.state.army.settings.autoHealThreshold = v; const label = document.getElementById('heal-threshold-label'); if (label) label.textContent = `${Math.round(v*100)}%`; }); }
+            document.querySelectorAll('.army-setting-toggle').forEach(chk => { chk.addEventListener('change', () => { const key = chk.dataset.key; const val = !!chk.checked; this.game.state.army.settings[key] = val; }); });
 
             // Workers - generic
             document.querySelectorAll('.hire-worker-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.hireWorker(btn.dataset.skillId); this.pulseAt(btn); this.game.uiManager.playSound('hire'); }); });
@@ -1522,7 +1617,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (headerMeta[skillId]) {
                 const meta = headerMeta[skillId];
                 return `
-                    <div class="block p-0 mb-5 border border-${theme} overflow-hidden medieval-glow gradient-workforce">
+                    <div class="block p-0 mb-5 border border-${skill.theme} overflow-hidden medieval-glow gradient-workforce">
                         <div class="relative p-5 pb-4">
                             <div class="absolute right-4 -top-3 text-4xl opacity-20 select-none">${meta.emoji}</div>
                             <div class="flex items-center gap-3">
@@ -1547,18 +1642,18 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             </div>
                             <div class="flex flex-col sm:flex-row gap-2 mt-4">
-                                <button class="hire-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}"><span class="mr-1">👷</span> Hire ${meta.worker} — <span class="text-yellow-300 font-mono">${hireCost}g</span></button>
-                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}" data-type="speed"><span class="mr-1">⚙️</span> Speed <span class="text-secondary ml-1">(L${speedLvl||0})</span> — <span class="text-yellow-300 font-mono">${speedCost}g</span></button>
-                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}" data-type="yield"><span class="mr-1">📦</span> Yield <span class="text-secondary ml-1">(L${yieldLvl||0})</span> — <span class="text-yellow-300 font-mono">${yieldCost}g</span></button>
+                                <button class="hire-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}"><span class="mr-1">👷</span> Hire ${meta.worker} — <span class="text-yellow-300 font-mono">${this.game.getHireCost(skillId)}g</span></button>
+                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}" data-type="speed"><span class="mr-1">⚙️</span> Speed <span class="text-secondary ml-1">(L${ws.upgrades.speedLevel||0})</span> — <span class="text-yellow-300 font-mono">${this.game.getUpgradeCost(skillId, 'speed')}g</span></button>
+                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}" data-type="yield"><span class="mr-1">📦</span> Yield <span class="text-secondary ml-1">(L${ws.upgrades.yieldLevel||0})</span> — <span class="text-yellow-300 font-mono">${this.game.getUpgradeCost(skillId, 'yield')}g</span></button>
                             </div>
-                            <p class="text-[11px] text-secondary mt-2">Current bonuses: <span class="text-green-300">+${((yieldLvl||0)*10).toFixed(0)}% yield</span> • <span class="text-blue-300">${Math.round(100 - (Math.pow(0.92, (speedLvl||0))*100))}% faster</span></p>
+                            <p class="text-[11px] text-secondary mt-2">Current bonuses: <span class="text-green-300">+${((ws.upgrades.yieldLevel||0)*10).toFixed(0)}% yield</span> • <span class="text-blue-300">${Math.round(100 - (Math.pow(0.92, (ws.upgrades.speedLevel||0))*100))}% faster</span></p>
                         </div>
                     </div>
                 `;
             }
             // Fallback generic panel for other gathering skills
             return `
-                <div class="block p-4 mb-4 border border-${theme}">
+                <div class="block p-4 mb-4 border border-${skill.theme}">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                         <div>
                             <h2 class="text-lg font-bold">Work Camp</h2>
@@ -1566,9 +1661,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class="text-white text-sm mt-1">Workers: <span class="font-bold">${ws.total}</span></p>
                         </div>
                         <div class="flex flex-col sm:flex-row gap-2">
-                            <button class="hire-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}">Hire Worker — Cost: ${hireCost} gold</button>
-                            <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-type="speed">Upgrade Tools (Speed L${speedLvl}) — Cost: ${speedCost} gold</button>
-                            <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-type="yield">Logistics (Yield L${yieldLvl}) — Cost: ${yieldCost} gold</button>
+                            <button class="hire-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}">Hire Worker — Cost: ${this.game.getHireCost(skillId)} gold</button>
+                            <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-type="speed">Upgrade Tools (Speed L${ws.upgrades.speedLevel}) — Cost: ${this.game.getUpgradeCost(skillId, 'speed')} gold</button>
+                            <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-type="yield">Logistics (Yield L${ws.upgrades.yieldLevel}) — Cost: ${this.game.getUpgradeCost(skillId, 'yield')} gold</button>
                         </div>
                     </div>
                 </div>
