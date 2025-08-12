@@ -190,13 +190,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    class GameManager {
-        constructor() { this.state = new GameState(); this.uiManager = new UIManager(this); this.gameLoop = null; }
-        init() { this.loadGame(); this.uiManager.init(); this.gameLoop = setInterval(() => this.update(), 100); setInterval(() => this.saveGame(), 10000); window.addEventListener('beforeunload', () => this.saveGame()); }
+        class GameManager {
+         constructor() { this.state = new GameState(); this.uiManager = new UIManager(this); this.gameLoop = null; }
+         init() { this.loadGame(); this.uiManager.init(); this.gameLoop = setInterval(() => this.update(), 100); setInterval(() => this.saveGame(), 10000); window.addEventListener('beforeunload', () => this.saveGame()); }
+ 
+         hasBuff(effectKey) { const exp = this.state.player.activeBuffs[effectKey]; return exp && Date.now() < exp; }
+ 
+         goldMultiplier() { let mult = 1; if (this.hasBuff('doubleGold')) mult *= 2; const gh = GAME_DATA.SPELLS.find(s => s.effect === 'goldBoost'); if (this.hasBuff('goldBoost')) mult *= (1 + (gh?.magnitude || 0)); const artistry = 1 + (this.state.player.meta_skills[META_SKILLS.ARTISTRY].level - 1) * 0.02; return mult * artistry; }
 
-        hasBuff(effectKey) { const exp = this.state.player.activeBuffs[effectKey]; return exp && Date.now() < exp; }
-
-        goldMultiplier() { let mult = 1; if (this.hasBuff('doubleGold')) mult *= 2; const gh = GAME_DATA.SPELLS.find(s => s.effect === 'goldBoost'); if (this.hasBuff('goldBoost')) mult *= (1 + (gh?.magnitude || 0)); const artistry = 1 + (this.state.player.meta_skills[META_SKILLS.ARTISTRY].level - 1) * 0.02; return mult * artistry; }
+        getGoldPerSecond() {
+            const c = this.state.clicker;
+            if (!c) return 0;
+            const autoPerSec = c.autoClickers * c.goldPerClick * (1000 / c.autoRateMs);
+            return autoPerSec * this.goldMultiplier();
+        }
 
         update() {
             const now = Date.now(); const delta = (now - this.state.lastUpdate); this.state.lastUpdate = now;
@@ -602,17 +609,27 @@ document.addEventListener('DOMContentLoaded', () => {
         constructor(game) {
             this.game = game; this.mainContent = document.getElementById('main-content'); this.modalBackdrop = document.getElementById('modal-backdrop'); this.modalContent = document.getElementById('modal-content'); this.floatingTextContainer = document.getElementById('floating-text-container'); this.currentView = 'dashboard';
         }
-        init() { this.renderSidebar(); this.attachSidebarEventListeners(); this.render(); }
+        init() { this.renderSidebar(); this.attachSidebarEventListeners(); this.attachMobileMenuHandlers(); this.handleResize(); window.addEventListener('resize', () => this.handleResize()); this.render(); }
         renderSidebar() {
             const createLink = (skillId, skill) => `<a href="#" class="sidebar-link flex items-center p-3" data-view="${skillId}"><i class="fas ${skill.icon} w-6 text-center"></i><div class="flex-grow"><span>${skill.name}</span><div class="w-full xp-bar-bg rounded-full h-1.5 mt-1"><div id="sidebar-xp-${skillId}" class="xp-bar-fill h-1.5 rounded-full"></div></div></div></a>`;
             const gatheringHtml = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'gathering').map(id => createLink(id, GAME_DATA.SKILLS[id])).join(''); document.getElementById('gathering-skills-nav').innerHTML = gatheringHtml;
             const artisanHtml = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'artisan').map(id => createLink(id, GAME_DATA.SKILLS[id])).join(''); document.getElementById('artisan-skills-nav').innerHTML = artisanHtml;
         }
-        attachSidebarEventListeners() { document.querySelectorAll('.sidebar-link').forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); this.currentView = link.dataset.view; this.render(); }); }); }
+        attachSidebarEventListeners() {
+            document.querySelectorAll('.sidebar-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.currentView = link.dataset.view;
+                    if (!window.matchMedia('(min-width: 768px)').matches) this.closeSidebarMobile();
+                    this.render();
+                });
+            });
+        }
         render() { this.updateSidebarActive(); this.renderView(); }
 
         updateDynamicElements() {
             document.getElementById('gold-display').textContent = Math.floor(this.game.state.player.gold).toLocaleString();
+            const gpsEl = document.getElementById('gps-display'); if (gpsEl) { const gps = this.game.getGoldPerSecond(); gpsEl.textContent = `(+${gps.toFixed(1)}/s)`; }
             const runesEl = document.getElementById('runes-display'); if (runesEl) { const totalRunes = (this.game.state.player.runes || 0) + this.game.getTotalRuneItemCount(); runesEl.textContent = totalRunes.toLocaleString(); }
             const stamina = this.game.state.player.stamina; const staminaMax = this.game.state.player.staminaMax;
             document.getElementById('stamina-value').textContent = `${Math.floor(stamina)}/${staminaMax}`; document.getElementById('stamina-bar-fill').style.width = `${(stamina / staminaMax) * 100}%`;
@@ -1101,6 +1118,37 @@ document.addEventListener('DOMContentLoaded', () => {
             this.floatingTextContainer.appendChild(floatText);
             const duration = typeClass === 'fly-crit' || typeClass === 'fly-level' ? 1900 : (typeClass === 'fly-loot' ? 1800 : 1600);
             setTimeout(() => floatText.remove(), duration);
+        }
+
+        attachMobileMenuHandlers() {
+            const menuBtn = document.getElementById('mobile-menu-btn');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (menuBtn) menuBtn.addEventListener('click', () => this.openSidebarMobile());
+            if (overlay) overlay.addEventListener('click', () => this.closeSidebarMobile());
+        }
+        openSidebarMobile() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar) { sidebar.classList.remove('hidden'); sidebar.classList.add('flex'); }
+            if (overlay) overlay.classList.remove('hidden');
+        }
+        closeSidebarMobile() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (overlay) overlay.classList.add('hidden');
+            if (sidebar && !window.matchMedia('(min-width: 768px)').matches) { sidebar.classList.add('hidden'); sidebar.classList.remove('flex'); }
+        }
+        handleResize() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const isDesktop = window.matchMedia('(min-width: 768px)').matches;
+            if (isDesktop) {
+                if (sidebar) { sidebar.classList.remove('hidden'); sidebar.classList.add('flex'); }
+                if (overlay) overlay.classList.add('hidden');
+            } else {
+                if (sidebar) { sidebar.classList.add('hidden'); sidebar.classList.remove('flex'); }
+                if (overlay) overlay.classList.add('hidden');
+            }
         }
     }
 
