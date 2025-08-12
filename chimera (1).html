@@ -70,6 +70,8 @@
         .border-firemaking { border-color: #ff4500; } .bg-firemaking { background-color: #ff4500; }
         .border-smithing { border-color: #a9a9a9; } .bg-smithing { background-color: #a9a9a9; }
         .border-cooking { border-color: #d2691e; } .bg-cooking { background-color: #d2691e; }
+        .medieval-border { border-image: linear-gradient(45deg, #8b5a2b, #b8860b) 1; border-width: 1px; border-style: solid; }
+        .medieval-glow { box-shadow: 0 0 0 1px rgba(255,215,0,0.08) inset, 0 0 24px rgba(255,215,0,0.06); }
     </style>
 </head>
 <body class="text-sm">
@@ -84,7 +86,7 @@
                 <a href="#" class="sidebar-link active flex items-center p-3" data-view="dashboard"><i class="fas fa-tachometer-alt w-6 text-center"></i><span>Dashboard</span></a>
                 <a href="#" class="sidebar-link flex items-center p-3" data-view="bank"><i class="fas fa-box w-6 text-center"></i><span>Bank</span></a>
                 <a href="#" class="sidebar-link flex items-center p-3" data-view="combat"><i class="fas fa-skull w-6 text-center"></i><span>Combat</span></a>
-                <a href="#" class="sidebar-link flex items-center p-3" data-view="clicker"><i class="fas fa-hand-pointer w-6 text-center"></i><span>Clicker</span></a>
+                <a href="#" class="sidebar-link flex items-center p-3" data-view="clicker"><i class="fas fa-chess-rook w-6 text-center"></i><span>Empire</span></a>
                 <a href="#" class="sidebar-link flex items-center p-3" data-view="spellbook"><i class="fas fa-hat-wizard w-6 text-center"></i><span>Spellbook</span></a>
                 <a href="#" class="sidebar-link flex items-center p-3" data-view="shop"><i class="fas fa-store w-6 text-center"></i><span>Shop</span></a>
                 <h2 class="p-2 pt-4 text-xs font-bold tracking-wider uppercase text-secondary">Gathering</h2>
@@ -98,7 +100,7 @@
         <div class="flex-grow flex flex-col">
             <header class="flex-shrink-0 p-3 bg-secondary border-b border-border-color grid grid-cols-2 gap-4">
                 <div class="flex items-center space-x-4">
-                    <div class="flex items-center space-x-2"><i class="fas fa-coins text-yellow-400"></i><span id="gold-display">0</span></div>
+                    <div class="flex items-center space-x-2"><i class="fas fa-coins text-yellow-400"></i><span id="gold-display">0</span><span id="gps-display" class="text-xs text-secondary ml-2">(+0/s)</span></div>
                     <div class="flex items-center space-x-2"><i class="fas fa-gem text-purple-300"></i><span id="runes-display" class="font-mono">0</span></div>
                     <div class="flex items-center space-x-2 w-full">
                         <i class="fas fa-bolt text-green-400"></i>
@@ -234,6 +236,15 @@
                 ]
             }
         };
+        
+        // Medieval Empire Units dataset
+        const EMPIRE_UNITS = {
+            gold_miner: { id: 'gold_miner', name: 'Gold Miner', emoji: '⛏️', description: 'Mines gold from the mountain.', baseCost: 100, costGrowth: 1.18, goldPerSec: 1 },
+            prospector: { id: 'prospector', name: 'Dwarven Prospector', emoji: '⛏️✨', description: 'Veteran miner with a nose for veins.', baseCost: 450, costGrowth: 1.20, goldPerSec: 3 },
+            alchemist: { id: 'alchemist', name: 'Guild Alchemist', emoji: '⚗️', description: 'Brews tonics and sells them to nobles.', baseCost: 800, costGrowth: 1.22, goldPerSec: 2, runesPerSec: 0.02 },
+            rune_scribe: { id: 'rune_scribe', name: 'Rune Scribe', emoji: '📜', description: 'Inscribes raw essence into runes slowly.', baseCost: 1200, costGrowth: 1.25, essencePerSec: 0.1 }
+        };
+        GAME_DATA.UNITS = EMPIRE_UNITS;
 
         class Skill {
             constructor(id, name) { this.id = id; this.name = name; this.level = 1; this.currentXP = 0; this.xpToNextLevel = 100; }
@@ -281,6 +292,14 @@
 
                 // Clicker state
                 this.clicker = { goldPerClick: 1, autoClickers: 0, autoRateMs: 1000, lastAutoTick: Date.now(), upgrades: { clickPowerLevel: 0, autoClickerLevel: 0, multiplierLevel: 0 } };
+
+                // Empire workforce system (medieval themed)
+                this.empire = {
+                    units: Object.keys(GAME_DATA.UNITS).reduce((acc, id) => { acc[id] = 0; return acc; }, {}),
+                    lastTick: Date.now(),
+                    production: { goldPerSec: 0, runesPerSec: 0, essencePerSec: 0 },
+                    buffers: { gold: 0, runes: 0, essence: 0 }
+                };
 
                 Object.keys(GAME_DATA.SKILLS).forEach(id => { this.player.skills[id] = new Skill(id, GAME_DATA.SKILLS[id].name); this.player.mastery[id] = {}; });
                 Object.values(META_SKILLS).forEach(name => { this.player.meta_skills[name] = new Skill(name, name); });
@@ -349,6 +368,24 @@
                     this.state.clicker.lastAutoTick = now;
                     const gps = this.state.clicker.autoClickers * this.state.clicker.goldPerClick;
                     if (gps > 0) this.addGold(gps);
+                }
+
+                // Empire production
+                const empireDeltaSec = (now - this.state.empire.lastTick) / 1000;
+                if (empireDeltaSec > 0.1) {
+                    this.state.empire.lastTick = now;
+                    const totals = this.calculateEmpireProductionPerSecond();
+                    // Fractional buffers for smooth accrual
+                    this.state.empire.buffers.gold += totals.goldPerSec * empireDeltaSec;
+                    const goldWhole = Math.floor(this.state.empire.buffers.gold);
+                    if (goldWhole > 0) { this.addGold(goldWhole); this.state.empire.buffers.gold -= goldWhole; }
+                    this.state.empire.buffers.runes += (totals.runesPerSec || 0) * empireDeltaSec;
+                    const runeWhole = Math.floor(this.state.empire.buffers.runes);
+                    if (runeWhole > 0) { this.state.player.runes += runeWhole; this.state.empire.buffers.runes -= runeWhole; }
+                    this.state.empire.buffers.essence += (totals.essencePerSec || 0) * empireDeltaSec;
+                    const essWhole = Math.floor(this.state.empire.buffers.essence);
+                    if (essWhole > 0) { this.addToBank('rune_essence', essWhole); this.state.empire.buffers.essence -= essWhole; }
+                    this.state.empire.production = totals;
                 }
 
                 this.uiManager.updateDynamicElements();
@@ -464,6 +501,34 @@
             // Economy helpers
             addGold(amount) { const final = Math.floor(amount * this.goldMultiplier()); this.state.player.gold += final; }
             spendGold(amount) { if (this.state.player.gold < amount) return false; this.state.player.gold -= amount; return true; }
+
+            // Empire helpers
+            calculateEmpireProductionPerSecond() {
+                const units = this.state.empire.units || {};
+                let goldPerSec = 0, runesPerSec = 0, essencePerSec = 0;
+                for (const id of Object.keys(GAME_DATA.UNITS)) {
+                    const data = GAME_DATA.UNITS[id];
+                    const count = units[id] || 0;
+                    if (count <= 0) continue;
+                    if (data.goldPerSec) goldPerSec += data.goldPerSec * count;
+                    if (data.runesPerSec) runesPerSec += data.runesPerSec * count;
+                    if (data.essencePerSec) essencePerSec += data.essencePerSec * count;
+                }
+                // Gold is multiplied later via addGold; show base before buff for UI but store base here
+                return { goldPerSec, runesPerSec, essencePerSec };
+            }
+            getEmpireUnitCost(id) {
+                const data = GAME_DATA.UNITS[id];
+                const owned = this.state.empire.units[id] || 0;
+                return Math.floor(data.baseCost * Math.pow(data.costGrowth, owned));
+            }
+            hireEmpireUnit(id) {
+                const cost = this.getEmpireUnitCost(id);
+                if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold to hire a ${GAME_DATA.UNITS[id].name}.</p>`); return; }
+                this.state.empire.units[id] = (this.state.empire.units[id] || 0) + 1;
+                this.uiManager.showFloatingText(`+1 ${GAME_DATA.UNITS[id].name}`, 'text-yellow-300');
+                this.uiManager.renderView();
+            }
 
             // Worker economy
             getHireCost(skillId) {
@@ -609,6 +674,10 @@
                             if (typeof this.state.workers.woodcutting.assigned[a.id] !== 'number') this.state.workers.woodcutting.assigned[a.id] = 0;
                             if (typeof this.state.workers.woodcutting.progress[a.id] !== 'number') this.state.workers.woodcutting.progress[a.id] = 0;
                         });
+                        // Backfill empire system defaults if missing
+                        if (!this.state.empire) { this.state.empire = { units: {}, lastTick: Date.now(), production: { goldPerSec: 0, runesPerSec: 0, essencePerSec: 0 }, buffers: { gold: 0, runes: 0, essence: 0 } }; }
+                        if (!this.state.empire.units) this.state.empire.units = {};
+                        Object.keys(GAME_DATA.UNITS).forEach(id => { if (typeof this.state.empire.units[id] !== 'number') this.state.empire.units[id] = 0; });
                      } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
                  }
              }
@@ -629,6 +698,8 @@
 
             updateDynamicElements() {
                 document.getElementById('gold-display').textContent = Math.floor(this.game.state.player.gold).toLocaleString();
+                const gps = this.game.state.empire?.production?.goldPerSec || 0;
+                const gpsEl = document.getElementById('gps-display'); if (gpsEl) gpsEl.textContent = `(+${gps.toFixed(1)}/s)`;
                 const runesEl = document.getElementById('runes-display'); if (runesEl) { const totalRunes = (this.game.state.player.runes || 0) + this.game.getTotalRuneItemCount(); runesEl.textContent = totalRunes.toLocaleString(); }
                 const stamina = this.game.state.player.stamina; const staminaMax = this.game.state.player.staminaMax;
                 document.getElementById('stamina-value').textContent = `${Math.floor(stamina)}/${staminaMax}`; document.getElementById('stamina-bar-fill').style.width = `${(stamina / staminaMax) * 100}%`;
@@ -675,34 +746,70 @@
             }
 
             renderDashboardView() {
+                const prod = this.game.state.empire.production || { goldPerSec: 0, runesPerSec: 0, essencePerSec: 0 };
+                const units = this.game.state.empire.units || {};
+                const unitList = Object.keys(GAME_DATA.UNITS).map(id => {
+                    const u = GAME_DATA.UNITS[id];
+                    const qty = units[id] || 0;
+                    return `<div class="flex items-center justify-between"><span>${u.emoji} ${u.name}</span><span class="font-mono text-white">${qty}</span></div>`;
+                }).join('');
+                const wc = this.game.state.workers.woodcutting;
+                const wcAssigned = Object.values(wc.assigned || {}).reduce((a,b)=>a+b,0);
                 return `
-                    <h1 class="text-2xl font-semibold text-white mb-4">Dashboard</h1>
-                    <div class="block p-4">
-                        <h2 class="text-lg font-bold text-white mb-3">Log Real-Life Task</h2>
-                        <div id="add-task-form" class="space-y-3">
-                            <input type="text" id="task-name-input" placeholder="e.g., 'Workout for 30 minutes'" class="w-full p-2 bg-primary border border-border-color rounded-md">
-                            <div class="grid grid-cols-2 gap-3">
-                                <select id="task-category-select" class="w-full p-2 bg-primary border border-border-color rounded-md">
-                                    ${Object.entries(TASK_CATEGORIES).map(([key, value]) => `<option value="${value}">${key.charAt(0) + key.slice(1).toLowerCase()} (${value})</option>`).join('')}
-                                </select>
-                                <select id="task-difficulty-select" class="w-full p-2 bg-primary border border-border-color rounded-md">
-                                    <option value="small">Small</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="large">Large</option>
-                                </select>
+                    <div class="block p-6 mb-4 bg-gradient-to-r from-black/40 to-black/20 border border-border-color">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-crown text-yellow-400 text-2xl"></i>
+                                <div>
+                                    <h1 class="text-2xl font-semibold text-white">The Sovereign's Ledger</h1>
+                                    <p class="text-secondary">Command your medieval economy and rise to legend.</p>
+                                </div>
                             </div>
-                            <button id="add-task-btn" class="chimera-button w-full py-2 rounded-md font-bold">Complete Task & Gain Stamina</button>
+                            <div class="flex gap-2">
+                                <button id="goto-empire" class="chimera-button px-3 py-2 rounded-md"><i class="fas fa-chess-rook"></i> Empire</button>
+                                <button id="goto-woodcutting" class="chimera-button px-3 py-2 rounded-md"><i class="fas fa-tree"></i> Woodcutting</button>
+                                <button id="goto-runecrafting" class="chimera-button px-3 py-2 rounded-md"><i class="fas fa-circle-nodes"></i> Runecrafting</button>
+                                <button id="goto-combat" class="chimera-button px-3 py-2 rounded-md"><i class="fas fa-skull"></i> Combat</button>
+                                <button id="goto-shop" class="chimera-button px-3 py-2 rounded-md"><i class="fas fa-store"></i> Shop</button>
+                            </div>
                         </div>
                     </div>
-                    <div class="block p-4 mt-4">
-                        <h2 class="text-lg font-bold text-white mb-3">How to Play</h2>
-                        <ol class="text-secondary list-decimal list-inside space-y-1">
-                            <li>Complete real-life tasks here to earn <strong>Stamina</strong>.</li>
-                            <li>Use Gathering to gain resources; Artisan to craft gear and boosts.</li>
-                            <li>Fight in <strong>Combat</strong> using your crafted gear and food.</li>
-                            <li>Click in <strong>Clicker</strong> to generate Gold and unlock upgrades.</li>
-                            <li>Cast spells in <strong>Spellbook</strong>, buy and open <strong>Chests</strong> in Shop.</li>
-                        </ol>
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                        <div class="block p-4">
+                            <h2 class="text-lg font-bold">Treasury</h2>
+                            <p class="text-secondary">Gold on hand</p>
+                            <p class="text-2xl font-mono text-yellow-300">${Math.floor(this.game.state.player.gold).toLocaleString()}</p>
+                            <p class="text-xs text-green-300 mt-1">+${prod.goldPerSec.toFixed(1)}/s</p>
+                        </div>
+                        <div class="block p-4">
+                            <h2 class="text-lg font-bold">Arcane Reserves</h2>
+                            <p class="text-secondary">Runes & Essence</p>
+                            <p class="text-2xl font-mono text-purple-300">${((this.game.state.player.runes||0) + this.game.getTotalRuneItemCount()).toLocaleString()}</p>
+                            <p class="text-xs text-blue-300 mt-1">Runes: +${(prod.runesPerSec||0).toFixed(2)}/s • Essence: +${(prod.essencePerSec||0).toFixed(2)}/s</p>
+                        </div>
+                        <div class="block p-4">
+                            <h2 class="text-lg font-bold">Workforce</h2>
+                            <p class="text-secondary">Empire Units & Camps</p>
+                            <p class="text-sm">Timberhands: <span class="font-mono text-white">${wc.total}</span> • Assigned: <span class="font-mono text-white">${wcAssigned}</span></p>
+                            <div class="mt-2 space-y-1">${unitList || '<p class="text-secondary">No units hired yet.</p>'}</div>
+                        </div>
+                        <div class="block p-4">
+                            <h2 class="text-lg font-bold">Real-life Tasks</h2>
+                            <p class="text-secondary text-sm">Complete tasks to gain Stamina and level Meta Skills.</p>
+                            <div id="add-task-form" class="space-y-3 mt-2">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <select id="task-category-select" class="w-full p-2 bg-primary border border-border-color rounded-md">
+                                        ${Object.entries(TASK_CATEGORIES).map(([key, value]) => `<option value="${value}">${key.charAt(0) + key.slice(1).toLowerCase()} (${value})</option>`).join('')}
+                                    </select>
+                                    <select id="task-difficulty-select" class="w-full p-2 bg-primary border border-border-color rounded-md">
+                                        <option value="small">Small</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="large">Large</option>
+                                    </select>
+                                </div>
+                                <button id="add-task-btn" class="chimera-button w-full py-2 rounded-md font-bold">Complete Task & Gain Stamina</button>
+                            </div>
+                        </div>
                     </div>
                 `;
             }
@@ -806,26 +913,36 @@
             renderCombatFooter() { /* placeholder for potential dynamic footer updates */ }
 
             renderClickerView() {
-                const c = this.game.state.clicker;
-                const clickIncome = c.goldPerClick * this.game.goldMultiplier();
-                const upgradeCost = (lvl, base) => Math.floor(base * Math.pow(1.35, lvl));
-                const clickCost = upgradeCost(c.upgrades.clickPowerLevel, 50);
-                const autoCost = upgradeCost(c.upgrades.autoClickerLevel, 100);
-                const multCost = upgradeCost(c.upgrades.multiplierLevel, 250);
+                const units = GAME_DATA.UNITS;
+                const owned = this.game.state.empire.units;
+                const prod = this.game.calculateEmpireProductionPerSecond();
+                const cards = Object.keys(units).map(id => {
+                    const u = units[id];
+                    const qty = owned[id] || 0;
+                    const cost = this.game.getEmpireUnitCost(id);
+                    const lines = [];
+                    if (u.goldPerSec) lines.push(`Gold: +${u.goldPerSec}/s each`);
+                    if (u.runesPerSec) lines.push(`Runes: +${u.runesPerSec}/s each`);
+                    if (u.essencePerSec) lines.push(`Essence: +${u.essencePerSec}/s each`);
+                    return `
+                        <div class="block p-4 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-lg font-bold">${u.emoji} ${u.name}</h3>
+                                <p class="text-secondary text-xs">${u.description}</p>
+                                <p class="text-secondary text-xs mt-1">${lines.join(' • ')}</p>
+                                <p class="text-white text-sm mt-2">Owned: <span class="font-mono">${qty}</span></p>
+                            </div>
+                            <button class="hire-unit-btn chimera-button px-3 py-2 rounded-md mt-3" data-unit-id="${id}">Hire — Cost: ${cost} gold</button>
+                        </div>
+                    `;
+                }).join('');
                 return `
-                    <h1 class="text-2xl font-semibold text-white mb-4">Clicker</h1>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="block p-6 flex flex-col items-center justify-center space-y-4">
-                            <button id="big-cookie" class="chimera-button rounded-full w-40 h-40 flex items-center justify-center text-2xl">+${Math.floor(clickIncome)} Gold</button>
-                            <p class="text-secondary">Auto: ${c.autoClickers} x/${(1000 / c.autoRateMs).toFixed(1)}s, Power: ${c.goldPerClick}</p>
-                        </div>
-                        <div class="block p-4 space-y-3">
-                            <h2 class="text-lg font-bold">Upgrades</h2>
-                            <button id="upgrade-click" class="chimera-button px-3 py-2 rounded-md w-full text-left">Increase Click Power (+1) — Cost: ${clickCost} gold</button>
-                            <button id="upgrade-auto" class="chimera-button px-3 py-2 rounded-md w-full text-left">Buy Autoclicker (+1) — Cost: ${autoCost} gold</button>
-                            <button id="upgrade-mult" class="chimera-button px-3 py-2 rounded-md w-full text-left">Sharpen Tools (Power x1.2) — Cost: ${multCost} gold</button>
-                        </div>
+                    <h1 class="text-2xl font-semibold text-white mb-4">Empire Command</h1>
+                    <div class="block p-4 mb-4">
+                        <h2 class="text-lg font-bold">Production</h2>
+                        <p class="text-secondary text-sm">Gold: <span class="text-white">+${prod.goldPerSec.toFixed(1)}/s</span> • Runes: <span class="text-white">+${(prod.runesPerSec||0).toFixed(2)}/s</span> • Essence: <span class="text-white">+${(prod.essencePerSec||0).toFixed(2)}/s</span></p>
                     </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${cards}</div>
                 `;
             }
 
@@ -864,7 +981,12 @@
             }
 
             attachViewEventListeners() {
-                const addTaskBtn = document.getElementById('add-task-btn'); if (addTaskBtn) { addTaskBtn.addEventListener('click', () => { const category = document.getElementById('task-category-select').value; const difficulty = document.getElementById('task-difficulty-select').value; this.game.completeRealLifeTask(category, difficulty); const n = document.getElementById('task-name-input'); if (n) n.value = ''; }); }
+                const addTaskBtn = document.getElementById('add-task-btn'); if (addTaskBtn) { addTaskBtn.addEventListener('click', () => { const category = document.getElementById('task-category-select').value; const difficulty = document.getElementById('task-difficulty-select').value; this.game.completeRealLifeTask(category, difficulty); }); }
+                const ge = document.getElementById('goto-empire'); if (ge) ge.addEventListener('click', () => { this.currentView = 'clicker'; this.render(); });
+                const gw = document.getElementById('goto-woodcutting'); if (gw) gw.addEventListener('click', () => { this.currentView = 'woodcutting'; this.render(); });
+                const gr = document.getElementById('goto-runecrafting'); if (gr) gr.addEventListener('click', () => { this.currentView = 'runecrafting'; this.render(); });
+                const gc = document.getElementById('goto-combat'); if (gc) gc.addEventListener('click', () => { this.currentView = 'combat'; this.render(); });
+                const gs = document.getElementById('goto-shop'); if (gs) gs.addEventListener('click', () => { this.currentView = 'shop'; this.render(); });
                 document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => { const duration = parseInt(prompt('Enter duration in minutes:', '15'), 10); if (isNaN(duration) || duration <= 0) return; this.game.startAction(btn.dataset.skillId, btn.dataset.actionId, duration); }); });
                 document.querySelectorAll('.craft-action-btn, .light-action-btn').forEach(btn => { btn.addEventListener('click', () => {
                     const s = btn.dataset.skillId; const a = btn.dataset.actionId;
@@ -889,12 +1011,8 @@
                 document.querySelectorAll('.eat-food-btn').forEach(btn => { btn.addEventListener('click', () => this.game.eatFood(btn.dataset.itemId)); });
                 document.querySelectorAll('.equip-weapon-btn').forEach(btn => { btn.addEventListener('click', () => this.game.equipWeapon(btn.dataset.itemId)); });
 
-                // Clicker
-                const big = document.getElementById('big-cookie'); if (big) big.addEventListener('click', () => this.game.addGold(this.game.state.clicker.goldPerClick));
-                const c = this.game.state.clicker; const upgradeCost = (lvl, base) => Math.floor(base * Math.pow(1.35, lvl));
-                const upClick = document.getElementById('upgrade-click'); if (upClick) upClick.addEventListener('click', () => { const cost = upgradeCost(c.upgrades.clickPowerLevel, 50); if (!this.game.spendGold(cost)) return; c.upgrades.clickPowerLevel++; c.goldPerClick += 1; this.renderView(); });
-                const upAuto = document.getElementById('upgrade-auto'); if (upAuto) upAuto.addEventListener('click', () => { const cost = upgradeCost(c.upgrades.autoClickerLevel, 100); if (!this.game.spendGold(cost)) return; c.upgrades.autoClickerLevel++; c.autoClickers += 1; this.renderView(); });
-                const upMult = document.getElementById('upgrade-mult'); if (upMult) upMult.addEventListener('click', () => { const cost = upgradeCost(c.upgrades.multiplierLevel, 250); if (!this.game.spendGold(cost)) return; c.upgrades.multiplierLevel++; c.goldPerClick = Math.max(1, Math.floor(c.goldPerClick * 1.2)); this.renderView(); });
+                // Empire hiring events
+                document.querySelectorAll('.hire-unit-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireEmpireUnit(btn.dataset.unitId)); });
 
                 // Spells
                 document.querySelectorAll('.cast-spell-btn').forEach(btn => { btn.addEventListener('click', () => this.game.castSpell(btn.dataset.spellId)); });
