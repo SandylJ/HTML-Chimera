@@ -1363,6 +1363,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (action.input) { canAfford = action.input.every(inp => (this.game.state.bank[inp.itemId] || 0) >= inp.quantity); }
             const mastery = this.game.getMastery(skillId, action.id);
             const actionDesc = action.output ? `${GAME_DATA.ITEMS[action.output.itemId]?.name || 'Product'} x${action.output.quantity}` : 'Special';
+            const isGathering = GAME_DATA.SKILLS[skillId].type === 'gathering';
+            let freeWorkers = 0;
+            if (isGathering) {
+                const wsTmp = this.game.state.workers[skillId] || { total: 0, assigned: {} };
+                const sumAssignedTmp = Object.values(wsTmp.assigned || {}).reduce((a,b)=>a+(b||0),0);
+                freeWorkers = Math.max(0, (wsTmp.total||0) - sumAssignedTmp);
+            }
+            const isDisabled = isGathering
+                ? (!hasLevel || !canAfford || freeWorkers <= 0)
+                : (!hasLevel || !canAfford || this.game.state.activeAction);
             return `
                 <div class="block p-4">
                     <div class="flex items-center justify-between">
@@ -1378,8 +1388,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p class="text-xs text-secondary text-right">${Math.floor(mastery.currentXP)} / ${mastery.xpToNextLevel} XP</p>
                     </div>
                     ${(GAME_DATA.SKILLS[skillId].type === 'gathering' && this.game.state.workers[skillId]) ? this.renderWorkerAssign(skillId, action) : ''}
-                    ${actionType === 'Start' ? `<div class="mt-3 flex items-center gap-2"><label class="text-xs text-secondary">Duration</label><select class="action-duration-select chimera-button px-2 py-1 rounded" data-skill-id="${skillId}" data-action-id="${action.id}"><option value="5">5m</option><option value="15" selected>15m</option><option value="30">30m</option><option value="60">60m</option></select></div>` : ''}
-                    <button class="${actionType.toLowerCase()}-action-btn chimera-button px-4 py-2 rounded-md mt-4" data-skill-id="${skillId}" data-action-id="${action.id}" ${!hasLevel || !canAfford || this.game.state.activeAction ? 'disabled' : ''}>${actionType}</button>
+                    ${actionType === 'Start' && !isGathering ? `<div class="mt-3 flex items-center gap-2"><label class="text-xs text-secondary">Duration</label><select class="action-duration-select chimera-button px-2 py-1 rounded" data-skill-id="${skillId}" data-action-id="${action.id}"><option value="5">5m</option><option value="15" selected>15m</option><option value="30">30m</option><option value="60">60m</option></select></div>` : ''}
+                    <button class="${actionType.toLowerCase()}-action-btn chimera-button px-4 py-2 rounded-md mt-4" data-skill-id="${skillId}" data-action-id="${action.id}" data-mode="${isGathering ? 'worker' : 'manual'}" ${isDisabled ? 'disabled' : ''}>${actionType}${isGathering ? ' (Assign 1)' : ''}</button>
                 </div>
             `;
         }
@@ -1877,7 +1887,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const gwf = document.getElementById('goto-workforce'); if (gwf) gwf.addEventListener('click', () => { this.currentView = 'workforce'; this.render(); });
             const gar = document.getElementById('goto-army'); if (gar) gar.addEventListener('click', () => { this.currentView = 'army'; this.render(); });
             const asg = document.getElementById('all-systems-go'); if (asg) asg.addEventListener('click', (e) => { const rect = e.currentTarget.getBoundingClientRect(); this.juiceBurst('upgrade', rect.left + rect.width/2, rect.top + rect.height/2); this.pulseAt(e.currentTarget); this.game.activateAllWorkers(); });
-            document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => { const sel = this.mainContent.querySelector(`.action-duration-select[data-skill-id="${btn.dataset.skillId}"][data-action-id="${btn.dataset.actionId}"]`); const duration = sel ? parseInt(sel.value, 10) : 15; if (isNaN(duration) || duration <= 0) return; this.game.startAction(btn.dataset.skillId, btn.dataset.actionId, duration); }); });
+            document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => {
+                const skillId = btn.dataset.skillId; const actionId = btn.dataset.actionId; const mode = btn.dataset.mode;
+                if (mode === 'worker') {
+                    const ws = this.game.state.workers[skillId]; if (!ws) return;
+                    const sumAssigned = Object.values(ws.assigned || {}).reduce((a,b)=>a+(b||0),0);
+                    const free = Math.max(0, (ws.total || 0) - sumAssigned);
+                    if (free <= 0) { this.game.uiManager.showFloatingText('No free workers', 'text-yellow-300'); return; }
+                    ws.assigned[actionId] = (ws.assigned[actionId] || 0) + 1;
+                    if (typeof ws.progress[actionId] !== 'number') ws.progress[actionId] = 0;
+                    this.game.uiManager.showFloatingText('+1 Worker Assigned', 'text-green-300');
+                    this.render();
+                    return;
+                }
+                const sel = this.mainContent.querySelector(`.action-duration-select[data-skill-id="${skillId}"][data-action-id="${actionId}"]`);
+                const duration = sel ? parseInt(sel.value, 10) : 15; if (isNaN(duration) || duration <= 0) return; this.game.startAction(skillId, actionId, duration);
+            }); });
             document.querySelectorAll('.craft-action-btn, .light-action-btn').forEach(btn => { btn.addEventListener('click', () => {
                 const s = btn.dataset.skillId; const a = btn.dataset.actionId;
                 if (s === 'runecrafting') {
