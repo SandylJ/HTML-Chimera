@@ -261,7 +261,10 @@ document.addEventListener('DOMContentLoaded', () => {
             this.lastUpdate = Date.now();
 
             // Combat state
-            this.combat = { inCombat: false, enemy: null, lastPlayerAttack: 0, lastEnemyAttack: 0, playerAttackSpeedMs: 1600 };
+            this.combat = { inCombat: false, enemy: null, lastPlayerAttack: 0, lastEnemyAttack: 0, playerAttackSpeedMs: 1600,
+                auto: { enabled: false, targetId: (GAME_DATA.COMBAT.ENEMIES?.[0]?.id) || null, lastTick: Date.now(), killsFrac: 0,
+                    buffers: { gold: 0, runes: 0, items: {} } }
+            };
 
             // Clicker state
             this.clicker = { goldPerClick: 1, autoClickers: 0, autoRateMs: 1000, lastAutoTick: Date.now(), upgrades: { clickPowerLevel: 0, autoClickerLevel: 0, multiplierLevel: 0 } };
@@ -431,6 +434,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (this.state.player.hp <= 0) { this.endCombat(false); }
                 }
             }
+
+            // Passive auto-combat (army raids) when not in manual combat
+            this.processAutoCombat();
 
             // Clicker auto
             if (now - this.state.clicker.lastAutoTick >= this.state.clicker.autoRateMs) {
@@ -956,6 +962,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!this.state.army) { this.state.army = { units: {}, lastTick: Date.now(), production: { dps: 0, hps: 0, hungry: false }, upkeep: { foodBuffer: 0, hungry: false }, fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() }, upgrades: { offenseLevel: 0, supportLevel: 0, logisticsLevel: 0 }, stance: 'balanced' }; }
                     if (!this.state.army.units) this.state.army.units = {};
                     Object.keys(GAME_DATA.ARMY_CLASSES).forEach(id => { if (typeof this.state.army.units[id] !== 'number') this.state.army.units[id] = 0; });
+                    // Backfill combat auto-battle defaults if missing
+                    if (!this.state.combat) this.state.combat = { inCombat: false, enemy: null, lastPlayerAttack: 0, lastEnemyAttack: 0, playerAttackSpeedMs: 1600 };
+                    if (!this.state.combat.auto) this.state.combat.auto = { enabled: false, targetId: (GAME_DATA.COMBAT.ENEMIES?.[0]?.id) || null, lastTick: Date.now(), killsFrac: 0, buffers: { gold: 0, runes: 0, items: {} } };
                  } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
              }
          }
@@ -1085,6 +1094,64 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return total;
         }
+
+        // Passive auto-combat processor (army raids)
+        processAutoCombat() {
+            const auto = this.state.combat?.auto; if (!auto || !auto.enabled) return;
+            if (this.state.combat.inCombat) return; // pause while in manual combat
+            const now = Date.now();
+            const deltaSec = (now - (auto.lastTick || now)) / 1000;
+            if (deltaSec < 0.1) { auto.lastTick = now; return; }
+            auto.lastTick = now;
+
+            // Army upkeep and output snapshot
+            const upkeep = this.consumeArmyUpkeep(deltaSec);
+            const base = this.calculateArmyOutputPerSecond();
+            const hungryPenalty = upkeep.hungry ? 0.5 : 1.0;
+            const rallyMult = this.hasBuff('armyRally') ? 2 : 1;
+            const dps = (base.dps || 0) * hungryPenalty * rallyMult;
+            // Choose target
+            const target = (GAME_DATA.COMBAT.ENEMIES || []).find(e => e.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
+            if (!target || !target.maxHp || dps <= 0) return;
+            const killsPerSec = dps / target.maxHp;
+            auto.killsFrac = (auto.killsFrac || 0) + killsPerSec * deltaSec;
+            const wholeKills = Math.floor(auto.killsFrac);
+            if (wholeKills <= 0) return;
+            auto.killsFrac -= wholeKills;
+
+            // Roll rewards per kill
+            for (let i = 0; i < wholeKills; i++) {
+                // Gold roll within enemy range, add raw to buffer
+                const minG = Array.isArray(target.gold) ? (target.gold[0] || 0) : 0;
+                const maxG = Array.isArray(target.gold) ? (target.gold[1] || 0) : 0;
+                const g = Math.floor(Math.random() * (maxG - minG + 1)) + minG;
+                auto.buffers.gold = (auto.buffers.gold || 0) + g;
+                // Drops
+                (target.drops || []).forEach(drop => {
+                    const chance = drop.chance || 0; // percent
+                    if (Math.random() * 100 < chance) {
+                        const [qmin, qmax] = Array.isArray(drop.qty) ? drop.qty : [drop.qty || 1, drop.qty || 1];
+                        const qty = Math.floor(Math.random() * (qmax - qmin + 1)) + qmin;
+                        if (!auto.buffers.items) auto.buffers.items = {};
+                        auto.buffers.items[drop.id] = (auto.buffers.items[drop.id] || 0) + qty;
+                    }
+                });
+            }
+        }
+
+        claimWarSpoils() {
+            const auto = this.state.combat?.auto; if (!auto) return;
+            const goldAmt = Math.floor(auto.buffers?.gold || 0);
+            const items = auto.buffers?.items || {};
+            if (goldAmt > 0) this.addGold(goldAmt);
+            Object.entries(items).forEach(([id, qty]) => { if (qty > 0) this.addToBank(id, qty); });
+            // Reset buffers
+            auto.buffers = { gold: 0, runes: 0, items: {} };
+            this.uiManager.showFloatingText('War spoils claimed!', 'text-yellow-300');
+            this.uiManager.playSound('upgrade');
+            this.uiManager.renderView();
+        }
+        clearWarSpoils() { const auto = this.state.combat?.auto; if (!auto) return; auto.buffers = { gold: 0, runes: 0, items: {} }; this.uiManager.renderView(); }
     }
 
     class UIManager {
@@ -1681,6 +1748,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? `<button id="army-rally" class="chimera-button imperial-button px-3 py-2 rounded-md opacity-80">Rallying… ${rallyRemaining}s</button>`
                 : `<button id="army-rally" class="chimera-button imperial-button juicy-button px-3 py-2 rounded-md">Rally Army — 2 Runes</button>`;
 
+            // Auto-battle metrics (no consumption here)
+            const auto = this.game.state.combat.auto || { enabled: false, targetId: (GAME_DATA.COMBAT.ENEMIES?.[0]?.id)||null, buffers: { gold:0, items:{} } };
+            const target = (GAME_DATA.COMBAT.ENEMIES || []).find(x => x.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
+            const base = this.game.calculateArmyOutputPerSecond();
+            const hungryPenalty = this.game.state.army.upkeep?.hungry ? 0.5 : 1.0;
+            const rallyMult = this.game.hasBuff('armyRally') ? 2 : 1;
+            const estDps = (base.dps || 0) * hungryPenalty * rallyMult;
+            const killsPerSec = (target && target.maxHp > 0) ? (estDps / target.maxHp) : 0;
+            const avgGold = target && Array.isArray(target.gold) ? (target.gold[0] + target.gold[1]) / 2 : 0;
+            const estGoldPerSec = killsPerSec * avgGold * this.game.goldMultiplier();
+            const targetOptions = (GAME_DATA.COMBAT.ENEMIES || []).map(x => `<option value="${x.id}" ${auto.targetId===x.id?'selected':''}>${x.name} (Lv ${x.level})</option>`).join('');
+            const itemsEntries = Object.entries(auto.buffers?.items || {});
+            const itemsHtml = itemsEntries.length ? itemsEntries.map(([id,q]) => `<span class="badge">${GAME_DATA.ITEMS[id]?.icon||'❔'} ${GAME_DATA.ITEMS[id]?.name||id} x${q}</span>`).join(' ') : '<span class="text-secondary text-xs">No items yet.</span>';
+            const spoilsEmpty = (Math.floor(auto.buffers?.gold||0) <= 0) && itemsEntries.length === 0;
+
             return `
                 <div class="block combat-hero p-5 rounded-md mb-4">
                     <div class="flex items-center justify-between">
@@ -1717,6 +1799,24 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p class="text-secondary">Weapon: <span class="text-white">${equippedName}</span></p>
                         <div class="flex flex-wrap gap-2">${weapons || '<span class="text-secondary">Craft a weapon in Smithing.</span>'}</div>
                         <div class="flex flex-wrap gap-2">${foodButtons || '<span class="text-secondary">Cook food to heal.</span>'}</div>
+                        <div class="block p-3 rounded-md mt-3">
+                            <h3 class="text-md font-bold mb-2">Auto-Battle</h3>
+                            <div class="flex items-center gap-2 mb-2">
+                                <label class="text-xs flex items-center gap-2"><input id="auto-battle-toggle" type="checkbox" ${auto.enabled?'checked':''}/> Enable</label>
+                                <select id="auto-target-select" class="chimera-button px-2 py-1 rounded">${targetOptions}</select>
+                            </div>
+                            <div class="text-xs text-secondary">Kills/s: <span class="text-white font-mono">${killsPerSec.toFixed(2)}</span> • Gold/s: <span class="text-white font-mono">${estGoldPerSec.toFixed(1)}</span></div>
+                            <div class="text-[11px] text-secondary">Consumes food while active. Spoils are cached for claiming.</div>
+                        </div>
+                        <div class="block p-3 rounded-md">
+                            <h3 class="text-md font-bold mb-2">War Spoils</h3>
+                            <div class="text-sm mb-1">Gold: <span class="font-mono text-yellow-300">${Math.floor(auto.buffers?.gold||0).toLocaleString()}</span></div>
+                            <div class="flex flex-wrap gap-2 mb-2">${itemsHtml}</div>
+                            <div class="flex items-center gap-2">
+                                <button id="claim-war-spoils" class="chimera-button juicy-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Claim All</button>
+                                <button id="clear-war-spoils" class="chimera-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Clear</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -1992,6 +2092,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const endBtn = document.getElementById('end-combat-btn'); if (endBtn) endBtn.addEventListener('click', () => this.game.endCombat(false));
             document.querySelectorAll('.eat-food-btn').forEach(btn => { btn.addEventListener('click', () => this.game.eatFood(btn.dataset.itemId)); });
             document.querySelectorAll('.equip-weapon-btn').forEach(btn => { btn.addEventListener('click', () => this.game.equipWeapon(btn.dataset.itemId)); });
+            // Auto-battle controls
+            const abToggle = document.getElementById('auto-battle-toggle'); if (abToggle) abToggle.addEventListener('change', (e) => { this.game.state.combat.auto.enabled = !!e.target.checked; this.game.state.combat.auto.lastTick = Date.now(); });
+            const abTarget = document.getElementById('auto-target-select'); if (abTarget) abTarget.addEventListener('change', (e) => { this.game.state.combat.auto.targetId = e.target.value; });
+            const claimBtn = document.getElementById('claim-war-spoils'); if (claimBtn) claimBtn.addEventListener('click', () => this.game.claimWarSpoils());
+            const clearBtn = document.getElementById('clear-war-spoils'); if (clearBtn) clearBtn.addEventListener('click', () => this.game.clearWarSpoils());
 
             // Empire hiring events
             document.querySelectorAll('.hire-unit-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.hireEmpireUnit(btn.dataset.unitId); this.pulseAt(btn); this.game.uiManager.playSound('hire'); }); });
