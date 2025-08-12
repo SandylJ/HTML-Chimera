@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
             woodcutting: { name: 'Woodcutting', type: 'gathering', icon: 'fa-tree', theme: 'woodcutting' },
             mining: { name: 'Mining', type: 'gathering', icon: 'fa-gem', theme: 'mining' },
             fishing: { name: 'Fishing', type: 'gathering', icon: 'fa-fish', theme: 'fishing' },
+            farming: { name: 'Farming', type: 'gathering', icon: 'fa-seedling', theme: 'farming' },
             firemaking: { name: 'Firemaking', type: 'artisan', icon: 'fa-fire', theme: 'firemaking' },
             smithing: { name: 'Smithing', type: 'artisan', icon: 'fa-hammer', theme: 'smithing' },
             cooking: { name: 'Cooking', type: 'artisan', icon: 'fa-utensils', theme: 'cooking' },
@@ -48,6 +49,11 @@ document.addEventListener('DOMContentLoaded', () => {
             law_rune: { name: 'Law Rune', icon: '⚖️' },
             death_rune: { name: 'Death Rune', icon: '💀' },
             blood_rune: { name: 'Blood Rune', icon: '🩸' },
+
+            // Farming resources
+            potato: { name: 'Potato', icon: '🥔' },
+            wheat: { name: 'Wheat', icon: '🌾' },
+            flax: { name: 'Flax', icon: '🪢' },
         },
         ACTIONS: {
             woodcutting: [
@@ -62,6 +68,11 @@ document.addEventListener('DOMContentLoaded', () => {
             fishing: [
                 { id: 'shrimp_spot', name: 'Shrimp Spot', level: 1, xp: 8, output: { itemId: 'raw_shrimp', quantity: 1 }, baseTime: 4000 },
                 { id: 'sardine_spot', name: 'Sardine Spot', level: 5, xp: 15, output: { itemId: 'raw_sardine', quantity: 1 }, baseTime: 4500 },
+            ],
+            farming: [
+                { id: 'potato_patch', name: 'Potato Patch', level: 1, xp: 7, output: { itemId: 'potato', quantity: 1 }, baseTime: 4500 },
+                { id: 'wheat_field', name: 'Wheat Field', level: 5, xp: 10, output: { itemId: 'wheat', quantity: 1 }, baseTime: 5000 },
+                { id: 'flax_plot', name: 'Flax Plot', level: 10, xp: 13, output: { itemId: 'flax', quantity: 1 }, baseTime: 5200 },
             ],
         },
         RECIPES: {
@@ -168,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             Object.values(META_SKILLS).forEach(name => { this.player.meta_skills[name] = new Skill(name, name); });
 
-            // Worker systems: Mining Overseer and Fishing Harbor
+            // Worker systems: Mining Overseer, Fishing Harbor, Farming Estate
             this.workers = {
                 mining: {
                     total: 0,
@@ -182,11 +193,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     upgrades: { netLevel: 0, baitLevel: 0, boatLevel: 0 },
                     assigned: {},
                     progress: {}
+                },
+                farming: {
+                    total: 0,
+                    upgrades: { irrigationLevel: 0, toolsLevel: 0, compostLevel: 0, tractorLevel: 0 },
+                    assigned: {},
+                    progress: {}
                 }
             };
             // Seed worker action keys
             (GAME_DATA.ACTIONS.mining || []).forEach(a => { this.workers.mining.assigned[a.id] = 0; this.workers.mining.progress[a.id] = 0; });
             (GAME_DATA.ACTIONS.fishing || []).forEach(a => { this.workers.fishing.assigned[a.id] = 0; this.workers.fishing.progress[a.id] = 0; });
+            (GAME_DATA.ACTIONS.farming || []).forEach(a => { this.workers.farming.assigned[a.id] = 0; this.workers.farming.progress[a.id] = 0; });
         }
     }
 
@@ -321,11 +339,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!this.state.workers) {
                 this.state.workers = {
                     mining: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0, depthLevel: 0, cartLevel: 0 }, assigned: {}, progress: {} },
-                    fishing: { total: 0, boats: 0, upgrades: { netLevel: 0, baitLevel: 0, boatLevel: 0 }, assigned: {}, progress: {} }
+                    fishing: { total: 0, boats: 0, upgrades: { netLevel: 0, baitLevel: 0, boatLevel: 0 }, assigned: {}, progress: {} },
+                    farming: { total: 0, upgrades: { irrigationLevel: 0, toolsLevel: 0, compostLevel: 0, tractorLevel: 0 }, assigned: {}, progress: {} },
                 };
             }
             if (!this.state.workers.mining) this.state.workers.mining = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0, depthLevel: 0, cartLevel: 0 }, assigned: {}, progress: {} };
             if (!this.state.workers.fishing) this.state.workers.fishing = { total: 0, boats: 0, upgrades: { netLevel: 0, baitLevel: 0, boatLevel: 0 }, assigned: {}, progress: {} };
+            if (!this.state.workers.farming) this.state.workers.farming = { total: 0, upgrades: { irrigationLevel: 0, toolsLevel: 0, compostLevel: 0, tractorLevel: 0 }, assigned: {}, progress: {} };
             (GAME_DATA.ACTIONS.mining || []).forEach(a => {
                 if (typeof this.state.workers.mining.assigned[a.id] !== 'number') this.state.workers.mining.assigned[a.id] = 0;
                 if (typeof this.state.workers.mining.progress[a.id] !== 'number') this.state.workers.mining.progress[a.id] = 0;
@@ -333,6 +353,10 @@ document.addEventListener('DOMContentLoaded', () => {
             (GAME_DATA.ACTIONS.fishing || []).forEach(a => {
                 if (typeof this.state.workers.fishing.assigned[a.id] !== 'number') this.state.workers.fishing.assigned[a.id] = 0;
                 if (typeof this.state.workers.fishing.progress[a.id] !== 'number') this.state.workers.fishing.progress[a.id] = 0;
+            });
+            (GAME_DATA.ACTIONS.farming || []).forEach(a => {
+                if (typeof this.state.workers.farming.assigned[a.id] !== 'number') this.state.workers.farming.assigned[a.id] = 0;
+                if (typeof this.state.workers.farming.progress[a.id] !== 'number') this.state.workers.farming.progress[a.id] = 0;
             });
         }
 
@@ -342,6 +366,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (skillId === 'fishing') {
                 const base = 150; const growth = 1.22; const owned = this.state.workers.fishing.total || 0; return Math.floor(base * Math.pow(growth, owned));
+            }
+            if (skillId === 'farming') {
+                const base = 180; const growth = 1.23; const owned = this.state.workers.farming.total || 0; return Math.floor(base * Math.pow(growth, owned));
             }
             return 0;
         }
@@ -357,6 +384,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const level = type === 'net' ? (w.upgrades.netLevel || 0) : type === 'bait' ? (w.upgrades.baitLevel || 0) : (w.upgrades.boatLevel || 0);
                 const base = type === 'net' ? 180 : type === 'bait' ? 220 : 260; const growth = 1.4; return Math.floor(base * Math.pow(growth, level));
             }
+            if (skillId === 'farming') {
+                const w = this.state.workers.farming;
+                const level = type === 'irrigation' ? (w.upgrades.irrigationLevel || 0) : type === 'tools' ? (w.upgrades.toolsLevel || 0) : type === 'compost' ? (w.upgrades.compostLevel || 0) : (w.upgrades.tractorLevel || 0);
+                const base = type === 'irrigation' ? 220 : type === 'tools' ? 200 : type === 'compost' ? 240 : 320;
+                const growth = 1.42; return Math.floor(base * Math.pow(growth, level));
+            }
             return 0;
         }
         getBoatCost() {
@@ -366,6 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const cost = this.getHireCost(skillId); if (!this.spendGold(cost)) { this.uiManager.showModal('Not Enough Gold', `<p>You need ${cost} gold to hire.</p>`); return; }
             if (skillId === 'mining') { this.state.workers.mining.total += 1; this.uiManager.showFloatingText('+1 Miner Hired', 'text-green-400'); }
             if (skillId === 'fishing') { this.state.workers.fishing.total += 1; this.uiManager.showFloatingText('+1 Angler Hired', 'text-green-400'); }
+            if (skillId === 'farming') { this.state.workers.farming.total += 1; this.uiManager.showFloatingText('+1 Farmhand Hired', 'text-green-400'); }
             this.uiManager.renderView();
         }
         buyBoat() {
@@ -387,6 +421,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (type === 'boat') this.state.workers.fishing.upgrades.boatLevel += 1;
                 this.uiManager.showFloatingText('Harbor Upgraded!', 'text-yellow-300');
             }
+            if (skillId === 'farming') {
+                if (type === 'irrigation') this.state.workers.farming.upgrades.irrigationLevel += 1;
+                if (type === 'tools') this.state.workers.farming.upgrades.toolsLevel += 1;
+                if (type === 'compost') this.state.workers.farming.upgrades.compostLevel += 1;
+                if (type === 'tractor') this.state.workers.farming.upgrades.tractorLevel += 1;
+                this.uiManager.showFloatingText('Estate Upgraded!', 'text-yellow-300');
+            }
             this.uiManager.renderView();
         }
         getWorkerSpeedMultiplier(skillId, action) {
@@ -401,6 +442,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const timeMult = 1 / (1 + s * 0.1 + boats * 0.04);
                 return Math.max(0.5, timeMult * tide);
             }
+            if (skillId === 'farming') {
+                const irr = this.state.workers.farming.upgrades.irrigationLevel || 0; const tr = this.state.workers.farming.upgrades.tractorLevel || 0;
+                const timeMult = 1 / (1 + irr * 0.10 + tr * 0.06);
+                return Math.max(0.5, timeMult);
+            }
             return 1;
         }
         getWorkerYieldMultiplier(skillId, action) {
@@ -412,10 +458,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const net = this.state.workers.fishing.upgrades.netLevel || 0; const bait = this.state.workers.fishing.upgrades.baitLevel || 0;
                 return 1 + net * 0.12 + bait * 0.06;
             }
+            if (skillId === 'farming') {
+                const tools = this.state.workers.farming.upgrades.toolsLevel || 0; const comp = this.state.workers.farming.upgrades.compostLevel || 0;
+                return 1 + tools * 0.10 + comp * 0.08;
+            }
             return 1;
         }
         getTideSpeedModifier() {
-            const periodMs = 60 * 1000; // 1-minute tide cycle
+            const periodMs = 5 * 60 * 1000; // 5-minute tide cycle
             const phase = (Date.now() % periodMs) / periodMs; // 0..1
             const wave = Math.sin(phase * Math.PI * 2); // -1..1
             return 1 - wave * 0.08; // 0.92..1.08 inverted so low time mult at high tide
@@ -430,8 +480,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (wm.progress[action.id] >= perCycleTime) {
                         const cycles = Math.floor(wm.progress[action.id] / perCycleTime);
                         wm.progress[action.id] %= perCycleTime;
-                        const totalQty = (action.output?.quantity || 0) * cycles * this.getWorkerYieldMultiplier('mining', action);
-                        const qty = Math.max(0, Math.floor(totalQty)); if (qty > 0) {
+                        if (action.output && action.output.itemId) {
+                            const qty = Math.max(1, Math.floor(action.output.quantity * cycles * this.getWorkerYieldMultiplier('mining', action)));
                             this.addToBank(action.output.itemId, qty);
                             this.state.player.skills.mining.addXP(action.xp * cycles * 0.5, this);
                         }
@@ -452,15 +502,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (wf.progress[action.id] >= perCycleTime) {
                         const cycles = Math.floor(wf.progress[action.id] / perCycleTime);
                         wf.progress[action.id] %= perCycleTime;
-                        const totalQty = (action.output?.quantity || 0) * cycles * this.getWorkerYieldMultiplier('fishing', action);
-                        const qty = Math.max(0, Math.floor(totalQty)); if (qty > 0) {
+                        if (action.output && action.output.itemId) {
+                            const qty = Math.max(1, Math.floor(action.output.quantity * cycles * this.getWorkerYieldMultiplier('fishing', action)));
                             this.addToBank(action.output.itemId, qty);
                             this.state.player.skills.fishing.addXP(action.xp * cycles * 0.5, this);
                         }
-                        // Bait bonus: tiny chance at +1 extra
-                        const extraChance = 1 + (this.state.workers.fishing.upgrades.baitLevel || 0) * 0.6;
-                        for (let i = 0; i < cycles; i++) {
-                            if (Math.random() * 100 < extraChance) this.addToBank(action.output.itemId, 1);
+                    }
+                });
+            }
+            // Farming
+            const wfarm = this.state.workers?.farming; if (wfarm) {
+                (GAME_DATA.ACTIONS.farming || []).forEach(action => {
+                    const assigned = wfarm.assigned[action.id] || 0; if (assigned <= 0) return;
+                    const perCycleTime = this.calculateActionTime({ ...action, skillId: 'farming' }) * this.getWorkerSpeedMultiplier('farming', action);
+                    wfarm.progress[action.id] = (wfarm.progress[action.id] || 0) + deltaMs * assigned;
+                    if (wfarm.progress[action.id] >= perCycleTime) {
+                        const cycles = Math.floor(wfarm.progress[action.id] / perCycleTime);
+                        wfarm.progress[action.id] %= perCycleTime;
+                        if (action.output && action.output.itemId) {
+                            const qty = Math.max(1, Math.floor(action.output.quantity * cycles * this.getWorkerYieldMultiplier('farming', action)));
+                            this.addToBank(action.output.itemId, qty);
+                            this.state.player.skills.farming.addXP(action.xp * cycles * 0.5, this);
                         }
                     }
                 });
@@ -602,14 +664,25 @@ document.addEventListener('DOMContentLoaded', () => {
         constructor(game) {
             this.game = game; this.mainContent = document.getElementById('main-content'); this.modalBackdrop = document.getElementById('modal-backdrop'); this.modalContent = document.getElementById('modal-content'); this.floatingTextContainer = document.getElementById('floating-text-container'); this.currentView = 'dashboard';
         }
-        init() { this.renderSidebar(); this.attachSidebarEventListeners(); this.render(); }
+        init() {
+            this.renderSidebar(); this.attachSidebarEventListeners(); this.render();
+        }
+        render() {
+            this.renderView(); this.updateSidebarActive(); this.updateHeaderBars(); this.attachViewEventListeners(); this.updateMasteryBar(); if (this.currentView === 'combat') this.renderCombatFooter();
+        }
         renderSidebar() {
             const createLink = (skillId, skill) => `<a href="#" class="sidebar-link flex items-center p-3" data-view="${skillId}"><i class="fas ${skill.icon} w-6 text-center"></i><div class="flex-grow"><span>${skill.name}</span><div class="w-full xp-bar-bg rounded-full h-1.5 mt-1"><div id="sidebar-xp-${skillId}" class="xp-bar-fill h-1.5 rounded-full"></div></div></div></a>`;
             const gatheringHtml = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'gathering').map(id => createLink(id, GAME_DATA.SKILLS[id])).join(''); document.getElementById('gathering-skills-nav').innerHTML = gatheringHtml;
             const artisanHtml = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'artisan').map(id => createLink(id, GAME_DATA.SKILLS[id])).join(''); document.getElementById('artisan-skills-nav').innerHTML = artisanHtml;
         }
         attachSidebarEventListeners() { document.querySelectorAll('.sidebar-link').forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); this.currentView = link.dataset.view; this.render(); }); }); }
-        render() { this.updateSidebarActive(); this.renderView(); }
+
+        updateHeaderBars() {
+            const goldDisplay = document.getElementById('gold-display'); if (goldDisplay) goldDisplay.textContent = Math.floor(this.game.state.player.gold).toLocaleString();
+            const runesDisplay = document.getElementById('runes-display'); if (runesDisplay) runesDisplay.textContent = Math.floor(this.game.state.player.runes).toLocaleString();
+            const staminaFill = document.getElementById('stamina-bar-fill'); const staminaValue = document.getElementById('stamina-value'); if (staminaFill && staminaValue) { const s = this.game.state.player; staminaFill.style.width = `${(s.stamina / s.staminaMax) * 100}%`; staminaValue.textContent = `${Math.floor(s.stamina)}/${s.staminaMax}`; }
+        }
+        updateSidebarActive() { document.querySelectorAll('.sidebar-link').forEach(link => { link.classList.toggle('active', link.dataset.view === this.currentView); }); }
 
         updateDynamicElements() {
             document.getElementById('gold-display').textContent = Math.floor(this.game.state.player.gold).toLocaleString();
@@ -621,7 +694,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // If in combat, update view footer elements
             if (this.currentView === 'combat') this.renderCombatFooter();
         }
-        updateSidebarActive() { document.querySelectorAll('.sidebar-link').forEach(link => { link.classList.toggle('active', link.dataset.view === this.currentView); }); }
 
         updateMasteryBar() {
             const container = document.getElementById('mastery-progress-bar'); const action = this.game.state.activeAction; const inCombat = this.game.state.combat.inCombat; if (!action && !inCombat) { container.innerHTML = ''; return; }
@@ -661,32 +733,17 @@ document.addEventListener('DOMContentLoaded', () => {
         renderDashboardView() {
             return `
                 <h1 class="text-2xl font-semibold text-white mb-4">Dashboard</h1>
-                <div class="block p-4">
-                    <h2 class="text-lg font-bold text-white mb-3">Log Real-Life Task</h2>
-                    <div id="add-task-form" class="space-y-3">
-                        <input type="text" id="task-name-input" placeholder="e.g., 'Workout for 30 minutes'" class="w-full p-2 bg-primary border border-border-color rounded-md">
-                        <div class="grid grid-cols-2 gap-3">
-                            <select id="task-category-select" class="w-full p-2 bg-primary border border-border-color rounded-md">
-                                ${Object.entries(TASK_CATEGORIES).map(([key, value]) => `<option value="${value}">${key.charAt(0) + key.slice(1).toLowerCase()} (${value})</option>`).join('')}
-                            </select>
-                            <select id="task-difficulty-select" class="w-full p-2 bg-primary border border-border-color rounded-md">
-                                <option value="small">Small</option>
-                                <option value="medium">Medium</option>
-                                <option value="large">Large</option>
-                            </select>
-                        </div>
-                        <button id="add-task-btn" class="chimera-button w-full py-2 rounded-md font-bold">Complete Task & Gain Stamina</button>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div class="block p-4">
+                        <h2 class="text-lg font-bold">Getting Started</h2>
+                        <p class="text-secondary text-sm">Use Stamina to perform actions. Train Meta Skills to speed up and boost your economy.</p>
+                        <ol class="text-secondary list-decimal list-inside space-y-1">
+                            <li>Complete real-life tasks here to earn <strong>Stamina</strong>.</li>
+                            <li>Use Gathering to gain resources; Artisan to craft gear and boosts.</li>
+                            <li>Fight in <strong>Combat</strong> using your crafted gear and food.</li>
+                            <li>Click in <strong>Clicker</strong> to generate Gold and unlock upgrades.</li>
+                        </ol>
                     </div>
-                </div>
-                <div class="block p-4 mt-4">
-                    <h2 class="text-lg font-bold text-white mb-3">How to Play</h2>
-                    <ol class="text-secondary list-decimal list-inside space-y-1">
-                        <li>Complete real-life tasks here to earn <strong>Stamina</strong>.</li>
-                        <li>Use Gathering to gain resources; Artisan to craft gear and boosts.</li>
-                        <li>Fight in <strong>Combat</strong> using your crafted gear and food.</li>
-                        <li>Click in <strong>Clicker</strong> to generate Gold and unlock upgrades.</li>
-                        <li>Cast spells in <strong>Spellbook</strong>, buy and open <strong>Chests</strong> in Shop.</li>
-                    </ol>
                 </div>
             `;
         }
@@ -698,7 +755,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 actionType = 'Craft'; if (skillId === 'firemaking') { contentHtml = this.renderFiremakingView(); }
                 else { contentHtml = GAME_DATA.RECIPES[skillId].map(recipe => this.renderActionCard(skillId, recipe, actionType)).join(''); }
             }
-            const managerPanel = skillId === 'mining' ? this.renderMiningPanel() : (skillId === 'fishing' ? this.renderFishingPanel() : '');
+            const managerPanel = skillId === 'mining' ? this.renderMiningPanel() : (skillId === 'fishing' ? this.renderFishingPanel() : (skillId === 'farming' ? this.renderFarmingPanel() : ''));
             return `<h1 class="text-2xl font-semibold text-white mb-4">${skillData.name} <span class="text-base text-secondary">(Level ${playerSkill.level})</span></h1>${managerPanel}<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">${contentHtml}</div>`;
         }
 
@@ -706,25 +763,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const playerSkill = this.game.state.player.skills[skillId]; const hasLevel = playerSkill.level >= action.level; let canAfford = true;
             if (action.input) { canAfford = action.input.every(inp => (this.game.state.bank[inp.itemId] || 0) >= inp.quantity); }
             const mastery = this.game.getMastery(skillId, action.id);
-            let yieldMult = 1;
-            if (skillId === 'runecrafting') { yieldMult = Math.max(1, 1 + Math.floor((playerSkill.level - action.level) / 11)); }
-            const inputList = action.input ? action.input.map(inp => { const has = (this.game.state.bank[inp.itemId] || 0) >= inp.quantity; return `<span class="${has ? 'text-green-400' : 'text-red-400'}">${inp.quantity}x ${GAME_DATA.ITEMS[inp.itemId].name}</span>`; }).join(', ') : '';
+            const actionDesc = action.output ? `${GAME_DATA.ITEMS[action.output.itemId]?.name || 'Product'} x${action.output.quantity}` : 'Special';
             return `
-                <div class="block p-4 flex flex-col justify-between ${!hasLevel ? 'opacity-50' : ''}">
-                    <div>
-                        <h3 class="text-lg font-bold text-white">${action.name}</h3>
-                        <p class="text-secondary text-xs">Requires Level: ${action.level}</p>
-                        <p class="text-secondary text-xs">XP: ${action.xp}</p>
-                        ${action.input ? `<p class="text-secondary text-xs mt-1">Requires: ${inputList}</p>`: ''}
-                        ${skillId === 'runecrafting' ? `<p class="text-blue-300 text-xs mt-1">Yield at Lvl ${playerSkill.level}: x${yieldMult} per essence</p>` : ''}
-                        <div class="mt-2">
-                            <p class="text-xs text-yellow-400">Mastery Lvl ${mastery.level}</p>
-                            <div class="w-full xp-bar-bg rounded-full h-2 my-1"><div class="mastery-bar-fill h-2 rounded-full" style="width:${(mastery.currentXP / mastery.xpToNextLevel) * 100}%"></div></div>
-                            <p class="text-xs text-secondary text-right">${Math.floor(mastery.currentXP)} / ${mastery.xpToNextLevel} XP</p>
+                <div class="block p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold">${action.name}</h3>
+                            <p class="text-secondary text-sm">Lvl ${action.level} • ${actionDesc}</p>
                         </div>
-                        ${skillId === 'mining' ? this.renderMiningAssign(action) : ''}
-                        ${skillId === 'fishing' ? this.renderFishingAssign(action) : ''}
+                        <span class="badge"><i class="fas fa-star"></i> ${action.xp} XP</span>
                     </div>
+                    <div class="mt-2">
+                        <p class="text-xs text-secondary">Time: ${(this.game.calculateActionTime({ ...action, skillId }) / 1000).toFixed(1)}s</p>
+                        <div class="w-full xp-bar-bg rounded-full h-2 my-1"><div class="mastery-bar-fill h-2 rounded-full" style="width:${(mastery.currentXP / mastery.xpToNextLevel) * 100}%"></div></div>
+                        <p class="text-xs text-secondary text-right">${Math.floor(mastery.currentXP)} / ${mastery.xpToNextLevel} XP</p>
+                    </div>
+                    ${skillId === 'mining' ? this.renderMiningAssign(action) : ''}
+                    ${skillId === 'fishing' ? this.renderFishingAssign(action) : ''}
+                    ${skillId === 'farming' ? this.renderFarmingAssign(action) : ''}
                     <button class="${actionType.toLowerCase()}-action-btn chimera-button px-4 py-2 rounded-md mt-4" data-skill-id="${skillId}" data-action-id="${action.id}" ${!hasLevel || !canAfford || this.game.state.activeAction ? 'disabled' : ''}>${actionType}</button>
                 </div>
             `;
@@ -805,6 +861,49 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="space-x-1">
                             <button class="assign-fishing-worker-btn chimera-button px-2 py-1 rounded" data-action-id="${action.id}" data-dir="-1">-</button>
                             <button class="assign-fishing-worker-btn chimera-button px-2 py-1 rounded" data-action-id="${action.id}" data-dir="+1">+</button>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-secondary mt-1">Eff: x${yieldMult.toFixed(2)} yield, ${Math.round(100 - speedMult*100)}% faster</p>
+                </div>
+            `;
+        }
+
+        renderFarmingPanel() {
+            const wf = this.game.state.workers.farming; const hireCost = this.game.getHireCost('farming');
+            const irrCost = this.game.getUpgradeCost('farming', 'irrigation');
+            const toolsCost = this.game.getUpgradeCost('farming', 'tools');
+            const compCost = this.game.getUpgradeCost('farming', 'compost');
+            const tractCost = this.game.getUpgradeCost('farming', 'tractor');
+            return `
+                <div class="block p-4 mb-4 border border-farming">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <div>
+                            <h2 class="text-lg font-bold">Farming Estate</h2>
+                            <p class="text-secondary text-sm">Hire Farmhands. Irrigation and tractors speed growth; tools and compost increase yields.</p>
+                            <p class="text-white text-sm mt-1">Farmhands: <span class="font-bold">${wf.total}</span></p>
+                            <p class="text-secondary text-xs">Irrigation L${wf.upgrades.irrigationLevel} • Tools L${wf.upgrades.toolsLevel} • Compost L${wf.upgrades.compostLevel} • Tractor L${wf.upgrades.tractorLevel}</p>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <button id="hire-farmhand" class="chimera-button px-3 py-2 rounded-md">Hire Farmhand — Cost: ${hireCost} gold</button>
+                            <button id="upgrade-farming-irrigation" class="chimera-button px-3 py-2 rounded-md">Irrigation (L${wf.upgrades.irrigationLevel}) — Cost: ${irrCost} gold</button>
+                            <button id="upgrade-farming-tools" class="chimera-button px-3 py-2 rounded-md">Steel Tools (L${wf.upgrades.toolsLevel}) — Cost: ${toolsCost} gold</button>
+                            <button id="upgrade-farming-compost" class="chimera-button px-3 py-2 rounded-md">Compost Bins (L${wf.upgrades.compostLevel}) — Cost: ${compCost} gold</button>
+                            <button id="upgrade-farming-tractor" class="chimera-button px-3 py-2 rounded-md">Tractor (L${wf.upgrades.tractorLevel}) — Cost: ${tractCost} gold</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        renderFarmingAssign(action) {
+            const wf = this.game.state.workers.farming; const assigned = wf.assigned[action.id] || 0; const total = wf.total; const sumAssigned = Object.values(wf.assigned).reduce((a,b)=>a+b,0); const free = Math.max(0, total - sumAssigned);
+            const speedMult = this.game.getWorkerSpeedMultiplier('farming', action); const yieldMult = this.game.getWorkerYieldMultiplier('farming', action);
+            return `
+                <div class="mt-3 p-2 rounded-md bg-black/30 border border-border-color">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-secondary">Farmhands Assigned: <span class="text-white font-mono">${assigned}</span> / Free: <span class="text-white font-mono">${free}</span></span>
+                        <div class="space-x-1">
+                            <button class="assign-farming-worker-btn chimera-button px-2 py-1 rounded" data-action-id="${action.id}" data-dir="-1">-</button>
+                            <button class="assign-farming-worker-btn chimera-button px-2 py-1 rounded" data-action-id="${action.id}" data-dir="+1">+</button>
                         </div>
                     </div>
                     <p class="text-[11px] text-secondary mt-1">Eff: x${yieldMult.toFixed(2)} yield, ${Math.round(100 - speedMult*100)}% faster</p>
@@ -1058,6 +1157,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     const free = Math.max(0, wf.total - sumAssigned);
                     if (dir === 1 && free <= 0) return; if (dir === -1 && (wf.assigned[id] || 0) <= 0) return;
                     wf.assigned[id] = Math.max(0, (wf.assigned[id] || 0) + dir);
+                    this.renderView();
+                });
+            });
+
+            // Farming estate
+            const hireFarm = document.getElementById('hire-farmhand'); if (hireFarm) hireFarm.addEventListener('click', () => this.game.hireWorker('farming'));
+            const upFI = document.getElementById('upgrade-farming-irrigation'); if (upFI) upFI.addEventListener('click', () => this.game.upgradeWorkers('farming', 'irrigation'));
+            const upFT = document.getElementById('upgrade-farming-tools'); if (upFT) upFT.addEventListener('click', () => this.game.upgradeWorkers('farming', 'tools'));
+            const upFC = document.getElementById('upgrade-farming-compost'); if (upFC) upFC.addEventListener('click', () => this.game.upgradeWorkers('farming', 'compost'));
+            const upFR = document.getElementById('upgrade-farming-tractor'); if (upFR) upFR.addEventListener('click', () => this.game.upgradeWorkers('farming', 'tractor'));
+            document.querySelectorAll('.assign-farming-worker-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.dataset.actionId; const dir = btn.dataset.dir === '+1' ? 1 : -1; const wfarm = this.game.state.workers.farming;
+                    const sumAssigned = Object.values(wfarm.assigned).reduce((a,b)=>a+b,0);
+                    const free = Math.max(0, wfarm.total - sumAssigned);
+                    if (dir === 1 && free <= 0) return; if (dir === -1 && (wfarm.assigned[id] || 0) <= 0) return;
+                    wfarm.assigned[id] = Math.max(0, (wfarm.assigned[id] || 0) + dir);
                     this.renderView();
                 });
             });

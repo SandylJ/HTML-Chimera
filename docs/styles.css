@@ -104,6 +104,21 @@ body {
 .bg-smithing { background-color: #a9a9a9; }
 .border-cooking { border-color: #d2691e; }
 .bg-cooking { background-color: #d2691e; }
+.border-farming { border-color: #6b8e23; }
+.bg-farming { background-color: #6b8e23; }
+
+/* Small badge chips used in cards */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #1f2937;
+    border: 1px solid var(--border-color);
+    border-radius: 9999px;
+    padding: 2px 8px;
+    font-size: 11px;
+}
+.badge i { opacity: 0.9; }
 
 /* Meta Skills interactive UI */
 .meskill-card { transition: transform 120ms ease-out, box-shadow 200ms ease; will-change: transform; }
