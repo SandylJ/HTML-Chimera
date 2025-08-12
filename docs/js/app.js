@@ -1112,34 +1112,103 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => floatText.remove(), duration);
         }
 
+        // Dopamine helpers
+        pulseAt(el) {
+            if (!el) return; el.classList.remove('pulse-pop'); void el.offsetWidth; el.classList.add('pulse-pop');
+            setTimeout(() => el && el.classList && el.classList.remove('pulse-pop'), 260);
+        }
+        _ensureAudio() {
+            if (!this._audioCtx) {
+                const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; this._audioCtx = new AC();
+            }
+            return this._audioCtx;
+        }
+        playSound(type) {
+            const ctx = this._ensureAudio(); if (!ctx) return;
+            const now = ctx.currentTime; const osc = ctx.createOscillator(); const gain = ctx.createGain();
+            osc.type = 'triangle';
+            if (type === 'hire') { osc.frequency.setValueAtTime(740, now); osc.frequency.exponentialRampToValueAtTime(1180, now + 0.18); }
+            else if (type === 'upgrade') { osc.frequency.setValueAtTime(520, now); osc.frequency.exponentialRampToValueAtTime(1040, now + 0.22); }
+            else { osc.frequency.setValueAtTime(660, now); osc.frequency.exponentialRampToValueAtTime(770, now + 0.08); }
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(now); osc.stop(now + 0.26);
+        }
+        juiceBurst(kind, clientX, clientY) {
+            const containerRect = this.floatingTextContainer.getBoundingClientRect();
+            const x = clientX - containerRect.left; const y = clientY - containerRect.top;
+            const colors = kind === 'upgrade' ? ['#ffd166','#fca311','#ffe08a','#fff3c4'] : (kind === 'wood' ? ['#b08968','#7f5539','#ddb892','#e6ccb2'] : ['#ffd166','#ffd700','#fff3b0','#f1fa8c']);
+            const count = kind === 'upgrade' ? 24 : 18;
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div'); p.className = 'confetti-piece'; p.style.left = `${x}px`; p.style.top = `${y}px`;
+                p.style.backgroundColor = colors[Math.floor(Math.random()*colors.length)];
+                const dx = (Math.random() - 0.5) * 180; const dy = - (Math.random() * 160 + 80); const rot = (Math.random() - 0.5) * 260;
+                p.style.opacity = '1'; p.style.transform = `translate3d(-50%, -50%, 0) rotate(${rot}deg)`;
+                this.floatingTextContainer.appendChild(p);
+                requestAnimationFrame(() => { p.style.transition = 'transform 900ms cubic-bezier(.15,.55,.2,1), opacity 900ms ease'; p.style.transform = `translate3d(${dx}px, ${dy}px, 0) rotate(${rot+180}deg)`; p.style.opacity = '0'; });
+                setTimeout(() => p.remove(), 950);
+            }
+            for (let i = 0; i < 6; i++) {
+                const c = document.createElement('div'); c.className = 'coin-piece'; c.textContent = kind === 'wood' ? '🪵' : '💰'; c.style.left = `${x}px`; c.style.top = `${y}px`;
+                this.floatingTextContainer.appendChild(c);
+                const dx = (Math.random() - 0.5) * 120; const dy = - (Math.random() * 120 + 40);
+                requestAnimationFrame(() => { c.style.transition = 'transform 800ms cubic-bezier(.17,.67,.32,1.31), opacity 800ms ease'; c.style.opacity = '1'; c.style.transform = `translate(${dx}px, ${dy}px) scale(0.9)`; });
+                setTimeout(() => { c.style.opacity = '0'; }, 620); setTimeout(() => c.remove(), 900);
+            }
+        }
+
         renderWorkerPanel(skillId) {
-            const ws = this.game.state.workers[skillId];
-            const hireCost = this.game.getHireCost(skillId);
-            const speedCost = this.game.getUpgradeCost(skillId, 'speed');
-            const yieldCost = this.game.getUpgradeCost(skillId, 'yield');
-            const speedLvl = ws.upgrades.speedLevel;
-            const yieldLvl = ws.upgrades.yieldLevel;
-            const theme = GAME_DATA.SKILLS[skillId].theme;
-            const NAMES = {
-                woodcutting: { lodge: 'Timber Lodge', worker: 'Timberhands' },
-                mining: { lodge: 'Prospector Camp', worker: 'Miners' },
-                fishing: { lodge: 'Fishing Pier', worker: 'Anglers' },
-                farming: { lodge: 'Farmstead', worker: 'Farmhands' },
-                hunter: { lodge: 'Hunter Lodge', worker: 'Trappers' },
-                archaeology: { lodge: 'Digsite', worker: 'Excavators' },
-                divination: { lodge: 'Wisp Grove', worker: 'Diviners' },
-            };
-            const name = NAMES[skillId] || { lodge: 'Work Camp', worker: 'Workers' };
+            const ws = this.game.state.workers[skillId]; const hireCost = this.game.getHireCost(skillId); const speedCost = this.game.getUpgradeCost(skillId, 'speed'); const yieldCost = this.game.getUpgradeCost(skillId, 'yield'); const speedLvl = ws.upgrades.speedLevel; const yieldLvl = ws.upgrades.yieldLevel; const theme = GAME_DATA.SKILLS[skillId].theme;
+            if (skillId === 'woodcutting') {
+                const assigned = Object.values(ws.assigned || {}).reduce((a,b)=>a+b,0); const free = Math.max(0, (ws.total||0) - assigned);
+                return `
+                    <div class="block p-0 mb-5 border border-woodcutting overflow-hidden medieval-glow gradient-wood">
+                        <div class="relative p-5 pb-4">
+                            <div class="absolute right-4 -top-3 text-4xl opacity-20 select-none">🪓</div>
+                            <div class="flex items-center gap-3">
+                                <div class="text-2xl">🏕️</div>
+                                <div>
+                                    <h2 class="text-xl font-extrabold tracking-wide">Timber Lodge</h2>
+                                    <p class="text-secondary text-sm">Command your timberhands. Assign, upgrade, and prosper.</p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3 mt-4">
+                                <div class="glass-card rounded-md p-3 text-center shine">
+                                    <div class="text-[11px] text-secondary uppercase tracking-wider">Workers</div>
+                                    <div class="text-2xl font-mono text-white">${ws.total}</div>
+                                </div>
+                                <div class="glass-card rounded-md p-3 text-center">
+                                    <div class="text-[11px] text-secondary uppercase tracking-wider">Assigned</div>
+                                    <div class="text-xl font-mono text-white">${assigned}</div>
+                                </div>
+                                <div class="glass-card rounded-md p-3 text-center">
+                                    <div class="text-[11px] text-secondary uppercase tracking-wider">Free</div>
+                                    <div class="text-xl font-mono text-green-300">${free}</div>
+                                </div>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-2 mt-4">
+                                <button class="hire-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="woodcutting"><span class="mr-1">🪵</span> Hire Timberhand — <span class="text-yellow-300 font-mono">${hireCost}g</span></button>
+                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="woodcutting" data-type="speed"><span class="mr-1">🪓</span> Upgrade Axes <span class="text-secondary ml-1">(L${speedLvl})</span> — <span class="text-yellow-300 font-mono">${speedCost}g</span></button>
+                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="woodcutting" data-type="yield"><span class="mr-1">🛷</span> Lumber Sleds <span class="text-secondary ml-1">(L${yieldLvl})</span> — <span class="text-yellow-300 font-mono">${yieldCost}g</span></button>
+                            </div>
+                            <p class="text-[11px] text-secondary mt-2">Current bonuses: <span class="text-green-300">+${(yieldLvl*10).toFixed(0)}% yield</span> • <span class="text-blue-300">${Math.round(100 - (Math.pow(0.92, speedLvl)*100))}% faster</span></p>
+                        </div>
+                    </div>
+                `;
+            }
+            // Fallback generic panel for other gathering skills
             return `
                 <div class="block p-4 mb-4 border border-${theme}">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                         <div>
-                            <h2 class="text-lg font-bold">${name.lodge}</h2>
-                            <p class="text-secondary text-sm">${name.worker} work in the background. Assign them to specific tasks.</p>
+                            <h2 class="text-lg font-bold">Work Camp</h2>
+                            <p class="text-secondary text-sm">Workers operate in the background. Assign them to tasks.</p>
                             <p class="text-white text-sm mt-1">Workers: <span class="font-bold">${ws.total}</span></p>
                         </div>
                         <div class="flex flex-col sm:flex-row gap-2">
-                            <button class="hire-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}">Hire ${name.worker.slice(0, -1)} — Cost: ${hireCost} gold</button>
+                            <button class="hire-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}">Hire Worker — Cost: ${hireCost} gold</button>
                             <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-type="speed">Upgrade Tools (Speed L${speedLvl}) — Cost: ${speedCost} gold</button>
                             <button class="upgrade-worker-btn chimera-button px-3 py-2 rounded-md" data-skill-id="${skillId}" data-type="yield">Logistics (Yield L${yieldLvl}) — Cost: ${yieldCost} gold</button>
                         </div>
@@ -1149,28 +1218,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         renderWorkerAssign(skillId, action) {
-            const ws = this.game.state.workers[skillId]; const assigned = ws.assigned[action.id] || 0;
-            const total = ws.total; const sumAssigned = Object.values(ws.assigned).reduce((a,b)=>a+b,0);
-            const free = Math.max(0, total - sumAssigned);
-            const speedMult = this.game.getWorkerSpeedMultiplier(skillId, action);
-            const yieldMult = this.game.getWorkerYieldMultiplier(skillId, action);
-            const NAMES = {
-                woodcutting: { worker: 'Timberhands' },
-                mining: { worker: 'Miners' },
-                fishing: { worker: 'Anglers' },
-                farming: { worker: 'Farmhands' },
-                hunter: { worker: 'Trappers' },
-                archaeology: { worker: 'Excavators' },
-                divination: { worker: 'Diviners' },
-            };
+            const ws = this.game.state.workers[skillId]; const assigned = ws.assigned[action.id] || 0; const total = ws.total; const sumAssigned = Object.values(ws.assigned).reduce((a,b)=>a+b,0); const free = Math.max(0, total - sumAssigned); const speedMult = this.game.getWorkerSpeedMultiplier(skillId, action); const yieldMult = this.game.getWorkerYieldMultiplier(skillId, action);
+            const NAMES = { woodcutting: { worker: 'Timberhands' }, mining: { worker: 'Miners' }, fishing: { worker: 'Anglers' }, farming: { worker: 'Farmhands' }, hunter: { worker: 'Trappers' }, archaeology: { worker: 'Excavators' }, divination: { worker: 'Diviners' }, };
             const workerName = (NAMES[skillId] || { worker: 'Workers' }).worker;
             return `
                 <div class="mt-3 p-2 rounded-md bg-black/30 border border-border-color">
                     <div class="flex items-center justify-between">
                         <span class="text-xs text-secondary">${workerName} Assigned: <span class="text-white font-mono">${assigned}</span> / Free: <span class="text-white font-mono">${free}</span></span>
                         <div class="space-x-1">
-                            <button class="assign-worker-btn chimera-button px-2 py-1 rounded" data-skill-id="${skillId}" data-action-id="${action.id}" data-dir="-1">-</button>
-                            <button class="assign-worker-btn chimera-button px-2 py-1 rounded" data-skill-id="${skillId}" data-action-id="${action.id}" data-dir="+1">+</button>
+                            <button class="assign-worker-btn chimera-button juicy-button px-2 py-1 rounded" data-skill-id="${skillId}" data-action-id="${action.id}" data-dir="-1">-</button>
+                            <button class="assign-worker-btn chimera-button juicy-button px-2 py-1 rounded" data-skill-id="${skillId}" data-action-id="${action.id}" data-dir="+1">+</button>
                         </div>
                     </div>
                     <p class="text-[11px] text-secondary mt-1">Eff: x${yieldMult.toFixed(2)} yield, ${Math.round(100 - speedMult*100)}% faster</p>
