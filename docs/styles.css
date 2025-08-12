@@ -12,6 +12,13 @@
 
 body { background-color: var(--bg-primary); color: var(--text-primary); font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; }
 
+/* Utility theme classes to complement Tailwind CDN */
+.bg-primary { background-color: var(--bg-primary); }
+.bg-secondary { background-color: var(--bg-secondary); }
+.border-border-color { border-color: var(--border-color); }
+.text-secondary { color: var(--text-secondary); }
+.text-accent-blue { color: var(--accent-blue); }
+
 .block { background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 22px rgba(0,0,0,0.2); }
 .sidebar-link { transition: background-color 0.2s ease; }
 .sidebar-link:hover, .sidebar-link.active { background-color: #21262d; }

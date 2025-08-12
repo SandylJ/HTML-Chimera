@@ -231,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Show batched flytext to avoid spam
                 if (this.state.combat.allyDamageBuffer >= 3) { const out = Math.floor(this.state.combat.allyDamageBuffer); this.state.combat.allyDamageBuffer -= out; this.uiManager.showFloatingText(`-${out} (Allies)`, 'text-red-300'); }
                 if (this.state.combat.allyHealBuffer >= 5) { const outH = Math.floor(this.state.combat.allyHealBuffer); this.state.combat.allyHealBuffer -= outH; this.uiManager.showFloatingText(`+${outH} Healed`, 'text-green-300'); }
-                if (e.hp <= 0) { this.handleEnemyDefeat(e); }
+                if (this.state.combat.inCombat && e.hp <= 0) { this.handleEnemyDefeat(e); }
 
                 // Enemy attack
                 if (now - this.state.combat.lastEnemyAttack >= e.attackSpeedMs) {
