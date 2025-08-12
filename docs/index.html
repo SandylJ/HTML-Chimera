@@ -95,8 +95,8 @@
 
       // Sidebar open/close for small screens or forced mobile
       if (btn && sidebar && overlay) {
-        btn.addEventListener('click', () => { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); });
-        overlay.addEventListener('click', () => { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); });
+        btn.addEventListener('click', () => { sidebar.classList.add('open'); sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); });
+        overlay.addEventListener('click', () => { sidebar.classList.remove('open'); sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); });
       }
 
       // Expose closer for UI manager to use after nav click
@@ -106,7 +106,7 @@
         // Try again after app initializes
         window.addEventListener('load', () => {
           if (window.chimeraGame && window.chimeraGame.uiManager) {
-            window.chimeraGame.uiManager._closeMobileSidebar = () => { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); };
+            window.chimeraGame.uiManager._closeMobileSidebar = () => { sidebar.classList.remove('open'); sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); };
           }
         });
       }
