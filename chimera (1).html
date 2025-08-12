@@ -87,6 +87,11 @@
         .rc-locked { opacity: 0.55; filter: grayscale(0.2); }
         .rune-essence-token { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-color); background: rgba(2,6,23,0.5); padding: 6px 10px; border-radius: 9999px; cursor: grab; user-select: none; }
         .rune-output-badge { display:inline-flex; align-items:center; gap:6px; border:1px solid rgba(88,166,255,0.35); background: rgba(2,6,23,0.6); padding: 6px 10px; border-radius: 9999px; }
+        /* New gathering themes */
+        .border-farming { border-color: #6b8e23; } .bg-farming { background-color: #6b8e23; }
+        .border-hunter { border-color: #556b2f; } .bg-hunter { background-color: #556b2f; }
+        .border-archaeology { border-color: #c2b280; } .bg-archaeology { background-color: #c2b280; }
+        .border-divination { border-color: #7c3aed; } .bg-divination { background-color: #7c3aed; }
     </style>
 </head>
 <body class="text-sm">
@@ -145,6 +150,10 @@
                 woodcutting: { name: 'Woodcutting', type: 'gathering', icon: 'fa-tree', theme: 'woodcutting' },
                 mining: { name: 'Mining', type: 'gathering', icon: 'fa-gem', theme: 'mining' },
                 fishing: { name: 'Fishing', type: 'gathering', icon: 'fa-fish', theme: 'fishing' },
+                farming: { name: 'Farming', type: 'gathering', icon: 'fa-seedling', theme: 'farming' },
+                hunter: { name: 'Hunter', type: 'gathering', icon: 'fa-paw', theme: 'hunter' },
+                archaeology: { name: 'Archaeology', type: 'gathering', icon: 'fa-brush', theme: 'archaeology' },
+                divination: { name: 'Divination', type: 'gathering', icon: 'fa-sparkles', theme: 'divination' },
                 firemaking: { name: 'Firemaking', type: 'artisan', icon: 'fa-fire', theme: 'firemaking' },
                 smithing: { name: 'Smithing', type: 'artisan', icon: 'fa-hammer', theme: 'smithing' },
                 cooking: { name: 'Cooking', type: 'artisan', icon: 'fa-utensils', theme: 'cooking' },
@@ -158,6 +167,16 @@
                 raw_shrimp: { name: 'Raw Shrimp', icon: '🦐' }, raw_sardine: { name: 'Raw Sardine', icon: '🐟' },
                 shrimp: { name: 'Shrimp', icon: '🍤', heals: 20 }, sardine: { name: 'Sardine', icon: '🐠', heals: 30 },
                 bird_nest: { name: 'Bird Nest', icon: '🪺' },
+                potato: { name: 'Potato', icon: '🥔' },
+                wheat: { name: 'Wheat', icon: '🌾' },
+                flax: { name: 'Flax', icon: '🪢' },
+                raw_bird_meat: { name: 'Raw Bird Meat', icon: '🍖' },
+                animal_pelt: { name: 'Animal Pelt', icon: '🦫' },
+                artifact_fragment: { name: 'Artifact Fragment', icon: '🗿' },
+                ancient_relic: { name: 'Ancient Relic', icon: '🏺' },
+                pale_energy: { name: 'Pale Energy', icon: '✨' },
+                flickering_energy: { name: 'Flickering Energy', icon: '🔮' },
+                feather: { name: 'Feather', icon: '🪶' },
 
                 // Shop & chest items mirrored from native dataset
                 seed_vigor: { name: 'Seed of Vigor', icon: '🌱' },
@@ -200,6 +219,23 @@
                 fishing: [
                     { id: 'shrimp_spot', name: 'Shrimp Spot', level: 1, xp: 8, output: { itemId: 'raw_shrimp', quantity: 1 }, baseTime: 4000 },
                     { id: 'sardine_spot', name: 'Sardine Spot', level: 5, xp: 15, output: { itemId: 'raw_sardine', quantity: 1 }, baseTime: 4500 },
+                ],
+                farming: [
+                    { id: 'potato_patch', name: 'Potato Patch', level: 1, xp: 7, output: { itemId: 'potato', quantity: 1 }, baseTime: 4500 },
+                    { id: 'wheat_field', name: 'Wheat Field', level: 5, xp: 10, output: { itemId: 'wheat', quantity: 1 }, baseTime: 5000 },
+                    { id: 'flax_field', name: 'Flax Field', level: 10, xp: 14, output: { itemId: 'flax', quantity: 1 }, baseTime: 5200 },
+                ],
+                hunter: [
+                    { id: 'bird_snare', name: 'Bird Snaring', level: 1, xp: 9, output: { itemId: 'raw_bird_meat', quantity: 1 }, baseTime: 4200, rareDrop: { itemId: 'feather', chance: 5 } },
+                    { id: 'rabbit_trap', name: 'Rabbit Trapping', level: 7, xp: 14, output: { itemId: 'animal_pelt', quantity: 1 }, baseTime: 5200 },
+                ],
+                archaeology: [
+                    { id: 'surface_excavation', name: 'Surface Excavation', level: 1, xp: 6, output: { itemId: 'artifact_fragment', quantity: 1 }, baseTime: 4800 },
+                    { id: 'ancient_digsite', name: 'Ancient Digsite', level: 20, xp: 18, output: { itemId: 'ancient_relic', quantity: 1 }, baseTime: 8000 },
+                ],
+                divination: [
+                    { id: 'pale_wisp', name: 'Pale Wisp', level: 1, xp: 5, output: { itemId: 'pale_energy', quantity: 1 }, baseTime: 3000 },
+                    { id: 'flickering_wisp', name: 'Flickering Wisp', level: 10, xp: 8, output: { itemId: 'flickering_energy', quantity: 1 }, baseTime: 3600 },
                 ],
             },
             RECIPES: {
