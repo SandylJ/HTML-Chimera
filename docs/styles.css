@@ -139,6 +139,9 @@ body.force-mobile #sidebar.open { transform: translateX(0); }
 body.force-mobile #mobile-nav { display: block; }
 body.force-mobile header { grid-template-columns: 1fr !important; }
 body.force-mobile #main-content { padding-bottom: 6rem; }
+/* Overlay visibility when forcing mobile */
+body.force-mobile #sidebar-overlay { display: none; }
+body.force-mobile #sidebar.open ~ #sidebar-overlay { display: block !important; }
 
 /* Force show hamburger button when mobile view is toggled on large screens */
 body.force-mobile #mobile-menu-btn { display: flex !important; }
