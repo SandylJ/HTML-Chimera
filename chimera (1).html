@@ -128,6 +128,7 @@
                 firemaking: { name: 'Firemaking', type: 'artisan', icon: 'fa-fire', theme: 'firemaking' },
                 smithing: { name: 'Smithing', type: 'artisan', icon: 'fa-hammer', theme: 'smithing' },
                 cooking: { name: 'Cooking', type: 'artisan', icon: 'fa-utensils', theme: 'cooking' },
+                runecrafting: { name: 'Runecrafting', type: 'artisan', icon: 'fa-circle-nodes', theme: 'smithing' },
             },
             ITEMS: {
                 // Core resources
@@ -141,6 +142,7 @@
                 // Shop & chest items mirrored from native dataset
                 seed_vigor: { name: 'Seed of Vigor', icon: '🌱' },
                 seed_clarity: { name: 'Seed of Clarity', icon: '🌱' },
+                seed_inspiration: { name: 'Seed of Inspiration', icon: '🌱' },
                 material_joyful_ember: { name: 'Joyful Ember', icon: '🔥' },
                 material_sunstone_shard: { name: 'Sunstone Shard', icon: '🔶' },
                 material_essence: { name: 'Raw Essence', icon: '✨' },
@@ -149,6 +151,21 @@
 
                 item_elixir_strength: { name: 'Elixir of Strength', icon: '🧪' },
                 item_scroll_fortune: { name: 'Scroll of Fortune', icon: '📜' },
+
+                // Runecrafting resources and products
+                rune_essence: { name: 'Rune Essence', icon: '✨' },
+                air_rune: { name: 'Air Rune', icon: '🌀' },
+                mind_rune: { name: 'Mind Rune', icon: '🧠' },
+                water_rune: { name: 'Water Rune', icon: '💧' },
+                earth_rune: { name: 'Earth Rune', icon: '🪨' },
+                fire_rune: { name: 'Fire Rune', icon: '🔥' },
+                body_rune: { name: 'Body Rune', icon: '🏋️' },
+                cosmic_rune: { name: 'Cosmic Rune', icon: '🌌' },
+                chaos_rune: { name: 'Chaos Rune', icon: '☄️' },
+                nature_rune: { name: 'Nature Rune', icon: '🍃' },
+                law_rune: { name: 'Law Rune', icon: '⚖️' },
+                death_rune: { name: 'Death Rune', icon: '💀' },
+                blood_rune: { name: 'Blood Rune', icon: '🩸' },
             },
             ACTIONS: {
                 woodcutting: [
@@ -158,6 +175,7 @@
                 mining: [
                     { id: 'copper_rock', name: 'Copper Rock', level: 1, xp: 12, output: { itemId: 'copper_ore', quantity: 1 }, baseTime: 3500 },
                     { id: 'tin_rock', name: 'Tin Rock', level: 1, xp: 12, output: { itemId: 'tin_ore', quantity: 1 }, baseTime: 3500 },
+                    { id: 'essence_rock', name: 'Rune Essence Rock', level: 1, xp: 6, output: { itemId: 'rune_essence', quantity: 1 }, baseTime: 3000 },
                 ],
                 fishing: [
                     { id: 'shrimp_spot', name: 'Shrimp Spot', level: 1, xp: 8, output: { itemId: 'raw_shrimp', quantity: 1 }, baseTime: 4000 },
@@ -175,6 +193,20 @@
                 cooking: [
                     { id: 'cook_shrimp', name: 'Cook Shrimp', level: 1, xp: 10, input: [{ itemId: 'raw_shrimp', quantity: 1 }], output: { itemId: 'shrimp', quantity: 1 }, baseTime: 3000 },
                     { id: 'cook_sardine', name: 'Cook Sardine', level: 5, xp: 18, input: [{ itemId: 'raw_sardine', quantity: 1 }], output: { itemId: 'sardine', quantity: 1 }, baseTime: 3500 },
+                ],
+                runecrafting: [
+                    { id: 'air_rune', name: 'Air Altar (Air Rune)', level: 1, xp: 5, input: [{ itemId: 'rune_essence', quantity: 1 }], output: { itemId: 'air_rune', quantity: 1 }, baseTime: 2500 },
+                    { id: 'mind_rune', name: 'Mind Altar (Mind Rune)', level: 2, xp: 5, input: [{ itemId: 'rune_essence', quantity: 1 }], output: { itemId: 'mind_rune', quantity: 1 }, baseTime: 2600 },
+                    { id: 'water_rune', name: 'Water Altar (Water Rune)', level: 5, xp: 6, input: [{ itemId: 'rune_essence', quantity: 1 }], output: { itemId: 'water_rune', quantity: 1 }, baseTime: 2700 },
+                    { id: 'earth_rune', name: 'Earth Altar (Earth Rune)', level: 9, xp: 6, input: [{ itemId: 'rune_essence', quantity: 1 }], output: { itemId: 'earth_rune', quantity: 1 }, baseTime: 2800 },
+                    { id: 'fire_rune', name: 'Fire Altar (Fire Rune)', level: 14, xp: 7, input: [{ itemId: 'rune_essence', quantity: 1 }], output: { itemId: 'fire_rune', quantity: 1 }, baseTime: 2900 },
+                    { id: 'body_rune', name: 'Body Altar (Body Rune)', level: 20, xp: 7, input: [{ itemId: 'rune_essence', quantity: 1 }], output: { itemId: 'body_rune', quantity: 1 }, baseTime: 3000 },
+                    { id: 'cosmic_rune', name: 'Cosmic Altar (Cosmic Rune)', level: 27, xp: 8, input: [{ itemId: 'rune_essence', quantity: 1 }], output: { itemId: 'cosmic_rune', quantity: 1 }, baseTime: 3200 },
+                    { id: 'chaos_rune', name: 'Chaos Altar (Chaos Rune)', level: 35, xp: 9, input: [{ itemId: 'rune_essence', quantity: 1 }], output: { itemId: 'chaos_rune', quantity: 1 }, baseTime: 3400 },
+                    { id: 'nature_rune', name: 'Nature Altar (Nature Rune)', level: 44, xp: 10, input: [{ itemId: 'rune_essence', quantity: 1 }], output: { itemId: 'nature_rune', quantity: 1 }, baseTime: 3600 },
+                    { id: 'law_rune', name: 'Law Altar (Law Rune)', level: 54, xp: 11, input: [{ itemId: 'rune_essence', quantity: 1 }], output: { itemId: 'law_rune', quantity: 1 }, baseTime: 3800 },
+                    { id: 'death_rune', name: 'Death Altar (Death Rune)', level: 65, xp: 12, input: [{ itemId: 'rune_essence', quantity: 1 }], output: { itemId: 'death_rune', quantity: 1 }, baseTime: 4000 },
+                    { id: 'blood_rune', name: 'Blood Altar (Blood Rune)', level: 77, xp: 13, input: [{ itemId: 'rune_essence', quantity: 1 }], output: { itemId: 'blood_rune', quantity: 1 }, baseTime: 4200 },
                 ],
                 alchemy: [ // from native dataset
                     { id: 'elixir_strength', name: 'Elixir of Strength', level: 1, xp: 25, input: [{ itemId: 'material_sunstone_shard', quantity: 1 }, { itemId: 'material_joyful_ember', quantity: 2 }], output: { itemId: 'item_elixir_strength', quantity: 1 }, baseTime: 5000 },
@@ -354,8 +386,20 @@
                 const recipe = GAME_DATA.RECIPES[skillId].find(r => r.id === recipeId); if (!recipe) return;
                 const canCraft = recipe.input.every(inp => (this.state.bank[inp.itemId] || 0) >= inp.quantity * quantity); if (!canCraft) return;
                 recipe.input.forEach(inp => this.removeFromBank(inp.itemId, inp.quantity * quantity));
-                if (recipe.output && recipe.output.itemId) { this.addToBank(recipe.output.itemId, recipe.output.quantity * quantity); this.uiManager.showFloatingText(`Crafted ${quantity} ${GAME_DATA.ITEMS[recipe.output.itemId].name}`, 'text-green-400'); }
-                const skill = this.state.player.skills[skillId]; skill.addXP(recipe.xp * quantity, this);
+                if (recipe.output && recipe.output.itemId) {
+                    let totalOut = recipe.output.quantity * quantity;
+                    if (skillId === 'runecrafting') {
+                        const lvl = this.state.player.skills[skillId].level;
+                        const mult = Math.max(1, 1 + Math.floor((lvl - recipe.level) / 11));
+                        totalOut *= mult;
+                    }
+                    this.addToBank(recipe.output.itemId, totalOut);
+                    this.uiManager.showFloatingText(`Crafted ${totalOut} ${GAME_DATA.ITEMS[recipe.output.itemId].name}`, 'text-green-400');
+                }
+                                const skill = this.state.player.skills[skillId]; skill.addXP(recipe.xp * quantity, this);
+                // Mastery progress for artisan recipes
+                const mastery = this.getMastery(skillId, recipe.id);
+                mastery.addXP((recipe.baseTime || 1000) / 1000 * quantity);
                 if (skillId === 'firemaking') { this.state.bonfire.active = true; this.state.bonfire.expiry = Date.now() + 2 * 60 * 60 * 1000; this.state.bonfire.xpBoost = 0.05; }
                 this.uiManager.renderView();
             }
@@ -366,6 +410,21 @@
 
             addToBank(itemId, quantity) { this.state.bank[itemId] = (this.state.bank[itemId] || 0) + quantity; }
             removeFromBank(itemId, quantity) { this.state.bank[itemId] -= quantity; if (this.state.bank[itemId] <= 0) { delete this.state.bank[itemId]; } }
+
+            // Rune helpers
+            getRuneItemIds() { return Object.keys(GAME_DATA.ITEMS).filter(id => id.endsWith('_rune')); }
+            getTotalRuneItemCount() { return this.getRuneItemIds().reduce((sum, id) => sum + (this.state.bank[id] || 0), 0); }
+            consumeRuneItems(amount) {
+                let remaining = amount;
+                const ids = this.getRuneItemIds();
+                for (const id of ids) {
+                    const have = this.state.bank[id] || 0; if (have <= 0) continue;
+                    const take = Math.min(have, remaining);
+                    this.removeFromBank(id, take);
+                    remaining -= take;
+                    if (remaining <= 0) break;
+                }
+            }
 
             // Real-life task completion -> stamina + meta XP
             completeRealLifeTask(metaSkillCategory, difficulty) {
@@ -378,8 +437,13 @@
             // Spells
             castSpell(spellId) {
                 const spell = GAME_DATA.SPELLS.find(s => s.id === spellId); if (!spell) return;
-                if (this.state.player.runes < spell.runeCost) { this.uiManager.showModal('Not Enough Runes', '<p>You lack the runes to cast this spell.</p>'); return; }
-                this.state.player.runes -= spell.runeCost;
+                const availableRunes = this.state.player.runes + this.getTotalRuneItemCount();
+                if (availableRunes < spell.runeCost) { this.uiManager.showModal('Not Enough Runes', '<p>You lack the runes to cast this spell.</p>'); return; }
+                // Spend generic runes first, then consume crafted rune items from bank
+                const spendFromGeneric = Math.min(this.state.player.runes, spell.runeCost);
+                this.state.player.runes -= spendFromGeneric;
+                const remaining = spell.runeCost - spendFromGeneric;
+                if (remaining > 0) this.consumeRuneItems(remaining);
                 this.state.player.activeBuffs[spell.effect] = Date.now() + spell.durationMs;
                 this.uiManager.showFloatingText(`${spell.name} activated!`, 'text-purple-300');
                 this.uiManager.renderView();
@@ -396,7 +460,7 @@
                 for (let i = 0; i < rolls; i++) {
                     const pick = chest.lootTable[Math.floor(Math.random() * chest.lootTable.length)];
                     if (pick.type === 'currency') { const amt = pick.amount; this.addGold(amt); rewards.push(`+${amt} Gold`); }
-                    if (pick.type === 'item') { const q = Math.floor(Math.random() * (pick.qty[1] - pick.qty[0] + 1)) + pick.qty[0]; this.addToBank(pick.id, q); rewards.push(`+${q} ${GAME_DATA.ITEMS[pick.id]?.name || pick.id}`); }
+                    if (pick.type === 'item') { const q = Array.isArray(pick.qty) ? (Math.floor(Math.random() * (pick.qty[1] - pick.qty[0] + 1)) + pick.qty[0]) : (pick.qty || 1); this.addToBank(pick.id, q); rewards.push(`+${q} ${GAME_DATA.ITEMS[pick.id]?.name || pick.id}`); }
                     if (pick.type === 'runes') { const amt = pick.amount; this.state.player.runes += amt; rewards.push(`+${amt} Runes`); }
                 }
                 this.uiManager.showModal('Chest Opened!', `<div class="space-y-1">${rewards.map(r => `<p>${r}</p>`).join('')}</div>`);
@@ -470,7 +534,7 @@
 
             updateDynamicElements() {
                 document.getElementById('gold-display').textContent = Math.floor(this.game.state.player.gold).toLocaleString();
-                const runesEl = document.getElementById('runes-display'); if (runesEl) runesEl.textContent = (this.game.state.player.runes || 0).toLocaleString();
+                const runesEl = document.getElementById('runes-display'); if (runesEl) { const totalRunes = (this.game.state.player.runes || 0) + this.game.getTotalRuneItemCount(); runesEl.textContent = totalRunes.toLocaleString(); }
                 const stamina = this.game.state.player.stamina; const staminaMax = this.game.state.player.staminaMax;
                 document.getElementById('stamina-value').textContent = `${Math.floor(stamina)}/${staminaMax}`; document.getElementById('stamina-bar-fill').style.width = `${(stamina / staminaMax) * 100}%`;
                 Object.keys(this.game.state.player.skills).forEach(id => { const skill = this.game.state.player.skills[id]; const xpBar = document.getElementById(`sidebar-xp-${id}`); if (xpBar) xpBar.style.width = `${(skill.currentXP / skill.xpToNextLevel) * 100}%`; });
@@ -481,7 +545,7 @@
             updateSidebarActive() { document.querySelectorAll('.sidebar-link').forEach(link => { link.classList.toggle('active', link.dataset.view === this.currentView); }); }
 
             updateMasteryBar() {
-                const container = document.getElementById('mastery-progress-bar'); const action = this.game.state.activeAction; const inCombat = this.game.state.state?.combat?.inCombat || this.game.state.combat.inCombat; if (!action && !inCombat) { container.innerHTML = ''; return; }
+                const container = document.getElementById('mastery-progress-bar'); const action = this.game.state.activeAction; const inCombat = this.game.state.combat.inCombat; if (!action && !inCombat) { container.innerHTML = ''; return; }
                 if (inCombat) {
                     const e = this.game.state.combat.enemy; if (!e) { container.innerHTML = ''; return; }
                     const playerHpPct = (this.game.state.player.hp / this.game.state.player.hpMax) * 100;
@@ -562,6 +626,8 @@
                 const playerSkill = this.game.state.player.skills[skillId]; const hasLevel = playerSkill.level >= action.level; let canAfford = true;
                 if (action.input) { canAfford = action.input.every(inp => (this.game.state.bank[inp.itemId] || 0) >= inp.quantity); }
                 const mastery = this.game.getMastery(skillId, action.id);
+                let yieldMult = 1;
+                if (skillId === 'runecrafting') { yieldMult = Math.max(1, 1 + Math.floor((playerSkill.level - action.level) / 11)); }
                 const inputList = action.input ? action.input.map(inp => { const has = (this.game.state.bank[inp.itemId] || 0) >= inp.quantity; return `<span class="${has ? 'text-green-400' : 'text-red-400'}">${inp.quantity}x ${GAME_DATA.ITEMS[inp.itemId].name}</span>`; }).join(', ') : '';
                 return `
                     <div class="block p-4 flex flex-col justify-between ${!hasLevel ? 'opacity-50' : ''}">
@@ -570,6 +636,7 @@
                             <p class="text-secondary text-xs">Requires Level: ${action.level}</p>
                             <p class="text-secondary text-xs">XP: ${action.xp}</p>
                             ${action.input ? `<p class="text-secondary text-xs mt-1">Requires: ${inputList}</p>`: ''}
+                            ${skillId === 'runecrafting' ? `<p class="text-blue-300 text-xs mt-1">Yield at Lvl ${playerSkill.level}: x${yieldMult} per essence</p>` : ''}
                             <div class="mt-2">
                                 <p class="text-xs text-yellow-400">Mastery Lvl ${mastery.level}</p>
                                 <div class="w-full xp-bar-bg rounded-full h-2 my-1"><div class="mastery-bar-fill h-2 rounded-full" style="width:${(mastery.currentXP / mastery.xpToNextLevel) * 100}%"></div></div>
@@ -699,7 +766,22 @@
             attachViewEventListeners() {
                 const addTaskBtn = document.getElementById('add-task-btn'); if (addTaskBtn) { addTaskBtn.addEventListener('click', () => { const category = document.getElementById('task-category-select').value; const difficulty = document.getElementById('task-difficulty-select').value; this.game.completeRealLifeTask(category, difficulty); const n = document.getElementById('task-name-input'); if (n) n.value = ''; }); }
                 document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => { const duration = parseInt(prompt('Enter duration in minutes:', '15'), 10); if (isNaN(duration) || duration <= 0) return; this.game.startAction(btn.dataset.skillId, btn.dataset.actionId, duration); }); });
-                document.querySelectorAll('.craft-action-btn, .light-action-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.craftItem(btn.dataset.skillId, btn.dataset.actionId, 1); }); });
+                document.querySelectorAll('.craft-action-btn, .light-action-btn').forEach(btn => { btn.addEventListener('click', () => {
+                    const s = btn.dataset.skillId; const a = btn.dataset.actionId;
+                    if (s === 'runecrafting') {
+                        const recipe = (GAME_DATA.RECIPES[s] || []).find(r => r.id === a);
+                        const essenceId = (recipe && recipe.input && recipe.input[0]) ? recipe.input[0].itemId : 'rune_essence';
+                        const essencePer = (recipe && recipe.input && recipe.input[0]) ? recipe.input[0].quantity : 1;
+                        const haveEss = this.game.state.bank[essenceId] || 0;
+                        const maxQty = Math.floor(haveEss / essencePer);
+                        if (maxQty <= 0) return;
+                        const qty = parseInt(prompt(`How many essences to craft? (Max ${maxQty})`, `${Math.min(25, maxQty)}`), 10);
+                        if (isNaN(qty) || qty <= 0) return;
+                        this.game.craftItem(s, a, Math.min(qty, maxQty));
+                    } else {
+                        this.game.craftItem(s, a, 1);
+                    }
+                }); });
 
                 // Combat
                 document.querySelectorAll('.start-combat-btn').forEach(btn => { btn.addEventListener('click', () => this.game.startCombat(btn.dataset.enemyId)); });
