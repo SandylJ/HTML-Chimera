@@ -64,6 +64,14 @@ document.addEventListener('DOMContentLoaded', () => {
             pale_energy: { name: 'Pale Energy', icon: '✨' },
             flickering_energy: { name: 'Flickering Energy', icon: '🔮' },
             feather: { name: 'Feather', icon: '🪶' },
+
+            // Hunter mission rewards
+            beast_bone: { name: 'Beast Bone', icon: '🦴' },
+            pristine_hide: { name: 'Pristine Hide', icon: '🦬' },
+            monster_heart: { name: 'Monster Heart', icon: '❤️‍🔥' },
+            dragon_scale: { name: 'Azure Dragon Scale', icon: '🛡️' },
+            azure_dragon_eye: { name: 'Azure Dragon Eye', icon: '👁️‍🗨️' },
+            legendary_trophy: { name: 'Legendary Trophy', icon: '🏆' },
         },
         ACTIONS: {
             woodcutting: [
@@ -164,6 +172,20 @@ document.addEventListener('DOMContentLoaded', () => {
         rune_scribe: { id: 'rune_scribe', name: 'Rune Scribe', emoji: '📜', description: 'Inscribes raw essence into runes slowly.', baseCost: 1200, costGrowth: 1.25, essencePerSec: 0.1 }
     };
     GAME_DATA.UNITS = EMPIRE_UNITS;
+
+    // Hunter specialists and missions
+    GAME_DATA.HUNTERS = {
+        tracker: { id: 'tracker', name: 'Tracker', emoji: '🦊', description: 'Keen senses, excels at tracking elusive prey.', baseCost: 250, successBonus: 0.05, speedBonus: 0.06 },
+        sharpshooter: { id: 'sharpshooter', name: 'Sharpshooter', emoji: '🏹', description: 'Long-range expert. Critical finishes.', baseCost: 400, successBonus: 0.08, speedBonus: 0.02 },
+        beastmaster: { id: 'beastmaster', name: 'Beastmaster', emoji: '🐺', description: 'Commands tamed beasts to corner quarry.', baseCost: 600, successBonus: 0.1, speedBonus: 0.0 },
+        dragonstalker: { id: 'dragonstalker', name: 'Dragonstalker', emoji: '🐉', description: 'Elite slayer specialized in apex prey.', baseCost: 1200, successBonus: 0.18, speedBonus: -0.02 }
+    };
+    GAME_DATA.HUNTER_MISSIONS = [
+        { id: 'mission_wyvern_track', name: 'Trace the Frost Wyvern', level: 8, durationMs: 30*60*1000, huntersNeeded: 1, baseSuccess: 0.7, icon: '❄️', rewards: [ {type:'item', id:'beast_bone', min:2, max:4, chance:1}, {type:'gold', min:120, max:220, chance:1}, {type:'item', id:'pristine_hide', min:1, max:2, chance:0.35} ] },
+        { id: 'mission_alpha_stag', name: 'Cull the Alpha Stag', level: 12, durationMs: 45*60*1000, huntersNeeded: 2, baseSuccess: 0.62, icon: '🦌', rewards: [ {type:'item', id:'pristine_hide', min:2, max:3, chance:1}, {type:'gold', min:220, max:400, chance:1}, {type:'item', id:'monster_heart', min:1, max:1, chance:0.25} ] },
+        { id: 'mission_chimera', name: 'Hunt a Chimera', level: 18, durationMs: 60*60*1000, huntersNeeded: 2, baseSuccess: 0.56, icon: '🦁', rewards: [ {type:'item', id:'beast_bone', min:3, max:6, chance:1}, {type:'item', id:'monster_heart', min:1, max:2, chance:0.35}, {type:'gold', min:350, max:650, chance:1} ] },
+        { id: 'mission_azure_tyrant', name: 'Legendary: Azure Sky Tyrant', level: 25, durationMs: 120*60*1000, huntersNeeded: 3, baseSuccess: 0.4, icon: '🐲', rewards: [ {type:'item', id:'dragon_scale', min:1, max:3, chance:0.9}, {type:'item', id:'azure_dragon_eye', min:1, max:1, chance:0.3}, {type:'gold', min:1200, max:2200, chance:1}, {type:'item', id:'legendary_trophy', min:1, max:1, chance:0.1} ] }
+    ];
 
     class Skill {
         constructor(id, name) { this.id = id; this.name = name; this.level = 1; this.currentXP = 0; this.xpToNextLevel = 100; }
@@ -290,6 +312,9 @@ document.addEventListener('DOMContentLoaded', () => {
             (GAME_DATA.ACTIONS.hunter || []).forEach(a => { this.workers.hunter.assigned[a.id] = 0; this.workers.hunter.progress[a.id] = 0; });
             (GAME_DATA.ACTIONS.archaeology || []).forEach(a => { this.workers.archaeology.assigned[a.id] = 0; this.workers.archaeology.progress[a.id] = 0; });
             (GAME_DATA.ACTIONS.divination || []).forEach(a => { this.workers.divination.assigned[a.id] = 0; this.workers.divination.progress[a.id] = 0; });
+
+            // Hunter missions subsystem
+            this.hunter = { roster: [], missions: [], nextHunterId: 1 };
         }
     }
 
@@ -393,6 +418,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.state.empire.production = totals;
             }
 
+            // Hunter mission loop
+            this.processHunterMissions(delta);
+
             this.uiManager.updateDynamicElements();
         }
 
@@ -446,6 +474,82 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             }
+        }
+
+        // Hunter Missions Processing
+        processHunterMissions(deltaMs) {
+            if (!this.state.hunter) return;
+            let changed = false;
+            for (const mission of this.state.hunter.missions) {
+                if (mission.status !== 'active') continue;
+                mission.remainingMs = Math.max(0, (mission.remainingMs || mission.durationMs) - deltaMs);
+                if (mission.remainingMs <= 0) {
+                    mission.status = 'complete';
+                    changed = true;
+                    this.resolveHunterMission(mission);
+                }
+            }
+            if (changed) this.uiManager.renderView();
+        }
+        resolveHunterMission(mission) {
+            // Compute success chance
+            const metaBonus = 0.01 * (this.state.player.meta_skills[META_SKILLS.STEWARDSHIP].level - 1);
+            const team = mission.hunters.map(id => this.state.hunter.roster.find(h => h.instanceId === id)).filter(Boolean);
+            const teamSuccess = team.reduce((acc, h) => acc + (GAME_DATA.HUNTERS[h.classId]?.successBonus || 0), 0);
+            const base = mission.baseSuccess || 0.5;
+            const chance = Math.max(0.05, Math.min(0.95, base + teamSuccess + metaBonus));
+            const success = Math.random() < chance;
+
+            if (success) {
+                const rewards = [];
+                (mission.rewards || []).forEach(r => {
+                    if (Math.random() <= (r.chance || 1)) {
+                        if (r.type === 'gold') {
+                            const amt = Math.floor(Math.random() * (r.max - r.min + 1)) + r.min;
+                            this.addGold(amt);
+                            rewards.push(`+${amt} Gold`);
+                        } else if (r.type === 'item') {
+                            const qty = Math.floor(Math.random() * (r.max - r.min + 1)) + r.min;
+                            this.addToBank(r.id, qty);
+                            rewards.push(`+${qty} ${GAME_DATA.ITEMS[r.id]?.name || r.id}`);
+                        }
+                    }
+                });
+                this.uiManager.showFloatingText('Hunt Successful!', 'text-green-300');
+                this.uiManager.showModal('Mission Complete', `<p class="text-sm mb-2">${mission.name} succeeded.</p><div class="space-y-1">${rewards.map(r=>`<p>${r}</p>`).join('')}</div>`);
+            } else {
+                this.uiManager.showFloatingText('Hunt Failed', 'text-red-300');
+                if (Math.random() < 0.25) { this.addToBank('beast_bone', 1); }
+            }
+            mission.hunters.forEach(id => { const h = this.state.hunter.roster.find(x => x.instanceId === id); if (h) h.busy = false; });
+        }
+        hireSpecialHunter(classId) {
+            const def = GAME_DATA.HUNTERS[classId]; if (!def) return;
+            const ownedOfClass = (this.state.hunter?.roster || []).filter(h => h.classId === classId).length;
+            const cost = Math.floor(def.baseCost * Math.pow(1.22, ownedOfClass));
+            if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold to hire a ${def.name}.</p>`); return; }
+            const instanceId = `H${this.state.hunter.nextHunterId++}`;
+            const hunter = { instanceId, classId, name: `${def.name} #${ownedOfClass+1}`, busy: false };
+            this.state.hunter.roster.push(hunter);
+            this.uiManager.playSound('hire');
+            this.uiManager.showFloatingText(`+1 ${def.name}`, 'text-green-300');
+            this.uiManager.renderView();
+        }
+        startHunterMission(missionId, hunterIds) {
+            const def = (GAME_DATA.HUNTER_MISSIONS || []).find(m => m.id === missionId); if (!def) return;
+            if (!this.state.hunter) this.state.hunter = { roster: [], missions: [], nextHunterId: 1 };
+            const needed = def.huntersNeeded || 1;
+            if (!hunterIds || hunterIds.length < needed) { this.uiManager.showModal('Invalid Team', `<p>Select ${needed} hunter${needed>1?'s':''} for this mission.</p>`); return; }
+            const allAvailable = hunterIds.every(id => { const h = this.state.hunter.roster.find(x => x.instanceId === id); return h && !h.busy; });
+            if (!allAvailable) { this.uiManager.showModal('Hunters Busy', '<p>One or more selected hunters are already on a mission.</p>'); return; }
+            const team = hunterIds.map(id => this.state.hunter.roster.find(h => h.instanceId === id));
+            team.forEach(h => h.busy = true);
+            const speedMult = team.reduce((acc, h) => acc * (1 - (GAME_DATA.HUNTERS[h.classId]?.speedBonus || 0)), 1);
+            const duration = Math.max(10*1000, Math.floor((def.durationMs || 600000) * speedMult));
+            const mission = { ...def, startMs: Date.now(), durationMs: duration, remainingMs: duration, hunters: [...hunterIds], status: 'active' };
+            this.state.hunter.missions.push(mission);
+            this.uiManager.showFloatingText('Hunters Deployed!', 'text-yellow-300');
+            this.uiManager.renderView();
         }
 
         getMastery(skillId, actionId) { if (!this.state.player.mastery[skillId][actionId]) { this.state.player.mastery[skillId][actionId] = new Mastery(); } return this.state.player.mastery[skillId][actionId]; }
@@ -729,6 +833,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     const parsedData = JSON.parse(savedData);
                     Object.assign(this.state, parsedData);
+                    // Ensure hunter state exists
+                    if (!this.state.hunter) this.state.hunter = { roster: [], missions: [], nextHunterId: 1 };
+                    if (!Array.isArray(this.state.hunter.roster)) this.state.hunter.roster = [];
+                    if (!Array.isArray(this.state.hunter.missions)) this.state.hunter.missions = [];
+                    if (typeof this.state.hunter.nextHunterId !== 'number') this.state.hunter.nextHunterId = 1;
                     // Rehydrate skill objects
                     Object.keys(GAME_DATA.SKILLS).forEach(id => { const skill = new Skill(id, GAME_DATA.SKILLS[id].name); if (parsedData.player.skills?.[id]) Object.assign(skill, parsedData.player.skills[id]); this.state.player.skills[id] = skill; });
                     Object.values(META_SKILLS).forEach(name => { const skill = new Skill(name, name); if (parsedData.player.meta_skills?.[name]) Object.assign(skill, parsedData.player.meta_skills[name]); this.state.player.meta_skills[name] = skill; });
@@ -908,7 +1017,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderSkillView(skillId) {
             const skillData = GAME_DATA.SKILLS[skillId]; const playerSkill = this.game.state.player.skills[skillId]; let contentHtml = ''; let actionType = '';
-            if (skillData.type === 'gathering') { actionType = 'Start'; contentHtml = (GAME_DATA.ACTIONS[skillId]||[]).map(action => this.renderActionCard(skillId, action, actionType)).join(''); }
+            if (skillId === 'hunter') {
+                const lodge = this.renderHunterLodge();
+                actionType = 'Start';
+                contentHtml = lodge + (GAME_DATA.ACTIONS[skillId]||[]).map(action => this.renderActionCard(skillId, action, actionType)).join('');
+            } else if (skillData.type === 'gathering') { actionType = 'Start'; contentHtml = (GAME_DATA.ACTIONS[skillId]||[]).map(action => this.renderActionCard(skillId, action, actionType)).join(''); }
             else if (skillData.type === 'artisan') {
                 actionType = 'Craft'; if (skillId === 'firemaking') { contentHtml = this.renderFiremakingView(); }
                 else if (skillId === 'runecrafting') { contentHtml = this.renderRunecraftingView(); }
@@ -1079,6 +1192,72 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
 
             return `<div class=\"grid grid-cols-1 md:grid-cols-3 gap-4\">${altar}${recipeList}</div>`;
+        }
+
+        // Hunter Lodge (missions + roster)
+        renderHunterLodge() {
+            const roster = this.game.state.hunter?.roster || [];
+            const missions = this.game.state.hunter?.missions || [];
+            const classes = GAME_DATA.HUNTERS || {};
+            const hireCards = Object.keys(classes).map(id => {
+                const c = classes[id];
+                const owned = roster.filter(h => h.classId === id).length;
+                const cost = Math.floor(c.baseCost * Math.pow(1.22, owned));
+                return `
+                    <div class=\"block p-4 flex flex-col justify-between\">
+                        <div>
+                            <h3 class=\"text-lg font-bold\">${c.emoji} ${c.name}</h3>
+                            <p class=\"text-secondary text-xs\">${c.description}</p>
+                            <p class=\"text-secondary text-xs mt-1\">Success +${Math.round((c.successBonus||0)*100)}% • Speed ${Math.round((c.speedBonus||0)*100)}%</p>
+                            <p class=\"text-white text-sm mt-2\">Owned: <span class=\"font-mono\">${owned}</span></p>
+                        </div>
+                        <button class=\"hire-hunter-class-btn chimera-button px-3 py-2 rounded-md mt-3\" data-class-id=\"${id}\">Hire — Cost: ${cost} gold</button>
+                    </div>
+                `;
+            }).join('');
+
+            const missionCards = (GAME_DATA.HUNTER_MISSIONS || []).map(m => {
+                const active = missions.find(x => x.id === m.id && x.status === 'active');
+                const req = m.huntersNeeded || 1;
+                const rosterAvail = roster.filter(h => !h.busy);
+                const canSelect = rosterAvail.length >= req;
+                const pickers = rosterAvail.map(h => `<label class=\"flex items-center gap-2 text-xs\"><input type=\"checkbox\" class=\"hl-pick\" data-mission-id=\"${m.id}\" value=\"${h.instanceId}\"><span>${GAME_DATA.HUNTERS[h.classId].emoji} ${h.name}</span></label>`).join('');
+                const timeMins = Math.round((m.durationMs || 0)/60000);
+                const basePct = Math.round((m.baseSuccess || 0.5) * 100);
+                return `
+                    <div class=\"block p-4\">
+                        <div class=\"flex items-center justify-between\"> 
+                            <div>
+                                <h3 class=\"text-lg font-bold\">${m.icon||'🪤'} ${m.name}</h3>
+                                <p class=\"text-secondary text-xs\">Req Lv ${m.level} • Team ${req} • Base ${basePct}% • ${timeMins}m</p>
+                            </div>
+                            ${active ? `<span class=\"badge\"><i class=\"fas fa-hourglass-half\"></i> In Progress</span>` : ''}
+                        </div>
+                        ${active ? `<p class=\"text-secondary text-xs mt-2\">Time Left: ${Math.ceil((active.remainingMs||0)/60000)}m</p>` : `
+                        <div class=\"mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2\">${canSelect ? pickers : '<span class=\\"text-secondary text-xs\\">No available hunters</span>'}</div>
+                        <button class=\"start-hunter-mission-btn chimera-button px-3 py-2 rounded-md mt-3\" data-mission-id=\"${m.id}\" ${canSelect? '' : 'disabled'}>Send Team</button>
+                        `}
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class=\"block p-4 mb-4 border border-hunter medieval-glow\">
+                    <div class=\"flex items-center justify-between mb-3\">
+                        <div class=\"flex items-center gap-3\">
+                            <div class=\"text-2xl\">🪤</div>
+                            <div>
+                                <h2 class=\"text-xl font-extrabold tracking-wide\">Hunter's Lodge</h2>
+                                <p class=\"text-secondary text-sm\">Hire specialists and send them on daring hunts.</p>
+                            </div>
+                        </div>
+                        <div class=\"text-xs text-secondary\">Roster: <span class=\"text-white font-mono\">${roster.length}</span> • Available: <span class=\"text-green-300 font-mono\">${roster.filter(h=>!h.busy).length}</span></div>
+                    </div>
+                    <div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4\">${hireCards}</div>
+                    <h3 class=\"text-lg font-bold mb-2\">Mission Board</h3>
+                    <div class=\"grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4\">${missionCards}</div>
+                </div>
+            `;
         }
 
         renderBankView() {
@@ -1386,9 +1565,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (craftBtn) craftBtn.addEventListener('click', () => { const id = craftBtn.dataset.recipeId; if (!id) return; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const maxQty = Math.floor((this.game.state.bank['rune_essence'] || 0) / per); const want = Math.min(maxQty, Math.max(1, parseInt(qtyInput.value || '1', 10))); if (want <= 0) return; this.game.craftItem('runecrafting', id, want); if (altar) { for (let i = 0; i < Math.min(10, want); i++) { const spark = document.createElement('div'); spark.className = 'rune-spark'; spark.style.setProperty('--sx', `${(Math.random() - 0.5) * 120}px`); spark.style.setProperty('--sy', `${(Math.random() - 0.2) * 40}px`); spark.style.setProperty('--tx', `${(Math.random() - 0.5) * 40}px`); spark.style.setProperty('--ty', `${-140 - Math.random() * 40}px`); altar.appendChild(spark); setTimeout(() => spark.remove(), 950); } } this.render(); });
             if (altar) { altar.addEventListener('dragover', (e) => { e.preventDefault(); altar.style.borderColor = 'rgba(88,166,255,0.6)'; }); altar.addEventListener('dragleave', () => { altar.style.borderColor = 'var(--border-color)'; }); altar.addEventListener('drop', (e) => { e.preventDefault(); altar.style.borderColor = 'var(--border-color)'; const sel = document.querySelector('.rc-altar-card.rc-selected'); if (!sel) { this.game.uiManager.showFloatingText('Select an altar first', 'text-yellow-300'); return; } const id = sel.dataset.rcRecipeId; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const have = (this.game.state.bank['rune_essence'] || 0); const maxQty = Math.floor(have / per); const want = Math.min(maxQty, Math.max(1, parseInt(qtyInput?.value || '1', 10))); if (want <= 0) return; this.game.craftItem('runecrafting', id, want); for (let i = 0; i < Math.min(10, want); i++) { const spark = document.createElement('div'); spark.className = 'rune-spark'; spark.style.setProperty('--sx', `${(Math.random() - 0.5) * 120}px`); spark.style.setProperty('--sy', `${(Math.random() - 0.2) * 40}px`); spark.style.setProperty('--tx', `${(Math.random() - 0.5) * 40}px`); spark.style.setProperty('--ty', `${-140 - Math.random() * 40}px`); altar.appendChild(spark); setTimeout(() => spark.remove(), 950); } this.render(); }); }
             if (essenceToken) { essenceToken.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', 'essence'); }); }
+
+            // Hunter lodge events
+            document.querySelectorAll('.hire-hunter-class-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.hireSpecialHunter(btn.dataset.classId); }); });
+            document.querySelectorAll('.start-hunter-mission-btn').forEach(btn => { btn.addEventListener('click', () => {
+                const missionId = btn.dataset.missionId;
+                const picks = Array.from(this.mainContent.querySelectorAll(`.hl-pick[data-mission-id="${missionId}"]`)).filter(ch => ch.checked).map(ch => ch.value);
+                this.game.startHunterMission(missionId, picks);
+            }); });
         }
 
         showModal(title, content) {
+            this.initNotify();
             const html = `<h3 class=\"text-xl font-bold text-white\">${title}</h3><div class=\"text-secondary my-4\">${content}</div><div class=\"text-right mt-6\"><button class=\"close-btn chimera-button px-4 py-2 rounded-md\">Close</button></div>`;
             this.modalContent.innerHTML = html; this.modalContent.querySelector('.close-btn').addEventListener('click', () => this.hideModal()); this.modalBackdrop.classList.remove('hidden');
         }
