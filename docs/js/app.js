@@ -212,6 +212,24 @@ document.addEventListener('DOMContentLoaded', () => {
             // Clicker state
             this.clicker = { goldPerClick: 1, autoClickers: 0, autoRateMs: 1000, lastAutoTick: Date.now(), upgrades: { clickPowerLevel: 0, autoClickerLevel: 0, multiplierLevel: 0 } };
 
+            // Empire/Army systems (ensure present for new games)
+            this.empire = {
+                units: {},
+                lastTick: Date.now(),
+                production: { goldPerSec: 0, runesPerSec: 0, essencePerSec: 0 },
+                buffers: { gold: 0, runes: 0, essence: 0 }
+            };
+            Object.keys(GAME_DATA.UNITS || {}).forEach(id => { this.empire.units[id] = 0; });
+
+            this.army = {
+                units: {},
+                lastTick: Date.now(),
+                production: { dps: 0, hps: 0, hungry: false },
+                upkeep: { foodBuffer: 0, hungry: false },
+                fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() }
+            };
+            Object.keys(GAME_DATA.ARMY_CLASSES || {}).forEach(id => { this.army.units[id] = 0; });
+
             Object.keys(GAME_DATA.SKILLS).forEach(id => {
                 this.player.skills[id] = new Skill(id, GAME_DATA.SKILLS[id].name);
                 this.player.mastery[id] = {};
@@ -220,6 +238,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Worker systems: Mining Overseer, Fishing Harbor, Farming Estate
             this.workers = {
+                woodcutting: {
+                    total: 0,
+                    upgrades: { speedLevel: 0, yieldLevel: 0 },
+                    assigned: {},
+                    progress: {}
+                },
                 mining: {
                     total: 0,
                     upgrades: { speedLevel: 0, yieldLevel: 0, depthLevel: 0, cartLevel: 0 },
@@ -238,12 +262,34 @@ document.addEventListener('DOMContentLoaded', () => {
                     upgrades: { irrigationLevel: 0, toolsLevel: 0, compostLevel: 0, tractorLevel: 0 },
                     assigned: {},
                     progress: {}
+                },
+                hunter: {
+                    total: 0,
+                    upgrades: { speedLevel: 0, yieldLevel: 0 },
+                    assigned: {},
+                    progress: {}
+                },
+                archaeology: {
+                    total: 0,
+                    upgrades: { speedLevel: 0, yieldLevel: 0 },
+                    assigned: {},
+                    progress: {}
+                },
+                divination: {
+                    total: 0,
+                    upgrades: { speedLevel: 0, yieldLevel: 0 },
+                    assigned: {},
+                    progress: {}
                 }
             };
             // Seed worker action keys
+            (GAME_DATA.ACTIONS.woodcutting || []).forEach(a => { this.workers.woodcutting.assigned[a.id] = 0; this.workers.woodcutting.progress[a.id] = 0; });
             (GAME_DATA.ACTIONS.mining || []).forEach(a => { this.workers.mining.assigned[a.id] = 0; this.workers.mining.progress[a.id] = 0; });
             (GAME_DATA.ACTIONS.fishing || []).forEach(a => { this.workers.fishing.assigned[a.id] = 0; this.workers.fishing.progress[a.id] = 0; });
             (GAME_DATA.ACTIONS.farming || []).forEach(a => { this.workers.farming.assigned[a.id] = 0; this.workers.farming.progress[a.id] = 0; });
+            (GAME_DATA.ACTIONS.hunter || []).forEach(a => { this.workers.hunter.assigned[a.id] = 0; this.workers.hunter.progress[a.id] = 0; });
+            (GAME_DATA.ACTIONS.archaeology || []).forEach(a => { this.workers.archaeology.assigned[a.id] = 0; this.workers.archaeology.progress[a.id] = 0; });
+            (GAME_DATA.ACTIONS.divination || []).forEach(a => { this.workers.divination.assigned[a.id] = 0; this.workers.divination.progress[a.id] = 0; });
         }
     }
 
@@ -464,18 +510,82 @@ document.addEventListener('DOMContentLoaded', () => {
         addToBank(itemId, quantity) { this.state.bank[itemId] = (this.state.bank[itemId] || 0) + quantity; if (quantity > 0) this.uiManager.notifyItem(itemId, quantity); }
         removeFromBank(itemId, quantity) { this.state.bank[itemId] -= quantity; if (this.state.bank[itemId] <= 0) { delete this.state.bank[itemId]; } }
 
+        // Worker economy
+        getHireCost(skillId) {
+            const ws = this.state.workers?.[skillId]; const owned = ws?.total || 0;
+            const base = 100; const growth = 1.18;
+            return Math.floor(base * Math.pow(growth, owned));
+        }
+        getUpgradeCost(skillId, type) {
+            const ws = this.state.workers?.[skillId]; const lvl = (ws?.upgrades?.[`${type}Level`]) || 0;
+            const baseMap = { speed: 150, yield: 160, depth: 220, cart: 240, irrigation: 200, tools: 180, compost: 160, tractor: 500 };
+            const growth = 1.32; const base = baseMap[type] || 200;
+            return Math.floor(base * Math.pow(growth, lvl));
+        }
+        hireWorker(skillId) {
+            this.ensureWorkerState();
+            const cost = this.getHireCost(skillId);
+            if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold to hire a worker.</p>`); return; }
+            this.state.workers[skillId].total = (this.state.workers[skillId].total || 0) + 1;
+            this.uiManager.playSound('hire');
+            this.uiManager.showFloatingText(`+1 ${GAME_DATA.SKILLS[skillId]?.name || 'Worker'}`, 'text-green-300');
+            this.uiManager.renderView();
+        }
+        upgradeWorkers(skillId, type) {
+            this.ensureWorkerState();
+            const cost = this.getUpgradeCost(skillId, type);
+            if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold to upgrade.</p>`); return; }
+            const key = `${type}Level`;
+            const ws = this.state.workers[skillId]; if (typeof ws.upgrades[key] !== 'number') ws.upgrades[key] = 0;
+            ws.upgrades[key] += 1;
+            this.uiManager.playSound('upgrade');
+            this.uiManager.renderView();
+        }
+
+        // Empire helpers (clicker)
+        getEmpireUnitCost(id) {
+            const def = GAME_DATA.UNITS[id]; const owned = this.state.empire.units[id] || 0;
+            return Math.floor(def.baseCost * Math.pow(def.costGrowth, owned));
+        }
+        hireEmpireUnit(id) {
+            const cost = this.getEmpireUnitCost(id);
+            if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold to hire a ${GAME_DATA.UNITS[id].name}.</p>`); return; }
+            this.state.empire.units[id] = (this.state.empire.units[id] || 0) + 1;
+            this.uiManager.playSound('hire');
+            this.uiManager.renderView();
+        }
+        calculateEmpireProductionPerSecond() {
+            const units = this.state.empire.units || {};
+            let goldPerSec = 0, runesPerSec = 0, essencePerSec = 0;
+            Object.keys(GAME_DATA.UNITS).forEach(id => {
+                const def = GAME_DATA.UNITS[id]; const count = units[id] || 0; if (count <= 0) return;
+                if (def.goldPerSec) goldPerSec += def.goldPerSec * count;
+                if (def.runesPerSec) runesPerSec += def.runesPerSec * count;
+                if (def.essencePerSec) essencePerSec += def.essencePerSec * count;
+            });
+            return { goldPerSec, runesPerSec, essencePerSec };
+        }
+
         // Worker systems
         ensureWorkerState() {
             if (!this.state.workers) {
                 this.state.workers = {
+                    woodcutting: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} },
                     mining: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0, depthLevel: 0, cartLevel: 0 }, assigned: {}, progress: {} },
                     fishing: { total: 0, boats: 0, upgrades: { netLevel: 0, baitLevel: 0, boatLevel: 0 }, assigned: {}, progress: {} },
                     farming: { total: 0, upgrades: { irrigationLevel: 0, toolsLevel: 0, compostLevel: 0, tractorLevel: 0 }, assigned: {}, progress: {} },
+                    hunter: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} },
+                    archaeology: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} },
+                    divination: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} },
                 };
             }
+            if (!this.state.workers.woodcutting) this.state.workers.woodcutting = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} };
             if (!this.state.workers.mining) this.state.workers.mining = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0, depthLevel: 0, cartLevel: 0 }, assigned: {}, progress: {} };
             if (!this.state.workers.fishing) this.state.workers.fishing = { total: 0, boats: 0, upgrades: { netLevel: 0, baitLevel: 0, boatLevel: 0 }, assigned: {}, progress: {} };
             if (!this.state.workers.farming) this.state.workers.farming = { total: 0, upgrades: { irrigationLevel: 0, toolsLevel: 0, compostLevel: 0, tractorLevel: 0 }, assigned: {}, progress: {} };
+            if (!this.state.workers.hunter) this.state.workers.hunter = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} };
+            if (!this.state.workers.archaeology) this.state.workers.archaeology = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} };
+            if (!this.state.workers.divination) this.state.workers.divination = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} };
             (GAME_DATA.ACTIONS.mining || []).forEach(a => {
                 if (typeof this.state.workers.mining.assigned[a.id] !== 'number') this.state.workers.mining.assigned[a.id] = 0;
                 if (typeof this.state.workers.mining.progress[a.id] !== 'number') this.state.workers.mining.progress[a.id] = 0;
@@ -487,6 +597,18 @@ document.addEventListener('DOMContentLoaded', () => {
             (GAME_DATA.ACTIONS.farming || []).forEach(a => {
                 if (typeof this.state.workers.farming.assigned[a.id] !== 'number') this.state.workers.farming.assigned[a.id] = 0;
                 if (typeof this.state.workers.farming.progress[a.id] !== 'number') this.state.workers.farming.progress[a.id] = 0;
+            });
+            (GAME_DATA.ACTIONS.hunter || []).forEach(a => {
+                if (typeof this.state.workers.hunter.assigned[a.id] !== 'number') this.state.workers.hunter.assigned[a.id] = 0;
+                if (typeof this.state.workers.hunter.progress[a.id] !== 'number') this.state.workers.hunter.progress[a.id] = 0;
+            });
+            (GAME_DATA.ACTIONS.archaeology || []).forEach(a => {
+                if (typeof this.state.workers.archaeology.assigned[a.id] !== 'number') this.state.workers.archaeology.assigned[a.id] = 0;
+                if (typeof this.state.workers.archaeology.progress[a.id] !== 'number') this.state.workers.archaeology.progress[a.id] = 0;
+            });
+            (GAME_DATA.ACTIONS.divination || []).forEach(a => {
+                if (typeof this.state.workers.divination.assigned[a.id] !== 'number') this.state.workers.divination.assigned[a.id] = 0;
+                if (typeof this.state.workers.divination.progress[a.id] !== 'number') this.state.workers.divination.progress[a.id] = 0;
             });
         }
 
@@ -787,9 +909,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="w-full xp-bar-bg rounded-full h-2 my-1"><div class="mastery-bar-fill h-2 rounded-full" style="width:${(mastery.currentXP / mastery.xpToNextLevel) * 100}%"></div></div>
                         <p class="text-xs text-secondary text-right">${Math.floor(mastery.currentXP)} / ${mastery.xpToNextLevel} XP</p>
                     </div>
-                    ${skillId === 'mining' ? this.renderMiningAssign(action) : ''}
-                    ${skillId === 'fishing' ? this.renderFishingAssign(action) : ''}
-                    ${skillId === 'farming' ? this.renderFarmingAssign(action) : ''}
+                    ${(GAME_DATA.SKILLS[skillId].type === 'gathering' && this.game.state.workers[skillId]) ? this.renderWorkerAssign(skillId, action) : ''}
                     <button class="${actionType.toLowerCase()}-action-btn chimera-button px-4 py-2 rounded-md mt-4" data-skill-id="${skillId}" data-action-id="${action.id}" ${!hasLevel || !canAfford || this.game.state.activeAction ? 'disabled' : ''}>${actionType}</button>
                 </div>
             `;
