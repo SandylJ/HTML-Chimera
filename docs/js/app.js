@@ -271,7 +271,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 units: {},
                 lastTick: Date.now(),
                 production: { goldPerSec: 0, runesPerSec: 0, essencePerSec: 0 },
-                buffers: { gold: 0, runes: 0, essence: 0 }
+                buffers: { gold: 0, runes: 0, essence: 0 },
+                auto: { enabled: false, mode: 'cheapest', reserveGold: 0, lastAutoMs: Date.now(), intervalMs: 1000 }
             };
             Object.keys(GAME_DATA.UNITS || {}).forEach(id => { this.empire.units[id] = 0; });
 
@@ -455,6 +456,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (essWhole > 0) { this.addToBank('rune_essence', essWhole); this.state.empire.buffers.essence -= essWhole; }
                 this.state.empire.production = totals;
             }
+            // Empire auto-hiring
+            this.processEmpireAutoHire(now);
 
             // Hunter mission loop
             this.processHunterMissions(delta);
@@ -707,6 +710,47 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             return { goldPerSec, runesPerSec, essencePerSec };
         }
+        processEmpireAutoHire(nowMs) {
+            const auto = this.state.empire?.auto; if (!auto || !auto.enabled) return;
+            const due = (nowMs - (auto.lastAutoMs || 0)) >= (auto.intervalMs || 1000);
+            if (!due) return;
+            auto.lastAutoMs = nowMs;
+            const availableGold = Math.floor(this.state.player.gold - (auto.reserveGold || 0));
+            if (availableGold <= 0) return;
+            // Determine candidate unit
+            let candidateId = null;
+            if (auto.mode === 'roi') {
+                // Highest goldPerSec per cost among units with goldPerSec
+                let bestScore = 0;
+                for (const id of Object.keys(GAME_DATA.UNITS)) {
+                    const def = GAME_DATA.UNITS[id]; if (!def.goldPerSec) continue;
+                    const cost = this.getEmpireUnitCost(id); if (cost <= 0) continue;
+                    const score = def.goldPerSec / cost;
+                    if (score > bestScore && cost <= this.state.player.gold - (auto.reserveGold || 0)) { bestScore = score; candidateId = id; }
+                }
+            } else if (auto.mode === 'miner_only') {
+                candidateId = 'gold_miner';
+            } else {
+                // cheapest among units that produce gold
+                let cheapestCost = Number.POSITIVE_INFINITY;
+                for (const id of Object.keys(GAME_DATA.UNITS)) {
+                    const def = GAME_DATA.UNITS[id]; if (!def.goldPerSec) continue;
+                    const cost = this.getEmpireUnitCost(id);
+                    if (cost < cheapestCost) { cheapestCost = cost; candidateId = id; }
+                }
+            }
+            if (!candidateId) return;
+            const price = this.getEmpireUnitCost(candidateId);
+            if (price <= this.state.player.gold - (auto.reserveGold || 0)) {
+                // Spend directly to avoid modal
+                if (this.spendGold(price)) {
+                    this.state.empire.units[candidateId] = (this.state.empire.units[candidateId] || 0) + 1;
+                    this.uiManager.notifyResource('gold', -price);
+                    this.uiManager.showFloatingText(`Auto-hired ${GAME_DATA.UNITS[candidateId].name}`, 'text-green-300');
+                    // Do not force re-render each tick; header will update via dynamic elements
+                }
+            }
+        }
 
         // Worker systems
         ensureWorkerState() {
@@ -899,9 +943,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             });
                         });
                     // Backfill empire system defaults if missing
-                    if (!this.state.empire) { this.state.empire = { units: {}, lastTick: Date.now(), production: { goldPerSec: 0, runesPerSec: 0, essencePerSec: 0 }, buffers: { gold: 0, runes: 0, essence: 0 } }; }
+                    if (!this.state.empire) { this.state.empire = { units: {}, lastTick: Date.now(), production: { goldPerSec: 0, runesPerSec: 0, essencePerSec: 0 }, buffers: { gold: 0, runes: 0, essence: 0 }, auto: { enabled: false, mode: 'cheapest', reserveGold: 0, lastAutoMs: Date.now(), intervalMs: 1000 } }; }
                     if (!this.state.empire.units) this.state.empire.units = {};
                     Object.keys(GAME_DATA.UNITS).forEach(id => { if (typeof this.state.empire.units[id] !== 'number') this.state.empire.units[id] = 0; });
+                    if (!this.state.empire.auto) this.state.empire.auto = { enabled: false, mode: 'cheapest', reserveGold: 0, lastAutoMs: Date.now(), intervalMs: 1000 };
                     // Backfill army system defaults if missing
                     if (!this.state.army) { this.state.army = { units: {}, lastTick: Date.now(), production: { dps: 0, hps: 0, hungry: false }, upkeep: { foodBuffer: 0, hungry: false }, fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() }, upgrades: { offenseLevel: 0, supportLevel: 0, logisticsLevel: 0 }, stance: 'balanced' }; }
                     if (!this.state.army.units) this.state.army.units = {};
@@ -1625,11 +1670,30 @@ document.addEventListener('DOMContentLoaded', () => {
             const gIds = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'gathering');
             const totals = gIds.reduce((acc, id) => { const ws = this.game.state.workers[id]; const assigned = Object.values(ws.assigned||{}).reduce((a,b)=>a+b,0); acc.total += (ws.total||0); acc.assigned += assigned; return acc; }, { total: 0, assigned: 0 });
             const free = Math.max(0, totals.total - totals.assigned);
+            const auto = this.game.state.empire.auto || { enabled: false, mode: 'cheapest', reserveGold: 0 };
             return `
                 <h1 class="text-2xl font-semibold text-white mb-4">Empire Command</h1>
                 <div class="block p-4 mb-4">
                     <h2 class="text-lg font-bold">Production</h2>
                     <p class="text-secondary text-sm">Gold: <span class="text-white">+${prod.goldPerSec.toFixed(1)}/s</span> • Runes: <span class="text-white">+${(prod.runesPerSec||0).toFixed(2)}/s</span> • Essence: <span class="text-white">+${(prod.essencePerSec||0).toFixed(2)}/s</span></p>
+                </div>
+                <div class="block p-4 mb-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h2 class="text-lg font-bold">Automation</h2>
+                            <p class="text-secondary text-xs">Auto-hire guild workers that generate gold.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs text-secondary">Reserve</label>
+                            <input id="auto-hire-reserve" class="chimera-button px-2 py-1 rounded w-20 text-right" type="number" min="0" value="${auto.reserveGold||0}" />
+                            <select id="auto-hire-mode" class="chimera-button px-2 py-1 rounded">
+                                <option value="cheapest" ${auto.mode==='cheapest'?'selected':''}>Cheapest</option>
+                                <option value="roi" ${auto.mode==='roi'?'selected':''}>Best ROI</option>
+                                <option value="miner_only" ${auto.mode==='miner_only'?'selected':''}>Gold Miners Only</option>
+                            </select>
+                            <label class="flex items-center gap-2 text-xs"><input id="auto-hire-toggle" type="checkbox" ${auto.enabled?'checked':''}/> Enable</label>
+                        </div>
+                    </div>
                 </div>
                 <div class="block p-4 mb-4 medieval-glow gradient-workforce">
                     <div class="flex items-center justify-between gap-3">
@@ -1839,6 +1903,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Empire hiring events
             document.querySelectorAll('.hire-unit-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.hireEmpireUnit(btn.dataset.unitId); this.pulseAt(btn); this.game.uiManager.playSound('hire'); }); });
+            const autoToggle = document.getElementById('auto-hire-toggle'); if (autoToggle) autoToggle.addEventListener('change', (e) => { this.game.state.empire.auto.enabled = !!e.target.checked; });
+            const autoMode = document.getElementById('auto-hire-mode'); if (autoMode) autoMode.addEventListener('change', (e) => { const val = e.target.value; this.game.state.empire.auto.mode = (val==='roi'||val==='miner_only')?val:'cheapest'; });
+            const autoReserve = document.getElementById('auto-hire-reserve'); if (autoReserve) autoReserve.addEventListener('change', (e) => { const v = parseInt(e.target.value||'0',10); this.game.state.empire.auto.reserveGold = Math.max(0, isNaN(v)?0:v); });
 
             // Spells
             document.querySelectorAll('.cast-spell-btn').forEach(btn => { btn.addEventListener('click', () => this.game.castSpell(btn.dataset.spellId)); });
