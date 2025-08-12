@@ -1624,32 +1624,99 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         renderCombatView() {
-            const eList = GAME_DATA.COMBAT.ENEMIES.map(e => `<button class="start-combat-btn chimera-button px-3 py-2 rounded-md" data-enemy-id="${e.id}"><i class="fas fa-skull"></i> ${e.name} (Lv ${e.level})</button>`).join(' ');
-            const equipped = this.game.state.player.weapon ? GAME_DATA.ITEMS[this.game.state.player.weapon].name : 'None';
-            const foodList = Object.entries(this.game.state.bank).filter(([id, q]) => GAME_DATA.ITEMS[id]?.heals).map(([id, q]) => `<button class="eat-food-btn chimera-button px-2 py-1 rounded-md" data-item-id="${id}">${GAME_DATA.ITEMS[id].name} x${q}</button>`).join(' ');
-            const weapons = Object.entries(this.game.state.bank).filter(([id, q]) => GAME_DATA.ITEMS[id]?.damage).map(([id, q]) => `<button class="equip-weapon-btn chimera-button px-2 py-1 rounded-md" data-item-id="${id}">${GAME_DATA.ITEMS[id].name}</button>`).join(' ');
-            const combatStatus = this.game.state.combat.inCombat && this.game.state.combat.enemy ? `<p class="text-secondary">Fighting: <span class="text-white font-bold">${this.game.state.combat.enemy.name}</span></p>` : '<p class="text-secondary">Not in combat.</p>';
-            return `
-                <h1 class="text-2xl font-semibold text-white mb-4">Combat</h1>
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <div class="block p-4 space-y-3">
-                        <h2 class="text-lg font-bold">Enemies</h2>
-                        <div class="space-x-2">${eList}</div>
-                    </div>
-                    <div class="block p-4 space-y-2">
-                        <h2 class="text-lg font-bold">Status</h2>
-                        ${combatStatus}
-                        <p class="text-secondary">HP: <span class="font-mono">${Math.floor(this.game.state.player.hp)}/${this.game.state.player.hpMax}</span></p>
-                        <div class="mt-2">
-                            <span class="badge"><i class="fas fa-users"></i> Allies: DPS ${Math.max(0,(this.game.state.army.production?.dps||0)).toFixed(1)} • HPS ${Math.max(0,(this.game.state.army.production?.hps||0)).toFixed(1)} ${this.game.state.army.upkeep?.hungry ? '<span class="text-red-400 ml-1">Hungry</span>' : ''}</span>
+            const buffs = this.game.state.player.activeBuffs || {};
+            const rallyActive = buffs['armyRally'] && Date.now() < buffs['armyRally'];
+            const rallyRemaining = rallyActive ? Math.ceil((buffs['armyRally'] - Date.now())/1000) : 0;
+
+            const enemiesGrid = GAME_DATA.COMBAT.ENEMIES.map(e => `
+                <div class="enemy-card glass-card p-4 rounded-md flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-white">${e.name}</h3>
+                            <span class="level-badge">Lv ${e.level}</span>
                         </div>
-                        <button id="end-combat-btn" class="chimera-button px-3 py-2 rounded-md" ${this.game.state.combat.inCombat ? '' : 'disabled'}>Retreat</button>
+                        <div class="text-xs text-secondary mt-1 flex items-center gap-3">
+                            <span><i class="fas fa-heart"></i> ${e.maxHp} HP</span>
+                            <span><i class="fas fa-sword"></i> ${e.attack} ATK</span>
+                            <span><i class="fas fa-shield"></i> ${e.defense} DEF</span>
+                        </div>
                     </div>
-                    <div class="block p-4 space-y-3">
+                    <button class="start-combat-btn juicy-button chimera-button mt-3 px-3 py-2 rounded-md" data-enemy-id="${e.id}">
+                        Engage
+                    </button>
+                </div>
+            `).join('');
+
+            const equippedName = this.game.state.player.weapon ? GAME_DATA.ITEMS[this.game.state.player.weapon].name : 'None';
+            const weapons = Object.entries(this.game.state.bank)
+                .filter(([id]) => !!GAME_DATA.ITEMS[id]?.damage)
+                .map(([id]) => `<button class="equip-weapon-btn juicy-button chimera-button px-2 py-1 rounded-md" data-item-id="${id}">${GAME_DATA.ITEMS[id].name}</button>`)
+                .join(' ');
+            const foodButtons = Object.entries(this.game.state.bank)
+                .filter(([id]) => !!GAME_DATA.ITEMS[id]?.heals)
+                .map(([id, q]) => `<button class="eat-food-btn juicy-button chimera-button px-2 py-1 rounded-md" data-item-id="${id}">${GAME_DATA.ITEMS[id].name} x${q}</button>`)
+                .join(' ');
+            const spells = (GAME_DATA.SPELLS || [])
+                .map(s => `<button class="cast-spell-btn juicy-button chimera-button px-3 py-2 rounded-md" data-spell-id="${s.id}"><i class="fas fa-bolt"></i> ${s.name} <span class="hud-subtext ml-1">(${s.runeCost} runes)</span></button>`)
+                .join(' ');
+
+            const inCombat = this.game.state.combat.inCombat && this.game.state.combat.enemy;
+            const e = this.game.state.combat.enemy;
+            const combatStatus = inCombat
+                ? `<div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xl font-bold">${e.name}</h3>
+                            <span class="level-badge">Lv ${e.level}</span>
+                        </div>
+                        <div class="w-full xp-bar-bg rounded-full h-2.5"><div class="mastery-bar-fill h-2.5 rounded-full" style="width:${(e.hp / e.maxHp) * 100}%"></div></div>
+                        <div class="flex items-center justify-between text-xs text-secondary">
+                            <span>Enemy HP: <span class="font-mono text-white">${Math.max(0, Math.floor(e.hp))}/${e.maxHp}</span></span>
+                            <span>Your HP: <span class="font-mono text-white">${Math.max(0, Math.floor(this.game.state.player.hp))}/${this.game.state.player.hpMax}</span></span>
+                        </div>
+                   </div>`
+                : `<p class="text-secondary">Choose a foe from the left to begin combat.</p>`;
+
+            const allies = this.game.state.army.production || { dps: 0, hps: 0 };
+            const rallyCta = rallyActive
+                ? `<button id="army-rally" class="chimera-button imperial-button px-3 py-2 rounded-md opacity-80">Rallying… ${rallyRemaining}s</button>`
+                : `<button id="army-rally" class="chimera-button imperial-button juicy-button px-3 py-2 rounded-md">Rally Army — 2 Runes</button>`;
+
+            return `
+                <div class="block combat-hero p-5 rounded-md mb-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-2xl font-semibold text-white">Battle Arena</h1>
+                            <p class="text-secondary text-sm">Face fearsome foes. Rally your army and unleash powerful spells.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="badge"><i class="fas fa-users"></i> Allies: DPS ${Math.max(0, allies.dps || 0).toFixed(1)} • HPS ${Math.max(0, allies.hps || 0).toFixed(1)}${this.game.state.army.upkeep?.hungry ? ' <span class="text-red-400 ml-1">Hungry</span>' : ''}</span>
+                            ${rallyCta}
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div class="space-y-3">
+                        <div class="block p-4 rounded-md">
+                            <h2 class="text-lg font-bold mb-2">Enemies</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-3">${enemiesGrid}</div>
+                        </div>
+                    </div>
+                    <div class="block battle-arena p-4 rounded-md flex flex-col gap-3">
+                        <h2 class="text-lg font-bold">Arena</h2>
+                        ${combatStatus}
+                        <div class="flex items-center gap-2 mt-2">
+                            <button id="end-combat-btn" class="chimera-button px-3 py-2 rounded-md" ${inCombat ? '' : 'disabled'}>Retreat</button>
+                        </div>
+                        <div class="mt-3">
+                            <h3 class="text-sm font-semibold mb-1">Quick Spells</h3>
+                            <div class="flex flex-wrap gap-2">${spells || '<span class="text-secondary">Unlock spells in the Spellbook.</span>'}</div>
+                        </div>
+                    </div>
+                    <div class="block p-4 rounded-md space-y-3">
                         <h2 class="text-lg font-bold">Equipment & Food</h2>
-                        <p class="text-secondary">Weapon: <span class="text-white">${equipped}</span></p>
-                        <div class="space-x-2">${weapons || '<span class="text-secondary">Craft a weapon in Smithing.</span>'}</div>
-                        <div class="space-x-2">${foodList || '<span class="text-secondary">Cook food to heal.</span>'}</div>
+                        <p class="text-secondary">Weapon: <span class="text-white">${equippedName}</span></p>
+                        <div class="flex flex-wrap gap-2">${weapons || '<span class="text-secondary">Craft a weapon in Smithing.</span>'}</div>
+                        <div class="flex flex-wrap gap-2">${foodButtons || '<span class="text-secondary">Cook food to heal.</span>'}</div>
                     </div>
                 </div>
             `;
