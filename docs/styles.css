@@ -120,6 +120,20 @@ body {
 }
 .badge i { opacity: 0.9; }
 
+/* New gathering themes */
+.border-farming { border-color: #6b8e23; }
+.bg-farming { background-color: #6b8e23; }
+.border-hunter { border-color: #556b2f; }
+.bg-hunter { background-color: #556b2f; }
+.border-archaeology { border-color: #c2b280; }
+.bg-archaeology { background-color: #c2b280; }
+.border-divination { border-color: #7b68ee; }
+.bg-divination { background-color: #7b68ee; }
+
+/* Badges */
+.badge { display:inline-flex; align-items:center; gap:6px; background-color:#1f2937; border:1px solid var(--border-color); border-radius:9999px; padding:2px 8px; font-size:11px; }
+.badge i { opacity:0.9; }
+
 /* Meta Skills interactive UI */
 .meskill-card { transition: transform 120ms ease-out, box-shadow 200ms ease; will-change: transform; }
 .meskill-card:hover { box-shadow: 0 12px 24px rgba(0,0,0,0.3); }
