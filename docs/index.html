@@ -53,30 +53,22 @@
             </div>
         </nav>
         <div class="flex-grow flex flex-col">
-            <header class="epic-hud flex-shrink-0 border-b border-border-color">
-                <div class="epic-hud-content grid grid-cols-3 gap-4 items-center">
-                    <div class="hud-resources flex items-center gap-3">
-                        <div class="hud-chip hud-gold">
-                            <i class="fas fa-coins"></i>
-                            <span id="gold-display">0</span>
-                            <span id="gps-display" class="hud-subtext">(+0/s)</span>
-                        </div>
-                        <div class="hud-chip hud-runes">
-                            <i class="fas fa-gem"></i>
-                            <span id="runes-display" class="font-mono">0</span>
-                        </div>
+            <header class="epic-hud sticky top-0 z-40 flex-shrink-0 border-b border-border-color">
+                <div class="epic-hud-content grid grid-cols-3 gap-4 items-center text-sm">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-coins"></i>
+                        <span id="gold-display" class="font-mono">0</span>
                     </div>
-                    <div class="hud-center">
-                        <div id="mastery-progress-bar" class="block"></div>
+                    <div class="flex items-center gap-2 justify-center">
+                        <i class="fas fa-chart-line"></i>
+                        <span id="gps-display" class="hud-subtext">(+0/s)</span>
                     </div>
-                    <div class="hud-stamina flex items-center gap-2 justify-end">
-                        <i class="fas fa-bolt hud-stamina-icon"></i>
-                        <div class="hud-stamina-track">
-                            <div id="stamina-bar-fill" class="stamina-bar-fill hud-stamina-fill"></div>
-                        </div>
-                        <span id="stamina-value" class="font-mono hud-subtext">0/100</span>
+                    <div class="flex items-center gap-2 justify-end">
+                        <i class="fas fa-heart"></i>
+                        <span id="army-lp-display" class="font-mono">0 LP</span>
                     </div>
                 </div>
+                <div id="mastery-progress-bar" class="hidden"></div>
                 <div id="top-notification-stack" class="hud-notify-lane pointer-events-none"></div>
             </header>
             <main id="main-content" class="flex-grow p-4 overflow-y-auto"></main>

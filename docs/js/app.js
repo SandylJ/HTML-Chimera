@@ -954,6 +954,17 @@ document.addEventListener('DOMContentLoaded', () => {
             this.state.army.stance = stance;
             this.uiManager.renderView();
         }
+        calculateArmyLifePoints() {
+            const units = this.state.army?.units || {};
+            let total = 0;
+            for (const id of Object.keys(GAME_DATA.ARMY_CLASSES)) {
+                const def = GAME_DATA.ARMY_CLASSES[id] || {};
+                const count = units[id] || 0;
+                const hpPer = typeof def.hp === 'number' ? def.hp : 100;
+                total += count * hpPer;
+            }
+            return total;
+        }
     }
 
     class UIManager {
@@ -977,6 +988,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const goldDisplay = document.getElementById('gold-display'); if (goldDisplay) goldDisplay.textContent = Math.floor(this.game.state.player.gold).toLocaleString();
             const runesDisplay = document.getElementById('runes-display'); if (runesDisplay) runesDisplay.textContent = Math.floor(this.game.state.player.runes).toLocaleString();
             const staminaFill = document.getElementById('stamina-bar-fill'); const staminaValue = document.getElementById('stamina-value'); if (staminaFill && staminaValue) { const s = this.game.state.player; staminaFill.style.width = `${(s.stamina / s.staminaMax) * 100}%`; staminaValue.textContent = `${Math.floor(s.stamina)}/${s.staminaMax}`; }
+            const armyLpEl = document.getElementById('army-lp-display'); if (armyLpEl && this.game.calculateArmyLifePoints) { const lp = this.game.calculateArmyLifePoints(); armyLpEl.textContent = `${lp.toLocaleString()} LP`; }
         }
         updateSidebarActive() { document.querySelectorAll('.sidebar-link').forEach(link => { link.classList.toggle('active', link.dataset.view === this.currentView); }); }
 
@@ -986,7 +998,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const gpsEl = document.getElementById('gps-display'); if (gpsEl) gpsEl.textContent = `(+${gps.toFixed(1)}/s)`;
             const runesEl = document.getElementById('runes-display'); if (runesEl) { const totalRunes = (this.game.state.player.runes || 0) + this.game.getTotalRuneItemCount(); runesEl.textContent = totalRunes.toLocaleString(); }
             const stamina = this.game.state.player.stamina; const staminaMax = this.game.state.player.staminaMax;
-            document.getElementById('stamina-value').textContent = `${Math.floor(stamina)}/${staminaMax}`; document.getElementById('stamina-bar-fill').style.width = `${(stamina / staminaMax) * 100}%`;
+            const staminaValueEl = document.getElementById('stamina-value'); const staminaFillEl = document.getElementById('stamina-bar-fill'); if (staminaValueEl && staminaFillEl) { staminaValueEl.textContent = `${Math.floor(stamina)}/${staminaMax}`; staminaFillEl.style.width = `${(stamina / staminaMax) * 100}%`; }
+            const armyLpEl2 = document.getElementById('army-lp-display'); if (armyLpEl2 && this.game.calculateArmyLifePoints) { const lp = this.game.calculateArmyLifePoints(); armyLpEl2.textContent = `${lp.toLocaleString()} LP`; }
             // If in combat, show Ally badge refresh
             if (this.currentView === 'combat') this.renderCombatFooter();
             Object.keys(this.game.state.player.skills).forEach(id => { const skill = this.game.state.player.skills[id]; const xpBar = document.getElementById(`sidebar-xp-${id}`); if (xpBar) xpBar.style.width = `${(skill.currentXP / skill.xpToNextLevel) * 100}%`; });
