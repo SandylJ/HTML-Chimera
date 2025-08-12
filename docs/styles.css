@@ -16,6 +16,12 @@ body {
     color: var(--text-primary);
 }
 
+/* Utility token classes to match Tailwind-like names used in HTML */
+.bg-primary { background-color: var(--bg-primary); }
+.bg-secondary { background-color: var(--bg-secondary); }
+.text-secondary { color: var(--text-secondary); }
+.border-border-color { border-color: var(--border-color); }
+
 .block {
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-color);
