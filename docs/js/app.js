@@ -374,12 +374,18 @@ document.addEventListener('DOMContentLoaded', () => {
         // Combat
         startCombat(enemyId) {
             if (this.state.combat.inCombat) return; const e = JSON.parse(JSON.stringify(GAME_DATA.COMBAT.ENEMIES.find(x => x.id === enemyId))); if (!e) return;
+            // Reset combat state
             this.state.combat.inCombat = true; this.state.combat.enemy = e; this.state.player.hp = Math.min(this.state.player.hp, this.state.player.hpMax);
-            this.state.combat.lastPlayerAttack = 0; this.state.combat.lastEnemyAttack = 0; this.uiManager.renderView();
+            this.state.combat.lastPlayerAttack = 0; this.state.combat.lastEnemyAttack = 0;
+            this.state.combat.comboCount = 0; this.state.combat.lastComboHit = 0; this.state.combat.ultimateCharge = 0;
+            this.state.combat.cooldowns = { quickStrike: 0, guard: 0 };
+            this.uiManager.renderView();
+            this.uiManager.logBattle(`Engaged ${e.name} (Lv ${e.level}).`, 'neutral');
         }
         endCombat(victory) {
-            if (!this.state.combat.inCombat) return; if (!victory) { this.uiManager.showModal('Defeated', '<p>You were defeated. Rest to recover HP.</p>'); }
-            this.state.combat.inCombat = false; this.state.combat.enemy = null; this.uiManager.renderView();
+            if (!this.state.combat.inCombat) return; if (!victory) { this.uiManager.showModal('Defeated', '<p>You were defeated. Rest to recover HP.</p>'); this.uiManager.logBattle('You were defeated. Retreating...', 'bad'); }
+            this.state.combat.inCombat = false; this.state.combat.enemy = null; this.state.combat.comboCount = 0; this.state.combat.lastComboHit = 0; this.state.combat.ultimateCharge = 0;
+            this.uiManager.renderView();
         }
         handleEnemyDefeat(enemy) {
             // Gold
@@ -415,13 +421,15 @@ document.addEventListener('DOMContentLoaded', () => {
             this.state.combat.cooldowns.quickStrike = Date.now() + 4000;
             this.gainUltimate(dmg);
             this.uiManager.showFloatingText(`-${dmg} Quick!`, 'text-red-400 fly-damage'); this.uiManager.shakeScreen(0.6); this.uiManager.logBattle(`Quick Strike hit for ${dmg}.`, 'neutral');
-            if (e.hp <= 0) this.handleEnemyDefeat(e); this.uiManager.renderView();
+            if (e.hp <= 0) this.handleEnemyDefeat(e);
+            this.uiManager.updateCombatArena();
         }
         useGuard() {
             if (!this.state.combat.inCombat) return; if (!this.canUseGuard()) return;
             this.state.player.activeBuffs['guard'] = Date.now() + 5000; // 5s
             this.state.combat.cooldowns.guard = Date.now() + 9000;
-            this.uiManager.showFloatingText('Guard Up!', 'text-blue-300 fly-xp'); this.uiManager.logBattle('You brace yourself behind your guard.', 'neutral'); this.uiManager.renderView();
+            this.uiManager.showFloatingText('Guard Up!', 'text-blue-300 fly-xp'); this.uiManager.logBattle('You brace yourself behind your guard.', 'neutral');
+            this.uiManager.updateCombatArena();
         }
         useFinisher() {
             if (!this.state.combat.inCombat || !this.state.combat.enemy) return; if (this.state.combat.ultimateCharge < 100) return;
@@ -429,7 +437,8 @@ document.addEventListener('DOMContentLoaded', () => {
             e.hp = Math.max(0, e.hp - fin);
             this.state.combat.ultimateCharge = 0; this.resetCombo();
             this.uiManager.showFloatingText(`-${fin} FINISH!`, 'text-yellow-300 fly-crit'); this.uiManager.shakeScreen(1.2); this.uiManager.logBattle(`Finisher slams for ${fin}!`, 'good');
-            if (e.hp <= 0) this.handleEnemyDefeat(e); this.uiManager.renderView();
+            if (e.hp <= 0) this.handleEnemyDefeat(e);
+            this.uiManager.updateCombatArena();
         }
         calculatePlayerDamage(enemy) {
             let base = 5; if (this.state.player.weapon && GAME_DATA.ITEMS[this.state.player.weapon]?.damage) base += GAME_DATA.ITEMS[this.state.player.weapon].damage;
@@ -438,9 +447,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         eatFood(itemId) {
             const item = GAME_DATA.ITEMS[itemId]; if (!item || !item.heals) return; if ((this.state.bank[itemId] || 0) <= 0) return;
-            this.removeFromBank(itemId, 1); this.state.player.hp = Math.min(this.state.player.hpMax, this.state.player.hp + item.heals); this.uiManager.showFloatingText(`+${item.heals} HP`, 'text-green-300'); this.uiManager.renderView();
+            this.removeFromBank(itemId, 1); this.state.player.hp = Math.min(this.state.player.hpMax, this.state.player.hp + item.heals); this.uiManager.showFloatingText(`+${item.heals} HP`, 'text-green-300');
+            if (this.state.combat.inCombat) { this.uiManager.updateCombatArena(); } else { this.uiManager.renderView(); }
         }
-        equipWeapon(itemId) { if (!GAME_DATA.ITEMS[itemId]) return; if ((this.state.bank[itemId] || 0) <= 0) return; this.state.player.weapon = itemId; this.uiManager.renderView(); }
+        equipWeapon(itemId) { if (!GAME_DATA.ITEMS[itemId]) return; if ((this.state.bank[itemId] || 0) <= 0) return; this.state.player.weapon = itemId; if (this.state.combat.inCombat) { this.uiManager.updateCombatArena(); } this.uiManager.renderView(); }
 
         saveGame() { try { localStorage.setItem('chimeraSaveData_web_v1', JSON.stringify(this.state)); } catch (e) { console.error('Failed to save game:', e); } }
         loadGame() {
@@ -457,6 +467,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (!this.state.player.mastery[skillId]) this.state.player.mastery[skillId] = {};
                         Object.keys(parsedData.player.mastery[skillId]).forEach(actionId => { const mastery = new Mastery(); Object.assign(mastery, parsedData.player.mastery[skillId][actionId]); this.state.player.mastery[skillId][actionId] = mastery; });
                     });
+                    // Normalize missing combat fields from older saves
+                    this.state.combat = Object.assign({ inCombat: false, enemy: null, lastPlayerAttack: 0, lastEnemyAttack: 0, playerAttackSpeedMs: 1600, comboCount: 0, lastComboHit: 0, ultimateCharge: 0, cooldowns: { quickStrike: 0, guard: 0 } }, this.state.combat || {});
                     this.state.lastUpdate = Date.now();
                 } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
             }
