@@ -7,6 +7,13 @@ document.addEventListener('DOMContentLoaded', () => {
             woodcutting: { name: 'Woodcutting', type: 'gathering', icon: 'fa-tree', theme: 'woodcutting' },
             mining: { name: 'Mining', type: 'gathering', icon: 'fa-gem', theme: 'mining' },
             fishing: { name: 'Fishing', type: 'gathering', icon: 'fa-fish', theme: 'fishing' },
+            
+            // New gathering skills
+            farming: { name: 'Farming', type: 'gathering', icon: 'fa-seedling', theme: 'farming' },
+            hunter: { name: 'Hunter', type: 'gathering', icon: 'fa-paw', theme: 'hunter' },
+            archaeology: { name: 'Archaeology', type: 'gathering', icon: 'fa-brush', theme: 'archaeology' },
+            divination: { name: 'Divination', type: 'gathering', icon: 'fa-sparkles', theme: 'divination' },
+
             firemaking: { name: 'Firemaking', type: 'artisan', icon: 'fa-fire', theme: 'firemaking' },
             smithing: { name: 'Smithing', type: 'artisan', icon: 'fa-hammer', theme: 'smithing' },
             cooking: { name: 'Cooking', type: 'artisan', icon: 'fa-utensils', theme: 'cooking' },
@@ -39,15 +46,27 @@ document.addEventListener('DOMContentLoaded', () => {
             air_rune: { name: 'Air Rune', icon: '🌀' },
             mind_rune: { name: 'Mind Rune', icon: '🧠' },
             water_rune: { name: 'Water Rune', icon: '💧' },
-            earth_rune: { name: 'Earth Rune', icon: '🪨' },
+            earth_rune: { name: 'Earth Rune', icon: '🌱' },
             fire_rune: { name: 'Fire Rune', icon: '🔥' },
-            body_rune: { name: 'Body Rune', icon: '🏋️' },
-            cosmic_rune: { name: 'Cosmic Rune', icon: '🌌' },
-            chaos_rune: { name: 'Chaos Rune', icon: '☄️' },
+            body_rune: { name: 'Body Rune', icon: '🫀' },
+            chaos_rune: { name: 'Chaos Rune', icon: '🧿' },
             nature_rune: { name: 'Nature Rune', icon: '🍃' },
             law_rune: { name: 'Law Rune', icon: '⚖️' },
-            death_rune: { name: 'Death Rune', icon: '💀' },
             blood_rune: { name: 'Blood Rune', icon: '🩸' },
+            cosmic_rune: { name: 'Cosmic Rune', icon: '🌌' },
+            death_rune: { name: 'Death Rune', icon: '💀' },
+            
+            // New gathering outputs
+            potato: { name: 'Potato', icon: '🥔' },
+            wheat: { name: 'Wheat', icon: '🌾' },
+            flax: { name: 'Flax', icon: '🪢' },
+            raw_bird_meat: { name: 'Raw Bird Meat', icon: '🍖' },
+            animal_pelt: { name: 'Animal Pelt', icon: '🦫' },
+            artifact_fragment: { name: 'Artifact Fragment', icon: '🗿' },
+            ancient_relic: { name: 'Ancient Relic', icon: '🏺' },
+            pale_energy: { name: 'Pale Energy', icon: '✨' },
+            flickering_energy: { name: 'Flickering Energy', icon: '🔮' },
+            feather: { name: 'Feather', icon: '🪶' },
         },
         ACTIONS: {
             woodcutting: [
@@ -62,6 +81,25 @@ document.addEventListener('DOMContentLoaded', () => {
             fishing: [
                 { id: 'shrimp_spot', name: 'Shrimp Spot', level: 1, xp: 8, output: { itemId: 'raw_shrimp', quantity: 1 }, baseTime: 4000 },
                 { id: 'sardine_spot', name: 'Sardine Spot', level: 5, xp: 15, output: { itemId: 'raw_sardine', quantity: 1 }, baseTime: 4500 },
+            ],
+
+            // New gathering actions
+            farming: [
+                { id: 'potato_patch', name: 'Potato Patch', level: 1, xp: 7, output: { itemId: 'potato', quantity: 1 }, baseTime: 4500 },
+                { id: 'wheat_field', name: 'Wheat Field', level: 5, xp: 10, output: { itemId: 'wheat', quantity: 1 }, baseTime: 5000 },
+                { id: 'flax_field', name: 'Flax Field', level: 10, xp: 14, output: { itemId: 'flax', quantity: 1 }, baseTime: 5200 },
+            ],
+            hunter: [
+                { id: 'bird_snare', name: 'Bird Snaring', level: 1, xp: 9, output: { itemId: 'raw_bird_meat', quantity: 1 }, baseTime: 4200, rareDrop: { itemId: 'feather', chance: 5 } },
+                { id: 'rabbit_trap', name: 'Rabbit Trapping', level: 7, xp: 14, output: { itemId: 'animal_pelt', quantity: 1 }, baseTime: 5200 },
+            ],
+            archaeology: [
+                { id: 'surface_excavation', name: 'Surface Excavation', level: 1, xp: 6, output: { itemId: 'artifact_fragment', quantity: 1 }, baseTime: 4800 },
+                { id: 'ancient_digsite', name: 'Ancient Digsite', level: 20, xp: 18, output: { itemId: 'ancient_relic', quantity: 1 }, baseTime: 8000 },
+            ],
+            divination: [
+                { id: 'pale_wisp', name: 'Pale Wisp', level: 1, xp: 5, output: { itemId: 'pale_energy', quantity: 1 }, baseTime: 3000 },
+                { id: 'flickering_wisp', name: 'Flickering Wisp', level: 10, xp: 8, output: { itemId: 'flickering_energy', quantity: 1 }, baseTime: 3600 },
             ],
         },
         RECIPES: {
@@ -112,8 +150,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 { id: 'skeleton', name: 'Skeleton', level: 10, hp: 120, maxHp: 120, attack: 12, defense: 4, gold: [30, 60], drops: [ {id:'bronze_bar', qty:[1,2], chance:35} ], attackSpeedMs: 1700 },
                 { id: 'troll', name: 'Troll', level: 20, hp: 300, maxHp: 300, attack: 20, defense: 8, gold: [80, 150], drops: [ {id:'item_ancient_key', qty:[1,1], chance:10} ], attackSpeedMs: 1600 },
             ]
+        },
+        ARMY_CLASSES: {
+            knight: { id: 'knight', name: 'Knight', emoji: '🛡️', role: 'Defender', description: 'Armored vanguard that holds the line.', baseCost: 150, costGrowth: 1.22, dps: 3, hps: 0.0, foodPerMin: 0.6 },
+            wizard: { id: 'wizard', name: 'Wizard', emoji: '🪄', role: 'Caster', description: 'Arcane glass cannon raining destruction.', baseCost: 220, costGrowth: 1.24, dps: 5, hps: 0.0, foodPerMin: 0.5 },
+            warlock: { id: 'warlock', name: 'Warlock', emoji: '☯️', role: 'Hexer', description: 'Curses enemies and siphons life.', baseCost: 260, costGrowth: 1.26, dps: 3.5, hps: 0.5, foodPerMin: 0.6 },
+            cleric: { id: 'cleric', name: 'Cleric', emoji: '⛪', role: 'Healer', description: 'Faithful healer mending wounds.', baseCost: 200, costGrowth: 1.22, dps: 1, hps: 2.5, foodPerMin: 0.7 },
+            druid: { id: 'druid', name: 'Druid', emoji: '🌿', role: 'Support', description: "Nature's embrace with heals and thorns.", baseCost: 240, costGrowth: 1.25, dps: 2, hps: 1.5, foodPerMin: 0.6 },
+            goblin_merc: { id: 'goblin_merc', name: 'Goblin Merc', emoji: '🗡️', role: 'Rogue', description: 'Cheap hire, rowdy appetite.', baseCost: 100, costGrowth: 1.30, dps: 2, hps: 0, foodPerMin: 0.8 }
         }
     };
+    
+    // Medieval Empire Units dataset
+    const EMPIRE_UNITS = {
+        gold_miner: { id: 'gold_miner', name: 'Gold Miner', emoji: '⛏️', description: 'Mines gold from the mountain.', baseCost: 100, costGrowth: 1.18, goldPerSec: 1 },
+        prospector: { id: 'prospector', name: 'Dwarven Prospector', emoji: '⛏️✨', description: 'Veteran miner with a nose for veins.', baseCost: 450, costGrowth: 1.20, goldPerSec: 3 },
+        alchemist: { id: 'alchemist', name: 'Guild Alchemist', emoji: '⚗️', description: 'Brews tonics and sells them to nobles.', baseCost: 800, costGrowth: 1.22, goldPerSec: 2, runesPerSec: 0.02 },
+        rune_scribe: { id: 'rune_scribe', name: 'Rune Scribe', emoji: '📜', description: 'Inscribes raw essence into runes slowly.', baseCost: 1200, costGrowth: 1.25, essencePerSec: 0.1 }
+    };
+    GAME_DATA.UNITS = EMPIRE_UNITS;
 
     class Skill {
         constructor(id, name) { this.id = id; this.name = name; this.level = 1; this.currentXP = 0; this.xpToNextLevel = 100; }
@@ -162,31 +217,34 @@ document.addEventListener('DOMContentLoaded', () => {
             // Clicker state
             this.clicker = { goldPerClick: 1, autoClickers: 0, autoRateMs: 1000, lastAutoTick: Date.now(), upgrades: { clickPowerLevel: 0, autoClickerLevel: 0, multiplierLevel: 0 } };
 
-            Object.keys(GAME_DATA.SKILLS).forEach(id => {
-                this.player.skills[id] = new Skill(id, GAME_DATA.SKILLS[id].name);
-                this.player.mastery[id] = {};
-            });
-            Object.values(META_SKILLS).forEach(name => { this.player.meta_skills[name] = new Skill(name, name); });
-
-            // Worker systems: Mining Overseer and Fishing Harbor
-            this.workers = {
-                mining: {
-                    total: 0,
-                    upgrades: { speedLevel: 0, yieldLevel: 0, depthLevel: 0, cartLevel: 0 },
-                    assigned: {},
-                    progress: {}
-                },
-                fishing: {
-                    total: 0,
-                    boats: 0,
-                    upgrades: { netLevel: 0, baitLevel: 0, boatLevel: 0 },
-                    assigned: {},
-                    progress: {}
-                }
+            // Empire workforce system (medieval themed)
+            this.empire = {
+                units: Object.keys(GAME_DATA.UNITS).reduce((acc, id) => { acc[id] = 0; return acc; }, {}),
+                lastTick: Date.now(),
+                production: { goldPerSec: 0, runesPerSec: 0, essencePerSec: 0 },
+                buffers: { gold: 0, runes: 0, essence: 0 }
             };
-            // Seed worker action keys
-            (GAME_DATA.ACTIONS.mining || []).forEach(a => { this.workers.mining.assigned[a.id] = 0; this.workers.mining.progress[a.id] = 0; });
-            (GAME_DATA.ACTIONS.fishing || []).forEach(a => { this.workers.fishing.assigned[a.id] = 0; this.workers.fishing.progress[a.id] = 0; });
+
+            // Army system (hireable combat allies)
+            this.army = {
+                units: Object.keys(GAME_DATA.ARMY_CLASSES).reduce((acc, id) => { acc[id] = 0; return acc; }, {}),
+                lastTick: Date.now(),
+                production: { dps: 0, hps: 0, hungry: false },
+                upkeep: { foodBuffer: 0, hungry: false },
+                fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() }
+            };
+
+            Object.keys(GAME_DATA.SKILLS).forEach(id => { this.player.skills[id] = new Skill(id, GAME_DATA.SKILLS[id].name); this.player.mastery[id] = {}; });
+            Object.values(META_SKILLS).forEach(name => { this.player.meta_skills[name] = new Skill(name, name); });
+            
+            // Worker systems for all gathering skills
+            this.workers = {};
+            Object.keys(GAME_DATA.SKILLS)
+                .filter(id => GAME_DATA.SKILLS[id].type === 'gathering')
+                .forEach(skillId => {
+                    this.workers[skillId] = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} };
+                    (GAME_DATA.ACTIONS[skillId] || []).forEach(a => { this.workers[skillId].assigned[a.id] = 0; this.workers[skillId].progress[a.id] = 0; });
+                });
         }
     }
 
@@ -213,11 +271,43 @@ document.addEventListener('DOMContentLoaded', () => {
             if (this.state.activeAction) {
                 const action = this.state.activeAction; action.progress += delta; const actionTime = this.calculateActionTime(action);
                 if (action.progress >= actionTime) { const loops = Math.floor(action.progress / actionTime); this.gainActionRewards(action, loops); action.progress %= actionTime; }
-                if (now >= action.endTime) { this.stopAction(); }
+                if (action.endTime && now >= action.endTime) { this.stopAction(); }
             }
+
+            // Worker processing (all gathering skills)
+            this.processWorkers(delta);
 
             // Combat loop
             if (this.state.combat.inCombat && this.state.combat.enemy) {
+                // Army upkeep and contributions
+                const armyDeltaSec = (now - this.state.army.lastTick) / 1000;
+                if (armyDeltaSec > 0.1) {
+                    this.state.army.lastTick = now;
+                    const upkeep = this.consumeArmyUpkeep(armyDeltaSec);
+                    const base = this.calculateArmyOutputPerSecond();
+                    const hungryPenalty = upkeep.hungry ? 0.5 : 1.0;
+                    const dps = base.dps * hungryPenalty;
+                    const hps = base.hps * hungryPenalty;
+                    this.state.army.production = { dps, hps, hungry: upkeep.hungry };
+                    // Apply damage to enemy and heals to player
+                    const dmg = dps * armyDeltaSec;
+                    const heal = hps * armyDeltaSec;
+                    if (dmg > 0) {
+                        this.state.combat.enemy.hp = Math.max(0, this.state.combat.enemy.hp - dmg);
+                        this.state.army.fly.accumDmg += dmg;
+                        if (this.state.combat.enemy.hp <= 0) { this.handleEnemyDefeat(this.state.combat.enemy); }
+                    }
+                    if (heal > 0 && this.state.player.hp > 0) {
+                        this.state.player.hp = Math.min(this.state.player.hpMax, this.state.player.hp + heal);
+                        this.state.army.fly.accumHeal += heal;
+                    }
+                    // Flush flytext every ~700ms
+                    if (now - this.state.army.fly.lastFlush > 700) {
+                        if (this.state.army.fly.accumDmg > 0.9) { this.uiManager.showFloatingText(`-${Math.floor(this.state.army.fly.accumDmg)} Allies`, 'text-red-300'); this.state.army.fly.accumDmg = 0; }
+                        if (this.state.army.fly.accumHeal > 0.9) { this.uiManager.showFloatingText(`+${Math.floor(this.state.army.fly.accumHeal)} HP`, 'text-green-300'); this.state.army.fly.accumHeal = 0; }
+                        this.state.army.fly.lastFlush = now;
+                    }
+                }
                 const e = this.state.combat.enemy;
                 // Player attack
                 if (now - this.state.combat.lastPlayerAttack >= this.state.combat.playerAttackSpeedMs) {
@@ -240,8 +330,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (gps > 0) this.addGold(gps);
             }
 
-            // Passive workers
-            this.processWorkers(delta);
+            // Empire production
+            const empireDeltaSec = (now - this.state.empire.lastTick) / 1000;
+            if (empireDeltaSec > 0.1) {
+                this.state.empire.lastTick = now;
+                const totals = this.calculateEmpireProductionPerSecond();
+                // Fractional buffers for smooth accrual
+                this.state.empire.buffers.gold += totals.goldPerSec * empireDeltaSec;
+                const goldWhole = Math.floor(this.state.empire.buffers.gold);
+                if (goldWhole > 0) { this.addGold(goldWhole); this.state.empire.buffers.gold -= goldWhole; }
+                this.state.empire.buffers.runes += (totals.runesPerSec || 0) * empireDeltaSec;
+                const runeWhole = Math.floor(this.state.empire.buffers.runes);
+                if (runeWhole > 0) { this.state.player.runes += runeWhole; this.state.empire.buffers.runes -= runeWhole; }
+                this.state.empire.buffers.essence += (totals.essencePerSec || 0) * empireDeltaSec;
+                const essWhole = Math.floor(this.state.empire.buffers.essence);
+                if (essWhole > 0) { this.addToBank('rune_essence', essWhole); this.state.empire.buffers.essence -= essWhole; }
+                this.state.empire.production = totals;
+            }
 
             this.uiManager.updateDynamicElements();
         }
@@ -252,6 +357,52 @@ document.addEventListener('DOMContentLoaded', () => {
             const mastery = this.getMastery(action.skillId, action.id); const masteryBonus = 1 - (mastery.level * 0.002); time *= masteryBonus;
             return time;
         }
+        
+        // Worker helpers
+        getWorkerSpeedMultiplier(skillId, action) {
+            const ws = this.state.workers?.[skillId]; if (!ws) return 1;
+            const speedLevel = ws.upgrades.speedLevel || 0;
+            // 8% faster per level multiplicative
+            return Math.pow(0.92, speedLevel);
+        }
+        getWorkerYieldMultiplier(skillId, action) {
+            const ws = this.state.workers?.[skillId]; if (!ws) return 1;
+            const yieldLevel = ws.upgrades.yieldLevel || 0;
+            // 10% more per level
+            return 1 + (0.10 * yieldLevel);
+        }
+        
+        processWorkers(deltaMs) {
+            const workerSkills = Object.keys(this.state.workers || {});
+            for (const skillId of workerSkills) {
+                const ws = this.state.workers[skillId];
+                const actions = GAME_DATA.ACTIONS[skillId] || [];
+                for (const action of actions) {
+                    const assigned = ws.assigned[action.id] || 0; if (assigned <= 0) continue;
+                    const perCycleTime = this.calculateActionTime({ ...action, skillId }) * this.getWorkerSpeedMultiplier(skillId, action);
+                    ws.progress[action.id] += deltaMs * assigned;
+                    const cycles = Math.floor(ws.progress[action.id] / perCycleTime);
+                    if (cycles > 0) {
+                        ws.progress[action.id] %= perCycleTime;
+                        const totalQty = (action.output?.quantity || 0) * cycles * this.getWorkerYieldMultiplier(skillId, action);
+                        if (action.output?.itemId && totalQty > 0) {
+                            this.addToBank(action.output.itemId, Math.floor(totalQty));
+                            // Worker XP to player skill, reduced rate (50%)
+                            const xpGain = (action.xp || 0) * cycles * 0.5;
+                            this.state.player.skills[skillId].addXP(xpGain, this);
+                        }
+                        // Rare drops (each cycle independently, reduced chance)
+                        if (action.rareDrop) {
+                            const chance = action.rareDrop.chance || 0; // as percent
+                            for (let i = 0; i < cycles; i++) {
+                                if (Math.random() * 100 < chance * 0.5) { this.addToBank(action.rareDrop.itemId, 1); }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         getMastery(skillId, actionId) { if (!this.state.player.mastery[skillId][actionId]) { this.state.player.mastery[skillId][actionId] = new Mastery(); } return this.state.player.mastery[skillId][actionId]; }
 
         gainActionRewards(action, loops) {
@@ -271,14 +422,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        startAction(skillId, actionId, durationMinutes) {
+        startAction(skillId, actionId) {
             if (this.state.activeAction) return;
-            const cost = durationMinutes; if (this.state.player.stamina < cost) { this.uiManager.showModal('Not Enough Stamina', "<p>You don't have enough stamina to perform this action for that long.</p>"); return; }
-            this.state.player.stamina -= cost;
             let actionData;
             if (GAME_DATA.ACTIONS[skillId]) actionData = GAME_DATA.ACTIONS[skillId].find(a => a.id === actionId);
             if (GAME_DATA.RECIPES[skillId]) actionData = GAME_DATA.RECIPES[skillId].find(a => a.id === actionId);
-            this.state.activeAction = { ...actionData, skillId: skillId, startTime: Date.now(), endTime: Date.now() + durationMinutes * 60 * 1000, progress: 0 };
+            this.state.activeAction = { ...actionData, skillId: skillId, startTime: Date.now(), endTime: null, progress: 0 };
             this.uiManager.render();
         }
         stopAction() {
@@ -301,7 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.addToBank(recipe.output.itemId, totalOut);
                 this.uiManager.showFloatingText(`Crafted ${totalOut} ${GAME_DATA.ITEMS[recipe.output.itemId].name}`, 'text-green-400');
             }
-                            const skill = this.state.player.skills[skillId]; skill.addXP(recipe.xp * quantity, this);
+            const skill = this.state.player.skills[skillId]; skill.addXP(recipe.xp * quantity, this);
             // Mastery progress for artisan recipes
             const mastery = this.getMastery(skillId, recipe.id);
             mastery.addXP((recipe.baseTime || 1000) / 1000 * quantity);
@@ -313,159 +462,64 @@ document.addEventListener('DOMContentLoaded', () => {
         addGold(amount) { const final = Math.floor(amount * this.goldMultiplier()); this.state.player.gold += final; }
         spendGold(amount) { if (this.state.player.gold < amount) return false; this.state.player.gold -= amount; return true; }
 
-        addToBank(itemId, quantity) { this.state.bank[itemId] = (this.state.bank[itemId] || 0) + quantity; }
-        removeFromBank(itemId, quantity) { this.state.bank[itemId] -= quantity; if (this.state.bank[itemId] <= 0) { delete this.state.bank[itemId]; } }
-
-        // Worker systems
-        ensureWorkerState() {
-            if (!this.state.workers) {
-                this.state.workers = {
-                    mining: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0, depthLevel: 0, cartLevel: 0 }, assigned: {}, progress: {} },
-                    fishing: { total: 0, boats: 0, upgrades: { netLevel: 0, baitLevel: 0, boatLevel: 0 }, assigned: {}, progress: {} }
-                };
+        // Empire helpers
+        calculateEmpireProductionPerSecond() {
+            const units = this.state.empire.units || {};
+            let goldPerSec = 0, runesPerSec = 0, essencePerSec = 0;
+            for (const id of Object.keys(GAME_DATA.UNITS)) {
+                const data = GAME_DATA.UNITS[id];
+                const count = units[id] || 0;
+                if (count <= 0) continue;
+                if (data.goldPerSec) goldPerSec += data.goldPerSec * count;
+                if (data.runesPerSec) runesPerSec += data.runesPerSec * count;
+                if (data.essencePerSec) essencePerSec += data.essencePerSec * count;
             }
-            if (!this.state.workers.mining) this.state.workers.mining = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0, depthLevel: 0, cartLevel: 0 }, assigned: {}, progress: {} };
-            if (!this.state.workers.fishing) this.state.workers.fishing = { total: 0, boats: 0, upgrades: { netLevel: 0, baitLevel: 0, boatLevel: 0 }, assigned: {}, progress: {} };
-            (GAME_DATA.ACTIONS.mining || []).forEach(a => {
-                if (typeof this.state.workers.mining.assigned[a.id] !== 'number') this.state.workers.mining.assigned[a.id] = 0;
-                if (typeof this.state.workers.mining.progress[a.id] !== 'number') this.state.workers.mining.progress[a.id] = 0;
-            });
-            (GAME_DATA.ACTIONS.fishing || []).forEach(a => {
-                if (typeof this.state.workers.fishing.assigned[a.id] !== 'number') this.state.workers.fishing.assigned[a.id] = 0;
-                if (typeof this.state.workers.fishing.progress[a.id] !== 'number') this.state.workers.fishing.progress[a.id] = 0;
-            });
+            // Gold is multiplied later via addGold; show base before buff for UI but store base here
+            return { goldPerSec, runesPerSec, essencePerSec };
+        }
+        getEmpireUnitCost(id) {
+            const data = GAME_DATA.UNITS[id];
+            const owned = this.state.empire.units[id] || 0;
+            return Math.floor(data.baseCost * Math.pow(data.costGrowth, owned));
+        }
+        hireEmpireUnit(id) {
+            const cost = this.getEmpireUnitCost(id);
+            if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold to hire a ${GAME_DATA.UNITS[id].name}.</p>`); return; }
+            this.state.empire.units[id] = (this.state.empire.units[id] || 0) + 1;
+            this.uiManager.showFloatingText(`+1 ${GAME_DATA.UNITS[id].name}`, 'text-yellow-300');
+            this.uiManager.renderView();
         }
 
+        // Worker economy
         getHireCost(skillId) {
-            if (skillId === 'mining') {
-                const base = 200; const growth = 1.25; const owned = this.state.workers.mining.total || 0; return Math.floor(base * Math.pow(growth, owned));
-            }
-            if (skillId === 'fishing') {
-                const base = 150; const growth = 1.22; const owned = this.state.workers.fishing.total || 0; return Math.floor(base * Math.pow(growth, owned));
-            }
-            return 0;
+            const ws = this.state.workers?.[skillId]; if (!ws) return Infinity;
+            const base = 150; const owned = ws.total || 0; return Math.floor(base * Math.pow(1.35, owned));
         }
         getUpgradeCost(skillId, type) {
-            if (skillId === 'mining') {
-                const w = this.state.workers.mining;
-                const level = type === 'speed' ? (w.upgrades.speedLevel || 0) : type === 'yield' ? (w.upgrades.yieldLevel || 0) : type === 'depth' ? (w.upgrades.depthLevel || 0) : (w.upgrades.cartLevel || 0);
-                const base = type === 'speed' ? 250 : type === 'yield' ? 250 : type === 'depth' ? 400 : 300;
-                const growth = 1.45; return Math.floor(base * Math.pow(growth, level));
-            }
-            if (skillId === 'fishing') {
-                const w = this.state.workers.fishing;
-                const level = type === 'net' ? (w.upgrades.netLevel || 0) : type === 'bait' ? (w.upgrades.baitLevel || 0) : (w.upgrades.boatLevel || 0);
-                const base = type === 'net' ? 180 : type === 'bait' ? 220 : 260; const growth = 1.4; return Math.floor(base * Math.pow(growth, level));
-            }
-            return 0;
-        }
-        getBoatCost() {
-            const owned = this.state.workers.fishing.boats || 0; return Math.floor(400 * Math.pow(1.35, owned));
+            const ws = this.state.workers?.[skillId]; if (!ws) return Infinity;
+            const base = type === 'speed' ? 250 : 300; const level = type === 'speed' ? (ws.upgrades.speedLevel || 0) : (ws.upgrades.yieldLevel || 0);
+            return Math.floor(base * Math.pow(1.55, level));
         }
         hireWorker(skillId) {
-            const cost = this.getHireCost(skillId); if (!this.spendGold(cost)) { this.uiManager.showModal('Not Enough Gold', `<p>You need ${cost} gold to hire.</p>`); return; }
-            if (skillId === 'mining') { this.state.workers.mining.total += 1; this.uiManager.showFloatingText('+1 Miner Hired', 'text-green-400'); }
-            if (skillId === 'fishing') { this.state.workers.fishing.total += 1; this.uiManager.showFloatingText('+1 Angler Hired', 'text-green-400'); }
+            const ws = this.state.workers?.[skillId]; if (!ws) return;
+            const cost = this.getHireCost(skillId);
+            if (!this.spendGold(cost)) { this.uiManager.showModal('Not Enough Gold', `<p>You need ${cost} gold to hire a worker.</p>`); return; }
+            ws.total += 1;
+            this.uiManager.showFloatingText(`+1 Worker Hired`, 'text-green-400');
             this.uiManager.renderView();
-        }
-        buyBoat() {
-            const cost = this.getBoatCost(); if (!this.spendGold(cost)) { this.uiManager.showModal('Not Enough Gold', `<p>You need ${cost} gold to buy a boat.</p>`); return; }
-            this.state.workers.fishing.boats += 1; this.uiManager.showFloatingText('+1 Boat Purchased', 'text-blue-300'); this.uiManager.renderView();
         }
         upgradeWorkers(skillId, type) {
-            const cost = this.getUpgradeCost(skillId, type); if (!this.spendGold(cost)) { this.uiManager.showModal('Not Enough Gold', `<p>You need ${cost} gold to upgrade.</p>`); return; }
-            if (skillId === 'mining') {
-                if (type === 'speed') this.state.workers.mining.upgrades.speedLevel += 1;
-                if (type === 'yield') this.state.workers.mining.upgrades.yieldLevel += 1;
-                if (type === 'depth') this.state.workers.mining.upgrades.depthLevel += 1;
-                if (type === 'cart') this.state.workers.mining.upgrades.cartLevel += 1;
-                this.uiManager.showFloatingText('Mine Upgraded!', 'text-yellow-300');
-            }
-            if (skillId === 'fishing') {
-                if (type === 'net') this.state.workers.fishing.upgrades.netLevel += 1;
-                if (type === 'bait') this.state.workers.fishing.upgrades.baitLevel += 1;
-                if (type === 'boat') this.state.workers.fishing.upgrades.boatLevel += 1;
-                this.uiManager.showFloatingText('Harbor Upgraded!', 'text-yellow-300');
-            }
+            const ws = this.state.workers?.[skillId]; if (!ws) return;
+            const cost = this.getUpgradeCost(skillId, type);
+            if (!this.spendGold(cost)) { this.uiManager.showModal('Not Enough Gold', `<p>You need ${cost} gold to upgrade.</p>`); return; }
+            if (type === 'speed') ws.upgrades.speedLevel += 1;
+            if (type === 'yield') ws.upgrades.yieldLevel += 1;
+            this.uiManager.showFloatingText('Work Camp Upgraded!', 'text-yellow-300');
             this.uiManager.renderView();
         }
-        getWorkerSpeedMultiplier(skillId, action) {
-            if (skillId === 'mining') {
-                const s = this.state.workers.mining.upgrades.speedLevel || 0; const d = this.state.workers.mining.upgrades.depthLevel || 0;
-                const timeMult = 1 / (1 + s * 0.12 + d * 0.05);
-                return Math.max(0.4, timeMult);
-            }
-            if (skillId === 'fishing') {
-                const s = this.state.workers.fishing.upgrades.boatLevel || 0; const boats = this.state.workers.fishing.boats || 0;
-                const tide = this.getTideSpeedModifier();
-                const timeMult = 1 / (1 + s * 0.1 + boats * 0.04);
-                return Math.max(0.5, timeMult * tide);
-            }
-            return 1;
-        }
-        getWorkerYieldMultiplier(skillId, action) {
-            if (skillId === 'mining') {
-                const y = this.state.workers.mining.upgrades.yieldLevel || 0; const cart = this.state.workers.mining.upgrades.cartLevel || 0;
-                return 1 + y * 0.15 + cart * 0.08;
-            }
-            if (skillId === 'fishing') {
-                const net = this.state.workers.fishing.upgrades.netLevel || 0; const bait = this.state.workers.fishing.upgrades.baitLevel || 0;
-                return 1 + net * 0.12 + bait * 0.06;
-            }
-            return 1;
-        }
-        getTideSpeedModifier() {
-            const periodMs = 60 * 1000; // 1-minute tide cycle
-            const phase = (Date.now() % periodMs) / periodMs; // 0..1
-            const wave = Math.sin(phase * Math.PI * 2); // -1..1
-            return 1 - wave * 0.08; // 0.92..1.08 inverted so low time mult at high tide
-        }
-        processWorkers(deltaMs) {
-            // Mining
-            const wm = this.state.workers?.mining; if (wm) {
-                (GAME_DATA.ACTIONS.mining || []).forEach(action => {
-                    const assigned = wm.assigned[action.id] || 0; if (assigned <= 0) return;
-                    const perCycleTime = this.calculateActionTime({ ...action, skillId: 'mining' }) * this.getWorkerSpeedMultiplier('mining', action);
-                    wm.progress[action.id] = (wm.progress[action.id] || 0) + deltaMs * assigned;
-                    if (wm.progress[action.id] >= perCycleTime) {
-                        const cycles = Math.floor(wm.progress[action.id] / perCycleTime);
-                        wm.progress[action.id] %= perCycleTime;
-                        const totalQty = (action.output?.quantity || 0) * cycles * this.getWorkerYieldMultiplier('mining', action);
-                        const qty = Math.max(0, Math.floor(totalQty)); if (qty > 0) {
-                            this.addToBank(action.output.itemId, qty);
-                            this.state.player.skills.mining.addXP(action.xp * cycles * 0.5, this);
-                        }
-                        // Rare cart haul: small chance to add extra ores
-                        const extraChance = 2 + (this.state.workers.mining.upgrades.depthLevel || 0) * 0.5;
-                        for (let i = 0; i < cycles; i++) {
-                            if (Math.random() * 100 < extraChance) this.addToBank(action.output.itemId, 1);
-                        }
-                    }
-                });
-            }
-            // Fishing
-            const wf = this.state.workers?.fishing; if (wf) {
-                (GAME_DATA.ACTIONS.fishing || []).forEach(action => {
-                    const assigned = wf.assigned[action.id] || 0; if (assigned <= 0) return;
-                    const perCycleTime = this.calculateActionTime({ ...action, skillId: 'fishing' }) * this.getWorkerSpeedMultiplier('fishing', action);
-                    wf.progress[action.id] = (wf.progress[action.id] || 0) + deltaMs * assigned;
-                    if (wf.progress[action.id] >= perCycleTime) {
-                        const cycles = Math.floor(wf.progress[action.id] / perCycleTime);
-                        wf.progress[action.id] %= perCycleTime;
-                        const totalQty = (action.output?.quantity || 0) * cycles * this.getWorkerYieldMultiplier('fishing', action);
-                        const qty = Math.max(0, Math.floor(totalQty)); if (qty > 0) {
-                            this.addToBank(action.output.itemId, qty);
-                            this.state.player.skills.fishing.addXP(action.xp * cycles * 0.5, this);
-                        }
-                        // Bait bonus: tiny chance at +1 extra
-                        const extraChance = 1 + (this.state.workers.fishing.upgrades.baitLevel || 0) * 0.6;
-                        for (let i = 0; i < cycles; i++) {
-                            if (Math.random() * 100 < extraChance) this.addToBank(action.output.itemId, 1);
-                        }
-                    }
-                });
-            }
-        }
+
+        addToBank(itemId, quantity) { this.state.bank[itemId] = (this.state.bank[itemId] || 0) + quantity; }
+        removeFromBank(itemId, quantity) { this.state.bank[itemId] -= quantity; if (this.state.bank[itemId] <= 0) { delete this.state.bank[itemId]; } }
 
         // Rune helpers
         getRuneItemIds() { return Object.keys(GAME_DATA.ITEMS).filter(id => id.endsWith('_rune')); }
@@ -488,27 +542,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const staminaGained = Math.floor(10 * multiplier); this.state.player.stamina = Math.min(this.state.player.staminaMax, this.state.player.stamina + staminaGained); this.uiManager.showFloatingText(`+${staminaGained} Stamina`, 'text-green-400');
             const xpGained = Math.floor(20 * multiplier); const metaSkill = this.state.player.meta_skills[metaSkillCategory]; if (metaSkill) { metaSkill.addXP(xpGained, this); }
             this.uiManager.render();
-        }
-
-        // Meta Skill training (interactive)
-        trainMetaSkill(skillName, intensity) {
-            const intensityMap = {
-                spark: { stamina: 5, xp: 15 },
-                focus: { stamina: 12, xp: 40 },
-                surge: { stamina: 25, xp: 100 },
-            };
-            const config = intensityMap[intensity];
-            if (!config) return;
-            if (this.state.player.stamina < config.stamina) {
-                this.uiManager.showModal('Not Enough Stamina', '<p>You need more stamina to train this skill.</p>');
-                return;
-            }
-            this.state.player.stamina -= config.stamina;
-            const skill = this.state.player.meta_skills[skillName];
-            if (!skill) return;
-            skill.addXP(config.xp, this);
-            this.uiManager.showFloatingText(`${skillName} +${config.xp} XP`, 'text-blue-300');
-            this.uiManager.renderView();
         }
 
         // Spells
@@ -569,10 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const strBonus = 1 + (this.state.player.meta_skills[META_SKILLS.STRENGTH].level - 1) * 0.03; const dmg = Math.max(1, Math.floor((base * strBonus) - enemy.defense * 0.5));
             return dmg;
         }
-        eatFood(itemId) {
-            const item = GAME_DATA.ITEMS[itemId]; if (!item || !item.heals) return; if ((this.state.bank[itemId] || 0) <= 0) return;
-            this.removeFromBank(itemId, 1); this.state.player.hp = Math.min(this.state.player.hpMax, this.state.player.hp + item.heals); this.uiManager.showFloatingText(`+${item.heals} HP`, 'text-green-300'); this.uiManager.renderView();
-        }
+        eatFood(itemId) { const item = GAME_DATA.ITEMS[itemId]; if (!item || !item.heals) return; if ((this.state.bank[itemId] || 0) <= 0) return; this.removeFromBank(itemId, 1); this.state.player.hp = Math.min(this.state.player.hpMax, this.state.player.hp + item.heals); this.uiManager.showFloatingText(`+${item.heals} HP`, 'text-green-300'); this.uiManager.renderView(); }
         equipWeapon(itemId) { if (!GAME_DATA.ITEMS[itemId]) return; if ((this.state.bank[itemId] || 0) <= 0) return; this.state.player.weapon = itemId; this.uiManager.renderView(); }
 
         saveGame() { try { localStorage.setItem('chimeraSaveData_web_v1', JSON.stringify(this.state)); } catch (e) { console.error('Failed to save game:', e); } }
@@ -590,11 +620,69 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (!this.state.player.mastery[skillId]) this.state.player.mastery[skillId] = {};
                         Object.keys(parsedData.player.mastery[skillId]).forEach(actionId => { const mastery = new Mastery(); Object.assign(mastery, parsedData.player.mastery[skillId][actionId]); this.state.player.mastery[skillId][actionId] = mastery; });
                     });
-                    // Ensure worker structures exist
-                    this.ensureWorkerState();
                     this.state.lastUpdate = Date.now();
-                } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
+                    // Backfill worker system defaults if missing
+                    if (!this.state.workers) {
+                        this.state.workers = {};
+                    }
+                    Object.keys(GAME_DATA.SKILLS)
+                        .filter(id => GAME_DATA.SKILLS[id].type === 'gathering')
+                        .forEach(skillId => {
+                            if (!this.state.workers[skillId]) { this.state.workers[skillId] = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} }; }
+                            (GAME_DATA.ACTIONS[skillId] || []).forEach(a => {
+                                if (typeof this.state.workers[skillId].assigned[a.id] !== 'number') this.state.workers[skillId].assigned[a.id] = 0;
+                                if (typeof this.state.workers[skillId].progress[a.id] !== 'number') this.state.workers[skillId].progress[a.id] = 0;
+                            });
+                        });
+                    // Backfill empire system defaults if missing
+                    if (!this.state.empire) { this.state.empire = { units: {}, lastTick: Date.now(), production: { goldPerSec: 0, runesPerSec: 0, essencePerSec: 0 }, buffers: { gold: 0, runes: 0, essence: 0 } }; }
+                    if (!this.state.empire.units) this.state.empire.units = {};
+                    Object.keys(GAME_DATA.UNITS).forEach(id => { if (typeof this.state.empire.units[id] !== 'number') this.state.empire.units[id] = 0; });
+                    // Backfill army system defaults if missing
+                    if (!this.state.army) { this.state.army = { units: {}, lastTick: Date.now(), production: { dps: 0, hps: 0, hungry: false }, upkeep: { foodBuffer: 0, hungry: false }, fly: { accumDmg: 0, accumHeal: 0, lastFlush: Date.now() } }; }
+                    if (!this.state.army.units) this.state.army.units = {};
+                    Object.keys(GAME_DATA.ARMY_CLASSES).forEach(id => { if (typeof this.state.army.units[id] !== 'number') this.state.army.units[id] = 0; });
+                 } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
+             }
+         }
+
+        // Army helpers
+        getArmyUnitCost(id) { const data = GAME_DATA.ARMY_CLASSES[id]; const owned = this.state.army.units[id] || 0; return Math.floor(data.baseCost * Math.pow(data.costGrowth, owned)); }
+        hireArmyUnit(id) { const cost = this.getArmyUnitCost(id); if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient Gold', `<p>You need ${cost} gold to hire a ${GAME_DATA.ARMY_CLASSES[id].name}.</p>`); return; } this.state.army.units[id] = (this.state.army.units[id] || 0) + 1; this.uiManager.showFloatingText(`+1 ${GAME_DATA.ARMY_CLASSES[id].name}`, 'text-green-300'); this.uiManager.renderView(); }
+        calculateArmyOutputPerSecond() {
+            const units = this.state.army.units || {};
+            let dps = 0, hps = 0, foodPerMin = 0;
+            for (const id of Object.keys(GAME_DATA.ARMY_CLASSES)) {
+                const def = GAME_DATA.ARMY_CLASSES[id];
+                const count = units[id] || 0;
+                if (count <= 0) continue;
+                dps += (def.dps || 0) * count;
+                hps += (def.hps || 0) * count;
+                foodPerMin += (def.foodPerMin || 0) * count;
             }
+            return { dps, hps, foodPerMin };
+        }
+        consumeArmyUpkeep(deltaSec) {
+            // Use cooked foods first; each food heals value ~ treat 1 HP heal as 1 food unit
+            const foodIds = Object.keys(this.state.bank).filter(id => GAME_DATA.ITEMS[id]?.heals).sort((a,b) => (GAME_DATA.ITEMS[a].heals||0)-(GAME_DATA.ITEMS[b].heals||0));
+            const out = this.calculateArmyOutputPerSecond();
+            const requiredFoodUnits = (out.foodPerMin / 60) * deltaSec; // food units per sec
+            this.state.army.upkeep.foodBuffer += requiredFoodUnits;
+            let needed = Math.floor(this.state.army.upkeep.foodBuffer);
+            if (needed > 0) {
+                for (const fid of foodIds) {
+                    if (needed <= 0) break;
+                    let have = this.state.bank[fid] || 0;
+                    if (have <= 0) continue;
+                    const take = Math.min(have, needed);
+                    this.removeFromBank(fid, take);
+                    needed -= take;
+                }
+                this.state.army.upkeep.foodBuffer -= Math.floor(this.state.army.upkeep.foodBuffer);
+            }
+            const hungry = needed > 0; // unmet demand
+            this.state.army.upkeep.hungry = hungry;
+            return { hungry, out };
         }
     }
 
@@ -613,9 +701,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         updateDynamicElements() {
             document.getElementById('gold-display').textContent = Math.floor(this.game.state.player.gold).toLocaleString();
+            const gps = this.game.state.empire?.production?.goldPerSec || 0;
+            const gpsEl = document.getElementById('gps-display'); if (gpsEl) gpsEl.textContent = `(+${gps.toFixed(1)}/s)`;
             const runesEl = document.getElementById('runes-display'); if (runesEl) { const totalRunes = (this.game.state.player.runes || 0) + this.game.getTotalRuneItemCount(); runesEl.textContent = totalRunes.toLocaleString(); }
             const stamina = this.game.state.player.stamina; const staminaMax = this.game.state.player.staminaMax;
             document.getElementById('stamina-value').textContent = `${Math.floor(stamina)}/${staminaMax}`; document.getElementById('stamina-bar-fill').style.width = `${(stamina / staminaMax) * 100}%`;
+            // If in combat, show Ally badge refresh
+            if (this.currentView === 'combat') this.renderCombatFooter();
             Object.keys(this.game.state.player.skills).forEach(id => { const skill = this.game.state.player.skills[id]; const xpBar = document.getElementById(`sidebar-xp-${id}`); if (xpBar) xpBar.style.width = `${(skill.currentXP / skill.xpToNextLevel) * 100}%`; });
             this.updateMasteryBar();
             // If in combat, update view footer elements
@@ -635,8 +727,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>`;
                 return;
             }
-            const now = Date.now(); const timeElapsed = now - action.startTime; const totalDuration = action.endTime - action.startTime; const percentComplete = (timeElapsed / totalDuration) * 100;
-            const skillData = GAME_DATA.SKILLS[action.skillId]; const actionTime = this.game.calculateActionTime(action); const xpPerHour = (3600000 / actionTime) * action.xp;
+            const actionTime = this.game.calculateActionTime(action); const percentComplete = Math.min(100, (action.progress / actionTime) * 100);
+            const skillData = GAME_DATA.SKILLS[action.skillId]; const xpPerHour = (3600000 / actionTime) * action.xp;
             container.innerHTML = `<div class="block p-2 h-full flex items-center space-x-4"><i class="fas ${skillData.icon} text-xl"></i><div class="flex-grow"><div class="flex justify-between text-xs"><span>${action.name}</span><span class="font-mono">${xpPerHour.toFixed(0)} XP/hr</span></div><div class="w-full xp-bar-bg rounded-full h-2.5 mt-1"><div class="xp-bar-fill h-2.5 rounded-full" style="width: ${percentComplete}%"></div></div></div><button id="stop-action-btn" class="chimera-button rounded-full w-8 h-8 flex items-center justify-center"><i class="fas fa-stop"></i></button></div>`;
             const stop = document.getElementById('stop-action-btn'); if (stop) stop.onclick = () => this.game.stopAction();
         }
@@ -650,6 +742,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'bank': html = this.renderBankView(); break;
                     case 'meta_skills': html = this.renderMetaSkillsView(); break;
                     case 'combat': html = this.renderCombatView(); break;
+                    case 'army': html = this.renderArmyView(); break;
                     case 'clicker': html = this.renderClickerView(); break;
                     case 'spellbook': html = this.renderSpellbookView(); break;
                     case 'shop': html = this.renderShopView(); break;
@@ -659,47 +752,81 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         renderDashboardView() {
+            const prod = this.game.state.empire.production || { goldPerSec: 0, runesPerSec: 0, essencePerSec: 0 };
+            const units = this.game.state.empire.units || {};
+            const unitList = Object.keys(GAME_DATA.UNITS).map(id => {
+                const u = GAME_DATA.UNITS[id];
+                const qty = units[id] || 0;
+                return `<div class="flex items-center justify-between"><span>${u.emoji} ${u.name}</span><span class="font-mono text-white">${qty}</span></div>`;
+            }).join('');
+            const wc = this.game.state.workers.woodcutting;
+            const wcAssigned = Object.values(wc.assigned || {}).reduce((a,b)=>a+b,0);
             return `
-                <h1 class="text-2xl font-semibold text-white mb-4">Dashboard</h1>
-                <div class="block p-4">
-                    <h2 class="text-lg font-bold text-white mb-3">Log Real-Life Task</h2>
-                    <div id="add-task-form" class="space-y-3">
-                        <input type="text" id="task-name-input" placeholder="e.g., 'Workout for 30 minutes'" class="w-full p-2 bg-primary border border-border-color rounded-md">
-                        <div class="grid grid-cols-2 gap-3">
-                            <select id="task-category-select" class="w-full p-2 bg-primary border border-border-color rounded-md">
-                                ${Object.entries(TASK_CATEGORIES).map(([key, value]) => `<option value="${value}">${key.charAt(0) + key.slice(1).toLowerCase()} (${value})</option>`).join('')}
-                            </select>
-                            <select id="task-difficulty-select" class="w-full p-2 bg-primary border border-border-color rounded-md">
-                                <option value="small">Small</option>
-                                <option value="medium">Medium</option>
-                                <option value="large">Large</option>
-                            </select>
+                <div class="block p-6 mb-4 bg-gradient-to-r from-black/40 to-black/20 border border-border-color">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-crown text-yellow-400 text-2xl"></i>
+                            <div>
+                                <h1 class="text-2xl font-semibold text-white">The Sovereign's Ledger</h1>
+                                <p class="text-secondary">Command your medieval economy and rise to legend.</p>
+                            </div>
                         </div>
-                        <button id="add-task-btn" class="chimera-button w-full py-2 rounded-md font-bold">Complete Task & Gain Stamina</button>
+                        <div class="flex gap-2">
+                            <button id="goto-empire" class="chimera-button px-3 py-2 rounded-md"><i class="fas fa-chess-rook"></i> Empire</button>
+                            <button id="goto-woodcutting" class="chimera-button px-3 py-2 rounded-md"><i class="fas fa-tree"></i> Woodcutting</button>
+                            <button id="goto-runecrafting" class="chimera-button px-3 py-2 rounded-md"><i class="fas fa-circle-nodes"></i> Runecrafting</button>
+                            <button id="goto-combat" class="chimera-button px-3 py-2 rounded-md"><i class="fas fa-skull"></i> Combat</button>
+                            <button id="goto-shop" class="chimera-button px-3 py-2 rounded-md"><i class="fas fa-store"></i> Shop</button>
+                        </div>
                     </div>
                 </div>
-                <div class="block p-4 mt-4">
-                    <h2 class="text-lg font-bold text-white mb-3">How to Play</h2>
-                    <ol class="text-secondary list-decimal list-inside space-y-1">
-                        <li>Complete real-life tasks here to earn <strong>Stamina</strong>.</li>
-                        <li>Use Gathering to gain resources; Artisan to craft gear and boosts.</li>
-                        <li>Fight in <strong>Combat</strong> using your crafted gear and food.</li>
-                        <li>Click in <strong>Clicker</strong> to generate Gold and unlock upgrades.</li>
-                        <li>Cast spells in <strong>Spellbook</strong>, buy and open <strong>Chests</strong> in Shop.</li>
-                    </ol>
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                    <div class="block p-4">
+                        <h2 class="text-lg font-bold">Treasury</h2>
+                        <p class="text-secondary">Gold on hand</p>
+                        <p class="text-2xl font-mono text-yellow-300">${Math.floor(this.game.state.player.gold).toLocaleString()}</p>
+                        <p class="text-xs text-green-300 mt-1">+${prod.goldPerSec.toFixed(1)}/s</p>
+                    </div>
+                    <div class="block p-4">
+                        <h2 class="text-lg font-bold">Arcane Reserves</h2>
+                        <p class="text-secondary">Runes & Essence</p>
+                        <p class="text-2xl font-mono text-purple-300">${((this.game.state.player.runes||0) + this.game.getTotalRuneItemCount()).toLocaleString()}</p>
+                        <p class="text-xs text-blue-300 mt-1">Runes: +${(prod.runesPerSec||0).toFixed(2)}/s • Essence: +${(prod.essencePerSec||0).toFixed(2)}/s</p>
+                    </div>
+                    <div class="block p-4">
+                        <h2 class="text-lg font-bold">Workforce</h2>
+                        <p class="text-secondary">Empire Units & Camps</p>
+                        <p class="text-sm">Timberhands: <span class="font-mono text-white">${wc.total}</span> • Assigned: <span class="font-mono text-white">${wcAssigned}</span></p>
+                        <div class="mt-2 space-y-1">${unitList || '<p class="text-secondary">No units hired yet.</p>'}</div>
+                    </div>
+                    <div class="block p-4">
+                        <h2 class="text-lg font-bold">Real-life Tasks</h2>
+                        <p class="text-secondary text-sm">Complete tasks to gain Stamina and level Meta Skills.</p>
+                        <div id="add-task-form" class="space-y-3 mt-2">
+                            <div class="grid grid-cols-2 gap-2">
+                                ${Object.entries(TASK_CATEGORIES).map(([key, value]) => `<select id="task-category-select" class="w-full p-2 bg-primary border border-border-color rounded-md"><option value="${value}">${key.charAt(0) + key.slice(1).toLowerCase()} (${value})</option></select>`).join('')}
+                                <select id="task-difficulty-select" class="w-full p-2 bg-primary border border-border-color rounded-md">
+                                    <option value="small">Small</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="large">Large</option>
+                                </select>
+                            </div>
+                            <button id="add-task-btn" class="chimera-button w-full py-2 rounded-md font-bold">Complete Task & Gain Stamina</button>
+                        </div>
+                    </div>
                 </div>
             `;
         }
 
         renderSkillView(skillId) {
             const skillData = GAME_DATA.SKILLS[skillId]; const playerSkill = this.game.state.player.skills[skillId]; let contentHtml = ''; let actionType = '';
-            if (skillData.type === 'gathering') { actionType = 'Start'; contentHtml = GAME_DATA.ACTIONS[skillId].map(action => this.renderActionCard(skillId, action, actionType)).join(''); }
+            if (skillData.type === 'gathering') { actionType = 'Start'; contentHtml = (GAME_DATA.ACTIONS[skillId]||[]).map(action => this.renderActionCard(skillId, action, actionType)).join(''); }
             else if (skillData.type === 'artisan') {
                 actionType = 'Craft'; if (skillId === 'firemaking') { contentHtml = this.renderFiremakingView(); }
-                else { contentHtml = GAME_DATA.RECIPES[skillId].map(recipe => this.renderActionCard(skillId, recipe, actionType)).join(''); }
+                else { contentHtml = (GAME_DATA.RECIPES[skillId]||[]).map(recipe => this.renderActionCard(skillId, recipe, actionType)).join(''); }
             }
-            const managerPanel = skillId === 'mining' ? this.renderMiningPanel() : (skillId === 'fishing' ? this.renderFishingPanel() : '');
-            return `<h1 class="text-2xl font-semibold text-white mb-4">${skillData.name} <span class="text-base text-secondary">(Level ${playerSkill.level})</span></h1>${managerPanel}<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">${contentHtml}</div>`;
+            const workerPanel = (skillData.type === 'gathering' && this.game.state.workers[skillId]) ? this.renderWorkerPanel(skillId) : '';
+            return `<h1 class="text-2xl font-semibold text-white mb-4">${skillData.name} <span class="text-base text-secondary">(Level ${playerSkill.level})</span></h1>${workerPanel}<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">${contentHtml}</div>`;
         }
 
         renderActionCard(skillId, action, actionType) {
@@ -709,105 +836,27 @@ document.addEventListener('DOMContentLoaded', () => {
             let yieldMult = 1;
             if (skillId === 'runecrafting') { yieldMult = Math.max(1, 1 + Math.floor((playerSkill.level - action.level) / 11)); }
             const inputList = action.input ? action.input.map(inp => { const has = (this.game.state.bank[inp.itemId] || 0) >= inp.quantity; return `<span class="${has ? 'text-green-400' : 'text-red-400'}">${inp.quantity}x ${GAME_DATA.ITEMS[inp.itemId].name}</span>`; }).join(', ') : '';
+            const workerAssign = this.game.state.workers[skillId] ? this.renderWorkerAssign(skillId, action) : '';
             return `
                 <div class="block p-4 flex flex-col justify-between ${!hasLevel ? 'opacity-50' : ''}">
                     <div>
-                        <h3 class="text-lg font-bold text-white">${action.name}</h3>
+                        <h3 class="text-lg font-bold">${action.name}</h3>
                         <p class="text-secondary text-xs">Requires Level: ${action.level}</p>
                         <p class="text-secondary text-xs">XP: ${action.xp}</p>
                         ${action.input ? `<p class="text-secondary text-xs mt-1">Requires: ${inputList}</p>`: ''}
                         ${skillId === 'runecrafting' ? `<p class="text-blue-300 text-xs mt-1">Yield at Lvl ${playerSkill.level}: x${yieldMult} per essence</p>` : ''}
                         <div class="mt-2">
-                            <p class="text-xs text-yellow-400">Mastery Lvl ${mastery.level}</p>
+                            <div class="flex items-center justify-between">
+                                <span class="badge"><i class="fa-solid fa-hat-wizard"></i> Mastery Lvl ${mastery.level}</span>
+                            </div>
                             <div class="w-full xp-bar-bg rounded-full h-2 my-1"><div class="mastery-bar-fill h-2 rounded-full" style="width:${(mastery.currentXP / mastery.xpToNextLevel) * 100}%"></div></div>
                             <p class="text-xs text-secondary text-right">${Math.floor(mastery.currentXP)} / ${mastery.xpToNextLevel} XP</p>
                         </div>
-                        ${skillId === 'mining' ? this.renderMiningAssign(action) : ''}
-                        ${skillId === 'fishing' ? this.renderFishingAssign(action) : ''}
+                        ${workerAssign}
                     </div>
-                    <button class="${actionType.toLowerCase()}-action-btn chimera-button px-4 py-2 rounded-md mt-4" data-skill-id="${skillId}" data-action-id="${action.id}" ${!hasLevel || !canAfford || this.game.state.activeAction ? 'disabled' : ''}>${actionType}</button>
-                </div>
-            `;
-        }
-
-        renderMiningPanel() {
-            const wm = this.game.state.workers.mining; const hireCost = this.game.getHireCost('mining');
-            const speedCost = this.game.getUpgradeCost('mining', 'speed'); const yieldCost = this.game.getUpgradeCost('mining', 'yield');
-            const depthCost = this.game.getUpgradeCost('mining', 'depth'); const cartCost = this.game.getUpgradeCost('mining', 'cart');
-            return `
-                <div class="block p-4 mb-4 border border-mining">
-                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                        <div>
-                            <h2 class="text-lg font-bold">Mine Overseer</h2>
-                            <p class="text-secondary text-sm">Assign Miners to rock veins. Upgrade depth, carts and tools for efficiency.</p>
-                            <p class="text-white text-sm mt-1">Miners: <span class="font-bold">${wm.total}</span></p>
-                            <p class="text-secondary text-xs">Depth L${wm.upgrades.depthLevel} • Carts L${wm.upgrades.cartLevel}</p>
-                        </div>
-                        <div class="flex flex-col sm:flex-row gap-2">
-                            <button id="hire-miner" class="chimera-button px-3 py-2 rounded-md">Hire Miner — Cost: ${hireCost} gold</button>
-                            <button id="upgrade-mining-speed" class="chimera-button px-3 py-2 rounded-md">Sharper Picks (Speed L${wm.upgrades.speedLevel}) — Cost: ${speedCost} gold</button>
-                            <button id="upgrade-mining-yield" class="chimera-button px-3 py-2 rounded-md">Ore Sacks (Yield L${wm.upgrades.yieldLevel}) — Cost: ${yieldCost} gold</button>
-                            <button id="upgrade-mining-depth" class="chimera-button px-3 py-2 rounded-md">Deeper Shafts (L${wm.upgrades.depthLevel}) — Cost: ${depthCost} gold</button>
-                            <button id="upgrade-mining-cart" class="chimera-button px-3 py-2 rounded-md">Mine Carts (L${wm.upgrades.cartLevel}) — Cost: ${cartCost} gold</button>
-                        </div>
+                    <div class="mt-4 flex gap-2">
+                        <button class="${actionType.toLowerCase()}-action-btn chimera-button px-4 py-2 rounded-md" data-skill-id="${skillId}" data-action-id="${action.id}" ${!hasLevel || !canAfford || this.game.state.activeAction ? 'disabled' : ''}>${actionType}</button>
                     </div>
-                </div>
-            `;
-        }
-        renderMiningAssign(action) {
-            const wm = this.game.state.workers.mining; const assigned = wm.assigned[action.id] || 0; const total = wm.total; const sumAssigned = Object.values(wm.assigned).reduce((a,b)=>a+b,0); const free = Math.max(0, total - sumAssigned);
-            const speedMult = this.game.getWorkerSpeedMultiplier('mining', action); const yieldMult = this.game.getWorkerYieldMultiplier('mining', action);
-            return `
-                <div class="mt-3 p-2 rounded-md bg-black/30 border border-border-color">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs text-secondary">Miners Assigned: <span class="text-white font-mono">${assigned}</span> / Free: <span class="text-white font-mono">${free}</span></span>
-                        <div class="space-x-1">
-                            <button class="assign-mining-worker-btn chimera-button px-2 py-1 rounded" data-action-id="${action.id}" data-dir="-1">-</button>
-                            <button class="assign-mining-worker-btn chimera-button px-2 py-1 rounded" data-action-id="${action.id}" data-dir="+1">+</button>
-                        </div>
-                    </div>
-                    <p class="text-[11px] text-secondary mt-1">Eff: x${yieldMult.toFixed(2)} yield, ${Math.round(100 - speedMult*100)}% faster</p>
-                </div>
-            `;
-        }
-
-        renderFishingPanel() {
-            const wf = this.game.state.workers.fishing; const hireCost = this.game.getHireCost('fishing'); const boatCost = this.game.getBoatCost();
-            const netCost = this.game.getUpgradeCost('fishing', 'net'); const baitCost = this.game.getUpgradeCost('fishing', 'bait'); const boatUpCost = this.game.getUpgradeCost('fishing', 'boat');
-            const tideMult = this.game.getTideSpeedModifier(); const tidePct = Math.round((1 / tideMult) * 100) - 100; // higher is better (faster)
-            return `
-                <div class="block p-4 mb-4 border border-fishing">
-                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                        <div>
-                            <h2 class="text-lg font-bold">Harbor & Fleet</h2>
-                            <p class="text-secondary text-sm">Manage Anglers and Boats. Nets and bait boost your catches. Tides affect speed.</p>
-                            <p class="text-white text-sm mt-1">Anglers: <span class="font-bold">${wf.total}</span> • Boats: <span class="font-bold">${wf.boats}</span></p>
-                            <p class="text-blue-300 text-xs">Tide bonus: ${tidePct >= 0 ? '+' : ''}${tidePct}% speed</p>
-                        </div>
-                        <div class="flex flex-col sm:flex-row gap-2">
-                            <button id="hire-angler" class="chimera-button px-3 py-2 rounded-md">Hire Angler — Cost: ${hireCost} gold</button>
-                            <button id="buy-fishing-boat" class="chimera-button px-3 py-2 rounded-md">Buy Boat — Cost: ${boatCost} gold</button>
-                            <button id="upgrade-fishing-net" class="chimera-button px-3 py-2 rounded-md">Reinforced Nets (L${wf.upgrades.netLevel}) — Cost: ${netCost} gold</button>
-                            <button id="upgrade-fishing-bait" class="chimera-button px-3 py-2 rounded-md">Premium Bait (L${wf.upgrades.baitLevel}) — Cost: ${baitCost} gold</button>
-                            <button id="upgrade-fishing-boat" class="chimera-button px-3 py-2 rounded-md">Boat Fittings (L${wf.upgrades.boatLevel}) — Cost: ${boatUpCost} gold</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-        renderFishingAssign(action) {
-            const wf = this.game.state.workers.fishing; const assigned = wf.assigned[action.id] || 0; const total = wf.total; const sumAssigned = Object.values(wf.assigned).reduce((a,b)=>a+b,0); const free = Math.max(0, total - sumAssigned);
-            const speedMult = this.game.getWorkerSpeedMultiplier('fishing', action); const yieldMult = this.game.getWorkerYieldMultiplier('fishing', action);
-            return `
-                <div class="mt-3 p-2 rounded-md bg-black/30 border border-border-color">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs text-secondary">Anglers Assigned: <span class="text-white font-mono">${assigned}</span> / Free: <span class="text-white font-mono">${free}</span></span>
-                        <div class="space-x-1">
-                            <button class="assign-fishing-worker-btn chimera-button px-2 py-1 rounded" data-action-id="${action.id}" data-dir="-1">-</button>
-                            <button class="assign-fishing-worker-btn chimera-button px-2 py-1 rounded" data-action-id="${action.id}" data-dir="+1">+</button>
-                        </div>
-                    </div>
-                    <p class="text-[11px] text-secondary mt-1">Eff: x${yieldMult.toFixed(2)} yield, ${Math.round(100 - speedMult*100)}% faster</p>
                 </div>
             `;
         }
@@ -825,60 +874,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         renderMetaSkillsView() {
-            const colorFor = (name) => ({
-                [META_SKILLS.STRENGTH]: 'var(--accent-green)',
-                [META_SKILLS.INTELLECT]: 'var(--accent-blue)',
-                [META_SKILLS.STEWARDSHIP]: '#ffc107',
-                [META_SKILLS.RESILIENCE]: '#2dd4bf',
-                [META_SKILLS.ARTISTRY]: '#a78bfa',
-            })[name] || 'var(--accent-blue)';
-
-            const bonusFor = (skill) => {
-                switch (skill.name) {
-                    case META_SKILLS.STRENGTH: return 'Increases combat damage';
-                    case META_SKILLS.INTELLECT: return 'Boosts Artisan XP gain';
-                    case META_SKILLS.STEWARDSHIP: return `-${(skill.level - 1).toFixed(1)}% Gathering time`;
-                    case META_SKILLS.RESILIENCE: return `+${((skill.level - 1) * 5).toFixed(1)}% Stamina regen`;
-                    case META_SKILLS.ARTISTRY: return 'More Gold from all sources';
-                    default: return '';
-                }
-            };
-
             const skillsHtml = Object.values(this.game.state.player.meta_skills).map(skill => {
-                const pct = skill.xpToNextLevel > 0 ? (skill.currentXP / skill.xpToNextLevel) : 0;
-                const ringColor = colorFor(skill.name);
-                const bonusText = bonusFor(skill);
-                return `
-                <div class="block p-4 meskill-card" data-skill-name="${skill.name}">
-                    <div class="flex items-center justify-between mb-3">
-                        <h3 class="text-lg font-bold">${skill.name}</h3>
-                        <span class="meskill-badge">Lvl ${skill.level}</span>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <div class="ring" style="--ring-pct:${pct}; --ring-color:${ringColor}">
-                            <div class="ring-center">
-                                <div class="text-base font-bold">L${skill.level}</div>
-                                <div class="text-[10px] text-secondary">${Math.floor(skill.currentXP)} / ${skill.xpToNextLevel}</div>
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-sm text-secondary">${bonusText}</p>
-                            <div class="w-full xp-bar-bg rounded-full h-2 my-2"><div class="xp-bar-fill h-2 rounded-full" style="width:${pct * 100}%"></div></div>
-                            <div class="mt-2 grid grid-cols-3 gap-2">
-                                <button class="meskill-train-btn chimera-button px-2 py-1 rounded-md" data-skill="${skill.name}" data-intensity="spark">Spark</button>
-                                <button class="meskill-train-btn chimera-button px-2 py-1 rounded-md" data-skill="${skill.name}" data-intensity="focus">Focus</button>
-                                <button class="meskill-train-btn chimera-button px-2 py-1 rounded-md" data-skill="${skill.name}" data-intensity="surge">Surge</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
+                let bonusText = '';
+                switch (skill.name) {
+                    case META_SKILLS.STRENGTH: bonusText = `Increases combat damage.`; break;
+                    case META_SKILLS.INTELLECT: bonusText = `Increases Artisan skill XP gain.`; break;
+                    case META_SKILLS.STEWARDSHIP: bonusText = `- ${(skill.level - 1).toFixed(1)}% Gathering action time.`; break;
+                    case META_SKILLS.RESILIENCE: bonusText = `+${((skill.level - 1) * 5).toFixed(1)}% Stamina regeneration.`; break;
+                    case META_SKILLS.ARTISTRY: bonusText = `Increases Gold from all sources.`; break;
+                }
+                return `<div class="block p-4"><h3 class="text-lg font-bold text-white">${skill.name} - Level ${skill.level}</h3><div class="w-full xp-bar-bg rounded-full h-2 my-2"><div class="xp-bar-fill h-2 rounded-full" style="width:${(skill.currentXP / skill.xpToNextLevel) * 100}%"></div></div><p class="text-xs text-secondary text-right">${Math.floor(skill.currentXP)} / ${skill.xpToNextLevel} XP</p><p class="text-sm text-accent-blue mt-2">${bonusText}</p></div>`;
             }).join('');
-
-            return `
-                <h1 class="text-2xl font-semibold text-white mb-2">Meta Skills</h1>
-                <p class="text-secondary mb-4">Complete real-life tasks or spend Stamina to actively train these skills.</p>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">${skillsHtml}</div>
-            `;
+            return `<h1 class="text-2xl font-semibold text-white mb-4">Meta Skills</h1><p class="text-secondary mb-4">These skills are leveled up by completing real-life tasks. They provide passive bonuses to your in-game actions.</p><div class="grid grid-cols-1 md:grid-cols-2 gap-4">${skillsHtml}</div>`;
         }
 
         renderCombatView() {
@@ -898,6 +905,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         <h2 class="text-lg font-bold">Status</h2>
                         ${combatStatus}
                         <p class="text-secondary">HP: <span class="font-mono">${Math.floor(this.game.state.player.hp)}/${this.game.state.player.hpMax}</span></p>
+                        <div class="mt-2">
+                            <span class="badge"><i class="fas fa-users"></i> Allies: DPS ${Math.max(0,(this.game.state.army.production?.dps||0)).toFixed(1)} • HPS ${Math.max(0,(this.game.state.army.production?.hps||0)).toFixed(1)} ${this.game.state.army.upkeep?.hungry ? '<span class="text-red-400 ml-1">Hungry</span>' : ''}</span>
+                        </div>
                         <button id="end-combat-btn" class="chimera-button px-3 py-2 rounded-md" ${this.game.state.combat.inCombat ? '' : 'disabled'}>Retreat</button>
                     </div>
                     <div class="block p-4 space-y-3">
@@ -912,26 +922,36 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCombatFooter() { /* placeholder for potential dynamic footer updates */ }
 
         renderClickerView() {
-            const c = this.game.state.clicker;
-            const clickIncome = c.goldPerClick * this.game.goldMultiplier();
-            const upgradeCost = (lvl, base) => Math.floor(base * Math.pow(1.35, lvl));
-            const clickCost = upgradeCost(c.upgrades.clickPowerLevel, 50);
-            const autoCost = upgradeCost(c.upgrades.autoClickerLevel, 100);
-            const multCost = upgradeCost(c.upgrades.multiplierLevel, 250);
+            const units = GAME_DATA.UNITS;
+            const owned = this.game.state.empire.units;
+            const prod = this.game.calculateEmpireProductionPerSecond();
+            const cards = Object.keys(units).map(id => {
+                const u = units[id];
+                const qty = owned[id] || 0;
+                const cost = this.game.getEmpireUnitCost(id);
+                const lines = [];
+                if (u.goldPerSec) lines.push(`Gold: +${u.goldPerSec}/s each`);
+                if (u.runesPerSec) lines.push(`Runes: +${u.runesPerSec}/s each`);
+                if (u.essencePerSec) lines.push(`Essence: +${u.essencePerSec}/s each`);
+                return `
+                    <div class="block p-4 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold">${u.emoji} ${u.name}</h3>
+                            <p class="text-secondary text-xs">${u.description}</p>
+                            <p class="text-secondary text-xs mt-1">${lines.join(' • ')}</p>
+                            <p class="text-white text-sm mt-2">Owned: <span class="font-mono">${qty}</span></p>
+                        </div>
+                        <button class="hire-unit-btn chimera-button px-3 py-2 rounded-md mt-3" data-unit-id="${id}">Hire — Cost: ${cost} gold</button>
+                    </div>
+                `;
+            }).join('');
             return `
-                <h1 class="text-2xl font-semibold text-white mb-4">Clicker</h1>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="block p-6 flex flex-col items-center justify-center space-y-4">
-                        <button id="big-cookie" class="chimera-button rounded-full w-40 h-40 flex items-center justify-center text-2xl">+${Math.floor(clickIncome)} Gold</button>
-                        <p class="text-secondary">Auto: ${c.autoClickers} x/${(1000 / c.autoRateMs).toFixed(1)}s, Power: ${c.goldPerClick}</p>
-                    </div>
-                    <div class="block p-4 space-y-3">
-                        <h2 class="text-lg font-bold">Upgrades</h2>
-                        <button id="upgrade-click" class="chimera-button px-3 py-2 rounded-md w-full text-left">Increase Click Power (+1) — Cost: ${clickCost} gold</button>
-                        <button id="upgrade-auto" class="chimera-button px-3 py-2 rounded-md w-full text-left">Buy Autoclicker (+1) — Cost: ${autoCost} gold</button>
-                        <button id="upgrade-mult" class="chimera-button px-3 py-2 rounded-md w-full text-left">Sharpen Tools (Power x1.2) — Cost: ${multCost} gold</button>
-                    </div>
+                <h1 class="text-2xl font-semibold text-white mb-4">Empire Command</h1>
+                <div class="block p-4 mb-4">
+                    <h2 class="text-lg font-bold">Production</h2>
+                    <p class="text-secondary text-sm">Gold: <span class="text-white">+${prod.goldPerSec.toFixed(1)}/s</span> • Runes: <span class="text-white">+${(prod.runesPerSec||0).toFixed(2)}/s</span> • Essence: <span class="text-white">+${(prod.essencePerSec||0).toFixed(2)}/s</span></p>
                 </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${cards}</div>
             `;
         }
 
@@ -970,7 +990,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         attachViewEventListeners() {
-            const addTaskBtn = document.getElementById('add-task-btn'); if (addTaskBtn) { addTaskBtn.addEventListener('click', () => { const category = document.getElementById('task-category-select').value; const difficulty = document.getElementById('task-difficulty-select').value; this.game.completeRealLifeTask(category, difficulty); const n = document.getElementById('task-name-input'); if (n) n.value = ''; }); }
+            const addTaskBtn = document.getElementById('add-task-btn'); if (addTaskBtn) { addTaskBtn.addEventListener('click', () => { const category = document.getElementById('task-category-select').value; const difficulty = document.getElementById('task-difficulty-select').value; this.game.completeRealLifeTask(category, difficulty); }); }
+            const ge = document.getElementById('goto-empire'); if (ge) ge.addEventListener('click', () => { this.currentView = 'clicker'; this.render(); });
+            const gw = document.getElementById('goto-woodcutting'); if (gw) gw.addEventListener('click', () => { this.currentView = 'woodcutting'; this.render(); });
+            const gr = document.getElementById('goto-runecrafting'); if (gr) gr.addEventListener('click', () => { this.currentView = 'runecrafting'; this.render(); });
+            const gc = document.getElementById('goto-combat'); if (gc) gc.addEventListener('click', () => { this.currentView = 'combat'; this.render(); });
+            const gs = document.getElementById('goto-shop'); if (gs) gs.addEventListener('click', () => { this.currentView = 'shop'; this.render(); });
             document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => { const duration = parseInt(prompt('Enter duration in minutes:', '15'), 10); if (isNaN(duration) || duration <= 0) return; this.game.startAction(btn.dataset.skillId, btn.dataset.actionId, duration); }); });
             document.querySelectorAll('.craft-action-btn, .light-action-btn').forEach(btn => { btn.addEventListener('click', () => {
                 const s = btn.dataset.skillId; const a = btn.dataset.actionId;
@@ -989,76 +1014,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }); });
 
-            // Meta Skills interactions
-            document.querySelectorAll('.meskill-train-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    this.game.trainMetaSkill(btn.dataset.skill, btn.dataset.intensity);
-                });
-            });
-
-            // 3D tilt on Meta Skill cards
-            document.querySelectorAll('.meskill-card').forEach(card => {
-                const onMove = (e) => {
-                    const r = card.getBoundingClientRect();
-                    const px = (e.clientX - r.left) / r.width;
-                    const py = (e.clientY - r.top) / r.height;
-                    const rotY = (px - 0.5) * 10;
-                    const rotX = (0.5 - py) * 10;
-                    card.style.transform = `perspective(800px) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
-                };
-                card.addEventListener('mousemove', onMove);
-                card.addEventListener('mouseleave', () => { card.style.transform = ''; });
-            });
-
             // Combat
-            document.querySelectorAll('.start-combat-btn').forEach(btn => { btn.addEventListener('click', () => this.game.startCombat(btn.dataset.enemyId)); });
+            document.querySelectorAll('.start-combat-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.startCombat(btn.dataset.enemyId); this.currentView = 'combat'; this.render(); }); });
             const endBtn = document.getElementById('end-combat-btn'); if (endBtn) endBtn.addEventListener('click', () => this.game.endCombat(false));
             document.querySelectorAll('.eat-food-btn').forEach(btn => { btn.addEventListener('click', () => this.game.eatFood(btn.dataset.itemId)); });
             document.querySelectorAll('.equip-weapon-btn').forEach(btn => { btn.addEventListener('click', () => this.game.equipWeapon(btn.dataset.itemId)); });
 
-            // Clicker
-            const big = document.getElementById('big-cookie'); if (big) big.addEventListener('click', () => this.game.addGold(this.game.state.clicker.goldPerClick));
-            const c = this.game.state.clicker; const upgradeCost = (lvl, base) => Math.floor(base * Math.pow(1.35, lvl));
-            const upClick = document.getElementById('upgrade-click'); if (upClick) upClick.addEventListener('click', () => { const cost = upgradeCost(c.upgrades.clickPowerLevel, 50); if (!this.game.spendGold(cost)) return; c.upgrades.clickPowerLevel++; c.goldPerClick += 1; this.renderView(); });
-            const upAuto = document.getElementById('upgrade-auto'); if (upAuto) upAuto.addEventListener('click', () => { const cost = upgradeCost(c.upgrades.autoClickerLevel, 100); if (!this.game.spendGold(cost)) return; c.upgrades.autoClickerLevel++; c.autoClickers += 1; this.renderView(); });
-            const upMult = document.getElementById('upgrade-mult'); if (upMult) upMult.addEventListener('click', () => { const cost = upgradeCost(c.upgrades.multiplierLevel, 250); if (!this.game.spendGold(cost)) return; c.upgrades.multiplierLevel++; c.goldPerClick = Math.max(1, Math.floor(c.goldPerClick * 1.2)); this.renderView(); });
+            // Empire hiring events
+            document.querySelectorAll('.hire-unit-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireEmpireUnit(btn.dataset.unitId)); });
 
             // Spells
             document.querySelectorAll('.cast-spell-btn').forEach(btn => { btn.addEventListener('click', () => this.game.castSpell(btn.dataset.spellId)); });
             // Shop
             document.querySelectorAll('.buy-chest-btn').forEach(btn => { btn.addEventListener('click', () => this.game.buyChest(btn.dataset.chestId)); });
+            // Army
+            document.querySelectorAll('.hire-army-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireArmyUnit(btn.dataset.unitId)); });
 
-            // Mining manager
-            const hireMiner = document.getElementById('hire-miner'); if (hireMiner) hireMiner.addEventListener('click', () => this.game.hireWorker('mining'));
-            const upMS = document.getElementById('upgrade-mining-speed'); if (upMS) upMS.addEventListener('click', () => this.game.upgradeWorkers('mining', 'speed'));
-            const upMY = document.getElementById('upgrade-mining-yield'); if (upMY) upMY.addEventListener('click', () => this.game.upgradeWorkers('mining', 'yield'));
-            const upMD = document.getElementById('upgrade-mining-depth'); if (upMD) upMD.addEventListener('click', () => this.game.upgradeWorkers('mining', 'depth'));
-            const upMC = document.getElementById('upgrade-mining-cart'); if (upMC) upMC.addEventListener('click', () => this.game.upgradeWorkers('mining', 'cart'));
-            document.querySelectorAll('.assign-mining-worker-btn').forEach(btn => {
+            // Workers - Woodcutting
+            const hire = document.getElementById('hire-wood-worker'); if (hire) hire.addEventListener('click', () => this.game.hireWorker('woodcutting'));
+            const upS = document.getElementById('upgrade-wood-speed'); if (upS) upS.addEventListener('click', () => this.game.upgradeWorkers('woodcutting', 'speed'));
+            const upY = document.getElementById('upgrade-wood-yield'); if (upY) upY.addEventListener('click', () => this.game.upgradeWorkers('woodcutting', 'yield'));
+            document.querySelectorAll('.assign-worker-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const id = btn.dataset.actionId; const dir = btn.dataset.dir === '+1' ? 1 : -1; const wm = this.game.state.workers.mining;
-                    const sumAssigned = Object.values(wm.assigned).reduce((a,b)=>a+b,0);
-                    const free = Math.max(0, wm.total - sumAssigned);
-                    if (dir === 1 && free <= 0) return; if (dir === -1 && (wm.assigned[id] || 0) <= 0) return;
-                    wm.assigned[id] = Math.max(0, (wm.assigned[id] || 0) + dir);
-                    this.renderView();
-                });
-            });
-
-            // Fishing harbor
-            const hireAngler = document.getElementById('hire-angler'); if (hireAngler) hireAngler.addEventListener('click', () => this.game.hireWorker('fishing'));
-            const buyBoat = document.getElementById('buy-fishing-boat'); if (buyBoat) buyBoat.addEventListener('click', () => this.game.buyBoat());
-            const upFN = document.getElementById('upgrade-fishing-net'); if (upFN) upFN.addEventListener('click', () => this.game.upgradeWorkers('fishing', 'net'));
-            const upFB = document.getElementById('upgrade-fishing-bait'); if (upFB) upFB.addEventListener('click', () => this.game.upgradeWorkers('fishing', 'bait'));
-            const upFO = document.getElementById('upgrade-fishing-boat'); if (upFO) upFO.addEventListener('click', () => this.game.upgradeWorkers('fishing', 'boat'));
-            document.querySelectorAll('.assign-fishing-worker-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const id = btn.dataset.actionId; const dir = btn.dataset.dir === '+1' ? 1 : -1; const wf = this.game.state.workers.fishing;
-                    const sumAssigned = Object.values(wf.assigned).reduce((a,b)=>a+b,0);
-                    const free = Math.max(0, wf.total - sumAssigned);
-                    if (dir === 1 && free <= 0) return; if (dir === -1 && (wf.assigned[id] || 0) <= 0) return;
-                    wf.assigned[id] = Math.max(0, (wf.assigned[id] || 0) + dir);
-                    this.renderView();
+                    const id = btn.dataset.actionId; const dir = btn.dataset.dir;
+                    const skill = btn.dataset.skillId;
+                    const ws = this.game.state.workers[skill];
+                    const sumAssigned = Object.values(ws.assigned).reduce((a,b)=>a+b,0);
+                    if (dir === '+1') {
+                        if (sumAssigned < ws.total) { ws.assigned[id] = (ws.assigned[id] || 0) + 1; this.renderView(); }
+                    } else {
+                        if ((ws.assigned[id] || 0) > 0) { ws.assigned[id] -= 1; this.renderView(); }
+                    }
                 });
             });
         }
