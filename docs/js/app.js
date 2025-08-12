@@ -780,6 +780,10 @@ document.addEventListener('DOMContentLoaded', () => {
     class UIManager {
         constructor(game) {
             this.game = game; this.mainContent = document.getElementById('main-content'); this.modalBackdrop = document.getElementById('modal-backdrop'); this.modalContent = document.getElementById('modal-content'); this.floatingTextContainer = document.getElementById('floating-text-container'); this.currentView = 'dashboard';
+            // Bank UI state
+            this.bankSearchQuery = '';
+            this.bankSortMode = 'qty_desc'; // qty_desc | qty_asc | name_asc | name_desc
+            this.bankFilter = 'all'; // all | food | weapons | runes | materials
         }
         init() {
             this.renderSidebar(); this.attachSidebarEventListeners(); this.render();
@@ -1056,9 +1060,66 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         renderBankView() {
-            let itemsHtml = Object.entries(this.game.state.bank).map(([itemId, quantity]) => { const itemData = GAME_DATA.ITEMS[itemId]; if (!itemData) return ''; return `<div class="block p-2 flex flex-col items-center justify-center text-center tooltip"><span class="tooltiptext">${itemData.name}</span><span class="text-3xl">${itemData.icon || '❔'}</span><span class="font-mono text-white mt-1">${quantity.toLocaleString()}</span></div>`; }).join('');
-            if (itemsHtml === '') { itemsHtml = `<p class="text-secondary col-span-full text-center">Your bank is empty. Gather some resources!</p>`; }
-            return `<h1 class="text-2xl font-semibold text-white mb-4">Bank</h1><div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4">${itemsHtml}</div>`;
+            // Collect items and apply filter/search/sort
+            const entries = Object.entries(this.game.state.bank || {});
+            const filtered = entries.filter(([itemId, quantity]) => {
+                const item = GAME_DATA.ITEMS[itemId]; if (!item) return false;
+                // Filter
+                const cat = this.getItemCategory(itemId);
+                if (this.bankFilter !== 'all' && cat !== this.bankFilter) return false;
+                // Search
+                if (this.bankSearchQuery && !item.name.toLowerCase().includes(this.bankSearchQuery.toLowerCase())) return false;
+                return true;
+            });
+            // Sort
+            filtered.sort((a,b) => {
+                const [aid, aq] = a; const [bid, bq] = b;
+                const an = (GAME_DATA.ITEMS[aid]?.name || '').toLowerCase();
+                const bn = (GAME_DATA.ITEMS[bid]?.name || '').toLowerCase();
+                switch (this.bankSortMode) {
+                    case 'qty_asc': return aq - bq;
+                    case 'name_asc': return an.localeCompare(bn);
+                    case 'name_desc': return bn.localeCompare(an);
+                    case 'qty_desc':
+                    default: return bq - aq;
+                }
+            });
+
+            const itemsHtml = filtered.map(([itemId, quantity]) => {
+                const itemData = GAME_DATA.ITEMS[itemId]; if (!itemData) return '';
+                const cat = this.getItemCategory(itemId);
+                const ringClass = cat === 'food' ? 'ring-emerald-500/40' : (cat === 'weapons' ? 'ring-rose-500/40' : (cat === 'runes' ? 'ring-indigo-500/40' : 'ring-slate-500/30'));
+                const tooltip = this.getItemTooltipHTML(itemId, quantity);
+                return `
+                    <button class="block p-3 flex flex-col items-center justify-center text-center tooltip rounded-md border border-border-color hover:border-white/30 transition relative ring-1 ${ringClass} bank-item-card" data-item-id="${itemId}">
+                        <span class="tooltiptext">${tooltip}</span>
+                        <span class="text-3xl">${itemData.icon || '❔'}</span>
+                        <span class="text-[11px] text-secondary mt-1 truncate max-w-[96px]">${itemData.name}</span>
+                        <span class="font-mono text-white mt-1">${quantity.toLocaleString()}</span>
+                    </button>`;
+            }).join('');
+
+            const emptyHtml = `<p class="text-secondary col-span-full text-center">Your bank is empty. Gather some resources!</p>`;
+
+            const toolbar = `
+                <div class="block p-3 mb-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div class="flex flex-wrap gap-2">
+                            ${['all','food','weapons','runes','materials'].map(f => `<button class="bank-filter-btn chimera-button px-3 py-1.5 rounded-md text-xs ${this.bankFilter===f?'ring-1 ring-white/30':''}" data-filter="${f}">${f.charAt(0).toUpperCase()+f.slice(1)}</button>`).join('')}
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input id="bank-search" type="text" value="${this.bankSearchQuery || ''}" placeholder="Search items..." class="w-48 p-2 bg-primary border border-border-color rounded-md" />
+                            <select id="bank-sort" class="p-2 bg-primary border border-border-color rounded-md">
+                                <option value="qty_desc" ${this.bankSortMode==='qty_desc'?'selected':''}>Qty (High → Low)</option>
+                                <option value="qty_asc" ${this.bankSortMode==='qty_asc'?'selected':''}>Qty (Low → High)</option>
+                                <option value="name_asc" ${this.bankSortMode==='name_asc'?'selected':''}>Name (A → Z)</option>
+                                <option value="name_desc" ${this.bankSortMode==='name_desc'?'selected':''}>Name (Z → A)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>`;
+
+            return `<h1 class="text-2xl font-semibold text-white mb-2">Bank</h1>${toolbar}<div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4">${itemsHtml || emptyHtml}</div>`;
         }
 
         renderMetaSkillsView() {
@@ -1296,14 +1357,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         attachViewEventListeners() {
-            const addTaskBtn = document.getElementById('add-task-btn'); if (addTaskBtn) { addTaskBtn.addEventListener('click', () => { const category = document.getElementById('task-category-select').value; const difficulty = document.getElementById('task-difficulty-select').value; this.game.completeRealLifeTask(category, difficulty); const n = document.getElementById('task-name-input'); if (n) n.value = ''; }); }
+            const addTaskBtn = document.getElementById('add-task-btn'); if (addTaskBtn) { addTaskBtn.addEventListener('click', () => { const category = document.getElementById('task-category-select').value; const difficulty = document.getElementById('task-difficulty-select').value; this.game.completeRealLifeTask(category, difficulty); }); }
             const ge = document.getElementById('goto-empire'); if (ge) ge.addEventListener('click', () => { this.currentView = 'clicker'; this.render(); });
             const gw = document.getElementById('goto-woodcutting'); if (gw) gw.addEventListener('click', () => { this.currentView = 'woodcutting'; this.render(); });
             const gr = document.getElementById('goto-runecrafting'); if (gr) gr.addEventListener('click', () => { this.currentView = 'runecrafting'; this.render(); });
             const gc = document.getElementById('goto-combat'); if (gc) gc.addEventListener('click', () => { this.currentView = 'combat'; this.render(); });
             const gs = document.getElementById('goto-shop'); if (gs) gs.addEventListener('click', () => { this.currentView = 'shop'; this.render(); });
             const gwf = document.getElementById('goto-workforce'); if (gwf) gwf.addEventListener('click', () => { this.currentView = 'workforce'; this.render(); });
-            document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => { const sel = this.mainContent.querySelector(`.action-duration-select[data-skill-id="${btn.dataset.skillId}"][data-action-id="${btn.dataset.actionId}"]`); const duration = sel ? parseInt(sel.value, 10) : 15; if (isNaN(duration) || duration <= 0) return; this.game.startAction(btn.dataset.skillId, btn.dataset.actionId, duration); }); });
+            document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => { const duration = parseInt(prompt('Enter duration in minutes:', '15'), 10); if (isNaN(duration) || duration <= 0) return; this.game.startAction(btn.dataset.skillId, btn.dataset.actionId, duration); }); });
+            document.querySelectorAll('.stop-action-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.stopAction(); }); });
             document.querySelectorAll('.craft-action-btn, .light-action-btn').forEach(btn => { btn.addEventListener('click', () => {
                 const s = btn.dataset.skillId; const a = btn.dataset.actionId;
                 if (s === 'runecrafting') {
@@ -1321,6 +1383,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }); });
 
+            // Bank controls and item interactions
+            const bankSearch = document.getElementById('bank-search'); if (bankSearch) {
+                const handler = () => { this.bankSearchQuery = bankSearch.value || ''; this.renderView(); };
+                bankSearch.addEventListener('input', handler);
+                bankSearch.addEventListener('change', handler);
+            }
+            const bankSort = document.getElementById('bank-sort'); if (bankSort) {
+                bankSort.addEventListener('change', () => { this.bankSortMode = bankSort.value; this.renderView(); });
+            }
+            document.querySelectorAll('.bank-filter-btn').forEach(btn => { btn.addEventListener('click', () => { this.bankFilter = btn.dataset.filter; this.renderView(); }); });
+            document.querySelectorAll('.bank-item-card').forEach(card => { card.addEventListener('click', () => this.showItemDetails(card.dataset.itemId)); });
+
+            // Runecrafting interactive altar handlers
+            const altar = document.getElementById('altar-dropzone');
+            const essenceToken = document.getElementById('essence-token');
+            const qtyInput = document.getElementById('rc-qty');
+            const qtyRange = document.getElementById('rc-range');
+            const btnMinus = document.getElementById('rc-minus');
+            const btnPlus = document.getElementById('rc-plus');
+            const craftBtn = document.getElementById('rc-craft-btn');
+            const haveEss = (this.game.state.bank['rune_essence'] || 0);
+            const selectRecipe = (id) => { document.querySelectorAll('.rc-altar-card').forEach(c => c.classList.toggle('rc-selected', c.dataset.rcRecipeId === id)); if (craftBtn) { craftBtn.dataset.recipeId = id || ''; craftBtn.disabled = !id; } };
+            document.querySelectorAll('.rc-altar-card').forEach(card => { card.addEventListener('click', () => selectRecipe(card.dataset.rcRecipeId)); });
+            document.querySelectorAll('.rc-altar-card .quick-craft-btn').forEach(btn => { btn.addEventListener('click', (e) => { e.stopPropagation(); const id = btn.dataset.recipeId; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const maxQty = Math.floor((this.game.state.bank['rune_essence'] || 0) / per); if (maxQty <= 0) return; this.game.craftItem('runecrafting', id, Math.min(1, maxQty)); this.render(); }); });
+            if (btnMinus) btnMinus.addEventListener('click', () => { const v = Math.max(1, (parseInt(qtyInput.value || '1', 10) - 10)); qtyInput.value = v; if (qtyRange) qtyRange.value = v; });
+            if (btnPlus) btnPlus.addEventListener('click', () => { const v = Math.min(haveEss, (parseInt(qtyInput.value || '1', 10) + 10)); qtyInput.value = v; if (qtyRange) qtyRange.value = v; });
+            if (qtyInput) qtyInput.addEventListener('change', () => { let v = parseInt(qtyInput.value || '1', 10); if (isNaN(v) || v <= 0) v = 1; v = Math.min(v, haveEss); qtyInput.value = v; if (qtyRange) qtyRange.value = v; });
+            if (qtyRange) qtyRange.addEventListener('input', () => { let v = parseInt(qtyRange.value || '1', 10); if (isNaN(v) || v <= 0) v = 1; v = Math.min(v, haveEss); qtyRange.value = v; if (qtyInput) qtyInput.value = v; });
+            if (craftBtn) craftBtn.addEventListener('click', () => { const id = craftBtn.dataset.recipeId; if (!id) return; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const maxQty = Math.floor((this.game.state.bank['rune_essence'] || 0) / per); const want = Math.min(maxQty, Math.max(1, parseInt(qtyInput?.value || '1', 10))); if (want <= 0) return; this.game.craftItem('runecrafting', id, want); if (altar) { for (let i = 0; i < Math.min(10, want); i++) { const spark = document.createElement('div'); spark.className = 'rune-spark'; spark.style.setProperty('--sx', `${(Math.random() - 0.5) * 120}px`); spark.style.setProperty('--sy', `${(Math.random() - 0.2) * 40}px`); spark.style.setProperty('--tx', `${(Math.random() - 0.5) * 40}px`); spark.style.setProperty('--ty', `${-140 - Math.random() * 40}px`); altar.appendChild(spark); setTimeout(() => spark.remove(), 950); } } this.render(); });
+            if (altar) { altar.addEventListener('dragover', (e) => { e.preventDefault(); altar.style.borderColor = 'rgba(88,166,255,0.6)'; }); altar.addEventListener('dragleave', () => { altar.style.borderColor = 'var(--border-color)'; }); altar.addEventListener('drop', (e) => { e.preventDefault(); altar.style.borderColor = 'var(--border-color)'; const sel = document.querySelector('.rc-altar-card.rc-selected'); if (!sel) { this.game.uiManager.showFloatingText('Select an altar first', 'text-yellow-300'); return; } const id = sel.dataset.rcRecipeId; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const have = (this.game.state.bank['rune_essence'] || 0); const maxQty = Math.floor(have / per); const want = Math.min(maxQty, Math.max(1, parseInt((qtyInput?.value || qtyRange?.value || '1'), 10))); if (want <= 0) return; this.game.craftItem('runecrafting', id, want); for (let i = 0; i < Math.min(10, want); i++) { const spark = document.createElement('div'); spark.className = 'rune-spark'; spark.style.setProperty('--sx', `${(Math.random() - 0.5) * 120}px`); spark.style.setProperty('--sy', `${(Math.random() - 0.2) * 40}px`); spark.style.setProperty('--tx', `${(Math.random() - 0.5) * 40}px`); spark.style.setProperty('--ty', `${-140 - Math.random() * 40}px`); altar.appendChild(spark); setTimeout(() => spark.remove(), 950); } this.render(); }); }
+            if (essenceToken) { essenceToken.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', 'essence'); }); }
+
             // Combat
             document.querySelectorAll('.start-combat-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.startCombat(btn.dataset.enemyId); this.currentView = 'combat'; this.render(); }); });
             const endBtn = document.getElementById('end-combat-btn'); if (endBtn) endBtn.addEventListener('click', () => this.game.endCombat(false));
@@ -1328,7 +1422,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.equip-weapon-btn').forEach(btn => { btn.addEventListener('click', () => this.game.equipWeapon(btn.dataset.itemId)); });
 
             // Empire hiring events
-            document.querySelectorAll('.hire-unit-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.hireEmpireUnit(btn.dataset.unitId); this.pulseAt(btn); this.game.uiManager.playSound('hire'); }); });
+            document.querySelectorAll('.hire-unit-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireEmpireUnit(btn.dataset.unitId)); });
 
             // Spells
             document.querySelectorAll('.cast-spell-btn').forEach(btn => { btn.addEventListener('click', () => this.game.castSpell(btn.dataset.spellId)); });
@@ -1336,48 +1430,24 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.buy-chest-btn').forEach(btn => { btn.addEventListener('click', () => this.game.buyChest(btn.dataset.chestId)); });
             // Army
             document.querySelectorAll('.hire-army-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireArmyUnit(btn.dataset.unitId)); });
+            const rallyBtn = document.getElementById('rally-army-btn'); if (rallyBtn) rallyBtn.addEventListener('click', () => this.game.rallyArmy());
+            const resetBtn = document.getElementById('reset-save'); if (resetBtn) resetBtn.addEventListener('click', () => this.game.resetSave());
 
-            // Workers - generic
-            document.querySelectorAll('.hire-worker-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.hireWorker(btn.dataset.skillId); this.pulseAt(btn); this.game.uiManager.playSound('hire'); }); });
-            document.querySelectorAll('.upgrade-worker-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.upgradeWorkers(btn.dataset.skillId, btn.dataset.type); this.pulseAt(btn); this.game.uiManager.playSound('upgrade'); }); });
-            document.querySelectorAll('.assign-worker-btn').forEach(btn => { btn.addEventListener('click', () => {
-                const id = btn.dataset.actionId; const dir = btn.dataset.dir; const skill = btn.dataset.skillId; const ws = this.game.state.workers[skill]; const sumAssigned = Object.values(ws.assigned).reduce((a,b)=>a+b,0); if (dir === '+1') { if (sumAssigned < ws.total) ws.assigned[id] = (ws.assigned[id]||0)+1; } else { ws.assigned[id] = Math.max(0,(ws.assigned[id]||0)-1); } this.render();
-            }); });
-
-            // Farming estate
-            const hireFarm = document.getElementById('hire-farmhand'); if (hireFarm) hireFarm.addEventListener('click', () => this.game.hireWorker('farming'));
-            const upFI = document.getElementById('upgrade-farming-irrigation'); if (upFI) upFI.addEventListener('click', () => this.game.upgradeWorkers('farming', 'irrigation'));
-            const upFT = document.getElementById('upgrade-farming-tools'); if (upFT) upFT.addEventListener('click', () => this.game.upgradeWorkers('farming', 'tools'));
-            const upFC = document.getElementById('upgrade-farming-compost'); if (upFC) upFC.addEventListener('click', () => this.game.upgradeWorkers('farming', 'compost'));
-            const upFR = document.getElementById('upgrade-farming-tractor'); if (upFR) upFR.addEventListener('click', () => this.game.upgradeWorkers('farming', 'tractor'));
-            document.querySelectorAll('.assign-farming-worker-btn').forEach(btn => {
+            // Workers - generic per skill
+            document.querySelectorAll('.hire-worker-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireWorker(btn.dataset.skillId)); });
+            document.querySelectorAll('.upgrade-worker-btn').forEach(btn => { btn.addEventListener('click', () => this.game.upgradeWorkers(btn.dataset.skillId, btn.dataset.type)); });
+            document.querySelectorAll('.assign-worker-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const id = btn.dataset.actionId; const dir = btn.dataset.dir === '+1' ? 1 : -1; const wfarm = this.game.state.workers.farming;
-                    const sumAssigned = Object.values(wfarm.assigned).reduce((a,b)=>a+b,0);
-                    const free = Math.max(0, wfarm.total - sumAssigned);
-                    if (dir === 1 && free <= 0) return; if (dir === -1 && (wfarm.assigned[id] || 0) <= 0) return;
-                    wfarm.assigned[id] = Math.max(0, (wfarm.assigned[id] || 0) + dir);
-                    this.renderView();
+                    const skillId = btn.dataset.skillId; const id = btn.dataset.actionId; const dir = btn.dataset.dir;
+                    const ws = this.game.state.workers[skillId];
+                    const sumAssigned = Object.values(ws.assigned).reduce((a,b)=>a+b,0);
+                    if (dir === '+1') {
+                        if (sumAssigned < ws.total) { ws.assigned[id] = (ws.assigned[id] || 0) + 1; this.renderView(); }
+                    } else {
+                        if ((ws.assigned[id] || 0) > 0) { ws.assigned[id] -= 1; this.renderView(); }
+                    }
                 });
             });
-
-            // Runecrafting interactive altar handlers
-            const altar = document.getElementById('altar-dropzone');
-            const essenceToken = document.getElementById('essence-token');
-            const qtyInput = document.getElementById('rc-qty');
-            const btnMinus = document.getElementById('rc-minus');
-            const btnPlus = document.getElementById('rc-plus');
-            const craftBtn = document.getElementById('rc-craft-btn');
-            const haveEss = (this.game.state.bank['rune_essence'] || 0);
-            const selectRecipe = (id) => { document.querySelectorAll('.rc-altar-card').forEach(c => c.classList.toggle('rc-selected', c.dataset.rcRecipeId === id)); if (craftBtn) { craftBtn.dataset.recipeId = id || ''; craftBtn.disabled = !id; } };
-            document.querySelectorAll('.rc-altar-card').forEach(card => { card.addEventListener('click', () => selectRecipe(card.dataset.rcRecipeId)); });
-            document.querySelectorAll('.quick-craft-btn').forEach(btn => { btn.addEventListener('click', (e) => { e.stopPropagation(); const id = btn.dataset.recipeId; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const maxQty = Math.floor((this.game.state.bank['rune_essence'] || 0) / per); if (maxQty <= 0) return; this.game.craftItem('runecrafting', id, Math.min(1, maxQty)); this.render(); }); });
-            if (btnMinus) btnMinus.addEventListener('click', () => { const v = Math.max(1, (parseInt(qtyInput.value || '1', 10) - 10)); qtyInput.value = v; });
-            if (btnPlus) btnPlus.addEventListener('click', () => { const v = Math.min(haveEss, (parseInt(qtyInput.value || '1', 10) + 10)); qtyInput.value = v; });
-            if (qtyInput) qtyInput.addEventListener('change', () => { let v = parseInt(qtyInput.value || '1', 10); if (isNaN(v) || v <= 0) v = 1; v = Math.min(v, haveEss); qtyInput.value = v; });
-            if (craftBtn) craftBtn.addEventListener('click', () => { const id = craftBtn.dataset.recipeId; if (!id) return; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const maxQty = Math.floor((this.game.state.bank['rune_essence'] || 0) / per); const want = Math.min(maxQty, Math.max(1, parseInt(qtyInput.value || '1', 10))); if (want <= 0) return; this.game.craftItem('runecrafting', id, want); if (altar) { for (let i = 0; i < Math.min(10, want); i++) { const spark = document.createElement('div'); spark.className = 'rune-spark'; spark.style.setProperty('--sx', `${(Math.random() - 0.5) * 120}px`); spark.style.setProperty('--sy', `${(Math.random() - 0.2) * 40}px`); spark.style.setProperty('--tx', `${(Math.random() - 0.5) * 40}px`); spark.style.setProperty('--ty', `${-140 - Math.random() * 40}px`); altar.appendChild(spark); setTimeout(() => spark.remove(), 950); } } this.render(); });
-            if (altar) { altar.addEventListener('dragover', (e) => { e.preventDefault(); altar.style.borderColor = 'rgba(88,166,255,0.6)'; }); altar.addEventListener('dragleave', () => { altar.style.borderColor = 'var(--border-color)'; }); altar.addEventListener('drop', (e) => { e.preventDefault(); altar.style.borderColor = 'var(--border-color)'; const sel = document.querySelector('.rc-altar-card.rc-selected'); if (!sel) { this.game.uiManager.showFloatingText('Select an altar first', 'text-yellow-300'); return; } const id = sel.dataset.rcRecipeId; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const have = (this.game.state.bank['rune_essence'] || 0); const maxQty = Math.floor(have / per); const want = Math.min(maxQty, Math.max(1, parseInt(qtyInput?.value || '1', 10))); if (want <= 0) return; this.game.craftItem('runecrafting', id, want); for (let i = 0; i < Math.min(10, want); i++) { const spark = document.createElement('div'); spark.className = 'rune-spark'; spark.style.setProperty('--sx', `${(Math.random() - 0.5) * 120}px`); spark.style.setProperty('--sy', `${(Math.random() - 0.2) * 40}px`); spark.style.setProperty('--tx', `${(Math.random() - 0.5) * 40}px`); spark.style.setProperty('--ty', `${-140 - Math.random() * 40}px`); altar.appendChild(spark); setTimeout(() => spark.remove(), 950); } this.render(); }); }
-            if (essenceToken) { essenceToken.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', 'essence'); }); }
         }
 
         showModal(title, content) {
@@ -1646,6 +1716,103 @@ document.addEventListener('DOMContentLoaded', () => {
             const name = item?.name || itemId; const icon = item?.icon || '❔';
             const key = `item:${itemId}`;
             this.createOrUpdateNotification(key, { increment: qty, icon: icon, label: name, kind: 'item' });
+        }
+
+        // Helper: categorize items for filtering and styling
+        getItemCategory(itemId) {
+            if (!itemId) return 'materials';
+            if (itemId === 'rune_essence' || itemId.endsWith('_rune')) return 'runes';
+            const item = GAME_DATA.ITEMS[itemId] || {};
+            if (typeof item.heals === 'number' && item.heals > 0) return 'food';
+            if (typeof item.damage === 'number' && item.damage > 0) return 'weapons';
+            return 'materials';
+        }
+
+        // Helper: build tooltip HTML for items
+        getItemTooltipHTML(itemId, quantity) {
+            const item = GAME_DATA.ITEMS[itemId] || { name: 'Unknown', icon: '❔' };
+            const lines = [];
+            const category = this.getItemCategory(itemId);
+            if (item.heals) lines.push(`Restores <span class="text-green-300 font-mono">${item.heals}</span> HP`);
+            if (item.damage) lines.push(`Weapon Damage: <span class="text-red-300 font-mono">${item.damage}</span>`);
+            if (itemId === 'rune_essence') lines.push('Material for Runecrafting');
+            if (itemId.endsWith('_rune')) lines.push('Consumed when casting spells');
+            // Count recipes using this item
+            const uses = this.findRecipesUsing(itemId);
+            if (uses.length > 0) {
+                const uniqueSkills = [...new Set(uses.map(u => u.skillId))];
+                lines.push(`Used in: ${uniqueSkills.map(s => `<span class="text-blue-300">${s}</span>`).join(', ')}`);
+            }
+            return `
+                <div class="text-left">
+                    <div class="flex items-center gap-2 mb-1"><span class="text-lg">${item.icon || '❔'}</span><span class="font-semibold text-white">${item.name}</span></div>
+                    <div class="text-xs text-secondary">Category: <span class="uppercase">${category}</span> • Owned: <span class="font-mono text-white">${(quantity||0).toLocaleString()}</span></div>
+                    ${lines.length ? `<div class="mt-1 text-xs space-y-0.5">${lines.map(l => `<div>${l}</div>`).join('')}</div>` : ''}
+                </div>`;
+        }
+
+        // Helper: find recipes that consume the given item
+        findRecipesUsing(itemId) {
+            const matches = [];
+            Object.keys(GAME_DATA.RECIPES || {}).forEach(skillId => {
+                (GAME_DATA.RECIPES[skillId] || []).forEach(r => {
+                    const used = (r.input || []).some(inp => inp.itemId === itemId);
+                    if (used) matches.push({ skillId, recipe: r });
+                });
+            });
+            return matches;
+        }
+
+        // Modal: show detailed item view with actions
+        showItemDetails(itemId) {
+            const qty = this.game.state.bank[itemId] || 0; const item = GAME_DATA.ITEMS[itemId] || { name:'Unknown', icon:'❔' };
+            const category = this.getItemCategory(itemId);
+            const recipes = this.findRecipesUsing(itemId);
+            const hasFoodAction = !!item.heals;
+            const hasEquipAction = !!item.damage;
+            const hasRunecraftingNav = (itemId === 'rune_essence' || itemId.endsWith('_rune'));
+
+            const recipeList = recipes.slice(0, 6).map(({skillId, recipe}) => {
+                const canAfford = (recipe.input || []).every(inp => (this.game.state.bank[inp.itemId] || 0) >= inp.quantity);
+                const outItem = GAME_DATA.ITEMS[recipe.output?.itemId] || {};
+                return `
+                    <div class="flex items-center justify-between gap-2 p-2 rounded border border-border-color">
+                        <div class="text-xs">
+                            <div class="text-white">${recipe.name} <span class="text-secondary">(${skillId})</span></div>
+                            <div class="text-secondary">→ ${outItem.icon || ''} ${outItem.name || ''}</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="goto-skill-btn chimera-button px-2 py-1 rounded-md text-xs" data-skill-id="${skillId}">Open</button>
+                            <button class="quick-craft-btn chimera-button px-2 py-1 rounded-md text-xs" data-skill-id="${skillId}" data-recipe-id="${recipe.id}" ${canAfford ? '' : 'disabled'}>Craft 1</button>
+                        </div>
+                    </div>`;
+            }).join('');
+
+            const content = `
+                <div class="flex items-start gap-3">
+                    <div class="text-6xl">${item.icon || '❔'}</div>
+                    <div>
+                        <h3 class="text-xl font-bold text-white">${item.name}</h3>
+                        <div class="text-xs text-secondary">Category: ${category}</div>
+                        <div class="text-sm mt-1">Owned: <span class="font-mono text-white">${qty.toLocaleString()}</span></div>
+                        ${item.heals ? `<div class="text-xs text-green-300">Restores ${item.heals} HP</div>` : ''}
+                        ${item.damage ? `<div class="text-xs text-red-300">Weapon Damage ${item.damage}</div>` : ''}
+                    </div>
+                </div>
+                <div class="mt-4 flex flex-wrap gap-2">
+                    ${hasFoodAction ? `<button class="eat-item-btn chimera-button px-3 py-2 rounded-md" data-item-id="${itemId}"><i class="fas fa-bowl-food"></i> Eat</button>` : ''}
+                    ${hasEquipAction ? `<button class="equip-item-btn chimera-button px-3 py-2 rounded-md" data-item-id="${itemId}"><i class="fas fa-sword"></i> Equip</button>` : ''}
+                    ${hasRunecraftingNav ? `<button class="goto-runecrafting-btn chimera-button px-3 py-2 rounded-md"><i class="fas fa-circle-nodes"></i> Runecrafting</button>` : ''}
+                </div>
+                ${recipes.length ? `<div class="mt-4"><h4 class="text-sm font-semibold mb-2">Recipes using ${item.name}</h4><div class="space-y-2">${recipeList}</div></div>` : ''}
+            `;
+            this.showModal(item.name, content);
+            // Attach modal action handlers
+            const eatBtn = this.modalContent.querySelector('.eat-item-btn'); if (eatBtn) eatBtn.addEventListener('click', () => { this.game.eatFood(itemId); this.hideModal(); this.renderView(); });
+            const equipBtn = this.modalContent.querySelector('.equip-item-btn'); if (equipBtn) equipBtn.addEventListener('click', () => { this.game.equipWeapon(itemId); this.hideModal(); this.renderView(); });
+            const gotoRC = this.modalContent.querySelector('.goto-runecrafting-btn'); if (gotoRC) gotoRC.addEventListener('click', () => { this.currentView = 'runecrafting'; this.render(); this.hideModal(); });
+            this.modalContent.querySelectorAll('.goto-skill-btn').forEach(btn => btn.addEventListener('click', () => { this.currentView = btn.dataset.skillId; this.render(); this.hideModal(); }));
+            this.modalContent.querySelectorAll('.quick-craft-btn').forEach(btn => btn.addEventListener('click', () => { this.game.craftItem(btn.dataset.skillId, btn.dataset.recipeId, 1); this.render(); this.hideModal(); }));
         }
     }
 
