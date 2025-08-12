@@ -1086,8 +1086,6 @@
                 this.attachViewEventListeners();
             }
 
-            // ... existing code ...
-
             renderCombatView() {
                 const eList = GAME_DATA.COMBAT.ENEMIES.map(e => `<button class="start-combat-btn chimera-button px-3 py-2 rounded-md" data-enemy-id="${e.id}"><i class="fas fa-skull"></i> ${e.name} (Lv ${e.level})</button>`).join(' ');
                 const equipped = this.game.state.player.weapon ? GAME_DATA.ITEMS[this.game.state.player.weapon].name : 'None';
@@ -1363,8 +1361,6 @@
                 return `<h1 class="text-2xl font-semibold text-white mb-4">${skillData.name} <span class="text-base text-secondary">(Level ${playerSkill.level})</span></h1><div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">${listHtml}</div>`;
             }
 
-            // ... existing code ...
-
             attachViewEventListeners() {
                 const addTaskBtn = document.getElementById('add-task-btn'); if (addTaskBtn) { addTaskBtn.addEventListener('click', () => { const category = document.getElementById('task-category-select').value; const difficulty = document.getElementById('task-difficulty-select').value; this.game.completeRealLifeTask(category, difficulty); }); }
                 const ge = document.getElementById('goto-empire'); if (ge) ge.addEventListener('click', () => { this.currentView = 'clicker'; this.render(); });
@@ -1431,8 +1427,6 @@
                 document.querySelectorAll('.assign-worker-btn').forEach(btn => { btn.addEventListener('click', () => { const skillId = btn.dataset.skillId; const actionId = btn.dataset.actionId; const dir = btn.dataset.dir === '+1' ? 1 : -1; const ws = this.game.state.workers?.[skillId]; if (!ws) return; const free = (ws.total || 0) - Object.values(ws.assigned).reduce((s, n) => s + (n || 0), 0); if (dir > 0 && free <= 0) return; ws.assigned[actionId] = Math.max(0, (ws.assigned[actionId] || 0) + dir); this.render(); }); });
             }
 
-            // ... existing code ...
-
             renderArmyView() {
                 const defs = GAME_DATA.ARMY_CLASSES;
                 const owned = this.game.state.army.units || {};
@@ -1473,8 +1467,6 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${cards}</div>
                 `;
             }
-
-            // ... existing code ...
         }
 
         const game = new GameManager(); game.init(); window.chimeraGame = game;
