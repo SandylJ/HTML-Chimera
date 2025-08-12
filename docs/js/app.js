@@ -193,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (this.state.activeAction) {
                 const action = this.state.activeAction; action.progress += delta; const actionTime = this.calculateActionTime(action);
                 if (action.progress >= actionTime) { const loops = Math.floor(action.progress / actionTime); this.gainActionRewards(action, loops); action.progress %= actionTime; }
-                if (now >= action.endTime) { this.stopAction(); }
+                if (action.endTime && now >= action.endTime) { this.stopAction(); }
             }
 
             // Combat loop
@@ -248,14 +248,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        startAction(skillId, actionId, durationMinutes) {
+        startAction(skillId, actionId) {
             if (this.state.activeAction) return;
-            const cost = durationMinutes; if (this.state.player.stamina < cost) { this.uiManager.showModal('Not Enough Stamina', "<p>You don't have enough stamina to perform this action for that long.</p>"); return; }
-            this.state.player.stamina -= cost;
             let actionData;
             if (GAME_DATA.ACTIONS[skillId]) actionData = GAME_DATA.ACTIONS[skillId].find(a => a.id === actionId);
             if (GAME_DATA.RECIPES[skillId]) actionData = GAME_DATA.RECIPES[skillId].find(a => a.id === actionId);
-            this.state.activeAction = { ...actionData, skillId: skillId, startTime: Date.now(), endTime: Date.now() + durationMinutes * 60 * 1000, progress: 0 };
+            this.state.activeAction = { ...actionData, skillId: skillId, startTime: Date.now(), endTime: null, progress: 0 };
             this.uiManager.render();
         }
         stopAction() {
@@ -438,8 +436,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>`;
                 return;
             }
-            const now = Date.now(); const timeElapsed = now - action.startTime; const totalDuration = action.endTime - action.startTime; const percentComplete = (timeElapsed / totalDuration) * 100;
-            const skillData = GAME_DATA.SKILLS[action.skillId]; const actionTime = this.game.calculateActionTime(action); const xpPerHour = (3600000 / actionTime) * action.xp;
+            const actionTime = this.game.calculateActionTime(action); const percentComplete = Math.min(100, (action.progress / actionTime) * 100);
+            const skillData = GAME_DATA.SKILLS[action.skillId]; const xpPerHour = (3600000 / actionTime) * action.xp;
             container.innerHTML = `<div class="block p-2 h-full flex items-center space-x-4"><i class="fas ${skillData.icon} text-xl"></i><div class="flex-grow"><div class="flex justify-between text-xs"><span>${action.name}</span><span class="font-mono">${xpPerHour.toFixed(0)} XP/hr</span></div><div class="w-full xp-bar-bg rounded-full h-2.5 mt-1"><div class="xp-bar-fill h-2.5 rounded-full" style="width: ${percentComplete}%"></div></div></div><button id="stop-action-btn" class="chimera-button rounded-full w-8 h-8 flex items-center justify-center"><i class="fas fa-stop"></i></button></div>`;
             const stop = document.getElementById('stop-action-btn'); if (stop) stop.onclick = () => this.game.stopAction();
         }
@@ -525,7 +523,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class="text-xs text-secondary text-right">${Math.floor(mastery.currentXP)} / ${mastery.xpToNextLevel} XP</p>
                         </div>
                     </div>
-                    <button class="${actionType.toLowerCase()}-action-btn chimera-button px-4 py-2 rounded-md mt-4" data-skill-id="${skillId}" data-action-id="${action.id}" ${!hasLevel || !canAfford || this.game.state.activeAction ? 'disabled' : ''}>${actionType}</button>
+                    <div class="mt-4 flex gap-2">
+                        <button class="${actionType.toLowerCase()}-action-btn chimera-button px-4 py-2 rounded-md" data-skill-id="${skillId}" data-action-id="${action.id}" ${!hasLevel || !canAfford || this.game.state.activeAction ? 'disabled' : ''}>${actionType}</button>
+                        ${actionType === 'Start' ? `<button class="stop-action-btn chimera-button px-4 py-2 rounded-md" data-skill-id="${skillId}" data-action-id="${action.id}" ${(this.game.state.activeAction && this.game.state.activeAction.skillId === skillId && this.game.state.activeAction.id === action.id) ? '' : 'disabled'}>Stop</button>` : ''}
+                    </div>
                 </div>
             `;
         }
@@ -647,7 +648,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         attachViewEventListeners() {
             const addTaskBtn = document.getElementById('add-task-btn'); if (addTaskBtn) { addTaskBtn.addEventListener('click', () => { const category = document.getElementById('task-category-select').value; const difficulty = document.getElementById('task-difficulty-select').value; this.game.completeRealLifeTask(category, difficulty); const n = document.getElementById('task-name-input'); if (n) n.value = ''; }); }
-            document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => { const duration = parseInt(prompt('Enter duration in minutes:', '15'), 10); if (isNaN(duration) || duration <= 0) return; this.game.startAction(btn.dataset.skillId, btn.dataset.actionId, duration); }); });
+            document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.startAction(btn.dataset.skillId, btn.dataset.actionId); }); });
+            document.querySelectorAll('.stop-action-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.stopAction(); }); });
             document.querySelectorAll('.craft-action-btn, .light-action-btn').forEach(btn => { btn.addEventListener('click', () => {
                 const s = btn.dataset.skillId; const a = btn.dataset.actionId;
                 if (s === 'runecrafting') {
