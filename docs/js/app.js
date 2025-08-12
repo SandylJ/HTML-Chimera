@@ -458,10 +458,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Economy helpers
-        addGold(amount) { const final = Math.floor(amount * this.goldMultiplier()); this.state.player.gold += final; }
+        addGold(amount) { const final = Math.floor(amount * this.goldMultiplier()); this.state.player.gold += final; if (final > 0) this.uiManager.notifyResource('gold', final); }
         spendGold(amount) { if (this.state.player.gold < amount) return false; this.state.player.gold -= amount; return true; }
 
-        addToBank(itemId, quantity) { this.state.bank[itemId] = (this.state.bank[itemId] || 0) + quantity; }
+        addToBank(itemId, quantity) { this.state.bank[itemId] = (this.state.bank[itemId] || 0) + quantity; if (quantity > 0) this.uiManager.notifyItem(itemId, quantity); }
         removeFromBank(itemId, quantity) { this.state.bank[itemId] -= quantity; if (this.state.bank[itemId] <= 0) { delete this.state.bank[itemId]; } }
 
         // Worker systems
@@ -508,7 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Real-life task completion -> stamina + meta XP
         completeRealLifeTask(metaSkillCategory, difficulty) {
             const difficultyMultipliers = { small: 1, medium: 1.5, large: 2.5 }; const multiplier = difficultyMultipliers[difficulty];
-            const staminaGained = Math.floor(10 * multiplier); this.state.player.stamina = Math.min(this.state.player.staminaMax, this.state.player.stamina + staminaGained); this.uiManager.showFloatingText(`+${staminaGained} Stamina`, 'text-green-400');
+            const staminaGained = Math.floor(10 * multiplier); this.state.player.stamina = Math.min(this.state.player.staminaMax, this.state.player.stamina + staminaGained); this.uiManager.showFloatingText(`+${staminaGained} Stamina`, 'text-green-400'); this.uiManager.notifyResource('stamina', staminaGained);
             const xpGained = Math.floor(20 * multiplier); const metaSkill = this.state.player.meta_skills[metaSkillCategory]; if (metaSkill) { metaSkill.addXP(xpGained, this); }
             this.uiManager.render();
         }
@@ -540,7 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const pick = chest.lootTable[Math.floor(Math.random() * chest.lootTable.length)];
                 if (pick.type === 'currency') { const amt = pick.amount; this.addGold(amt); rewards.push(`+${amt} Gold`); }
                 if (pick.type === 'item') { const q = Array.isArray(pick.qty) ? (Math.floor(Math.random() * (pick.qty[1] - pick.qty[0] + 1)) + pick.qty[0]) : (pick.qty || 1); this.addToBank(pick.id, q); rewards.push(`+${q} ${GAME_DATA.ITEMS[pick.id]?.name || pick.id}`); }
-                if (pick.type === 'runes') { const amt = pick.amount; this.state.player.runes += amt; rewards.push(`+${amt} Runes`); }
+                if (pick.type === 'runes') { const amt = pick.amount; this.state.player.runes += amt; this.uiManager.notifyResource('runes', amt); rewards.push(`+${amt} Runes`); }
             }
             this.uiManager.showModal('Chest Opened!', `<div class="space-y-1">${rewards.map(r => `<p>${r}</p>`).join('')}</div>`);
             this.uiManager.renderView();
@@ -1176,6 +1176,61 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p class="text-[11px] text-secondary mt-1">Eff: x${yieldMult.toFixed(2)} yield, ${Math.round(100 - speedMult*100)}% faster</p>
                 </div>
             `;
+        }
+
+        // Notification stack (top-right)
+        initNotify() {
+            if (this._notify) return; this._notify = { map: {}, timers: {} };
+            this._notify.stack = document.getElementById('top-notification-stack');
+        }
+        createOrUpdateNotification(key, options) {
+            this.initNotify();
+            const stack = this._notify.stack; if (!stack) return;
+            const ttlMs = 2600;
+            const existing = this._notify.map[key];
+            if (existing) {
+                existing.total += options.increment || 0;
+                const countEl = existing.el.querySelector('.count');
+                if (countEl) countEl.textContent = `+${existing.total.toLocaleString()}`;
+                existing.el.classList.remove('notify-pulse');
+                void existing.el.offsetWidth;
+                existing.el.classList.add('notify-pulse');
+                clearTimeout(this._notify.timers[key]);
+                this._notify.timers[key] = setTimeout(() => this.removeNotification(key), ttlMs);
+                return existing.el;
+            }
+            const card = document.createElement('div');
+            card.className = `notify-card ${options.kind || ''}`.trim();
+            const icon = document.createElement('div'); icon.className = 'notify-icon'; icon.innerHTML = options.icon || '';
+            const count = document.createElement('div'); count.className = 'count'; count.textContent = `+${(options.increment||0).toLocaleString()}`;
+            const label = document.createElement('div'); label.className = 'label'; label.innerHTML = options.label || '';
+            card.appendChild(icon); card.appendChild(count); card.appendChild(label);
+            stack.prepend(card);
+            this._notify.map[key] = { el: card, total: options.increment || 0 };
+            this._notify.timers[key] = setTimeout(() => this.removeNotification(key), ttlMs);
+            return card;
+        }
+        removeNotification(key) {
+            if (!this._notify || !this._notify.map[key]) return;
+            const el = this._notify.map[key].el; el.classList.add('notify-out');
+            setTimeout(() => { el.remove(); }, 220);
+            clearTimeout(this._notify.timers[key]);
+            delete this._notify.timers[key];
+            delete this._notify.map[key];
+        }
+        notifyResource(type, amount) {
+            if (!amount || amount <= 0) return;
+            const icons = { gold: '<i class="fas fa-coins text-yellow-300"></i>', runes: '<i class="fas fa-gem text-purple-300"></i>', stamina: '<i class="fas fa-bolt text-green-400"></i>' };
+            const labels = { gold: 'Gold', runes: 'Runes', stamina: 'Stamina' };
+            const key = `res:${type}`;
+            this.createOrUpdateNotification(key, { increment: amount, icon: icons[type] || '', label: labels[type] || type, kind: type });
+        }
+        notifyItem(itemId, qty) {
+            if (!qty || qty <= 0) return;
+            const item = GAME_DATA.ITEMS[itemId];
+            const name = item?.name || itemId; const icon = item?.icon || '❔';
+            const key = `item:${itemId}`;
+            this.createOrUpdateNotification(key, { increment: qty, icon: icon, label: name, kind: 'item' });
         }
     }
 
