@@ -91,7 +91,7 @@
         .rune-essence-token { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border-color); background: rgba(2,6,23,0.6); padding: 8px 12px; border-radius: 9999px; cursor: grab; user-select: none; }
         .rune-output-badge { display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(88,166,255,0.45); background: rgba(2,6,23,0.65); padding: 8px 12px; border-radius: 9999px; }
         .rc-controls { background: linear-gradient(180deg, rgba(2,6,23,0.6), rgba(2,6,23,0.4)); border: 1px solid var(--border-color); border-radius: 12px; }
-        .sticky-panel { position: sticky; top: 16px; }
+        .sticky-panel { position: sticky; top: 16px; align-self: start; max-height: calc(100vh - 140px); overflow: auto; }
         @media (min-width: 768px) { .altar-zone { height: 480px; } }
         /* New gathering themes */
         .border-farming { border-color: #6b8e23; } .bg-farming { background-color: #6b8e23; }
@@ -1426,37 +1426,40 @@
                     `;
                 }).join('');
 
-                                 const altar = `
-                     <div class="block p-2 md:p-4 col-span-1 md:col-span-1">
-                         <div class="flex items-center justify-between mb-2">
-                             <h2 class="text-lg font-bold">Runic Altar</h2>
-                             <span class="badge"><i class="fa-regular fa-sparkles"></i> Aesthetic Mode</span>
-                         </div>
-                         <div class="altar-zone" id="altar-dropzone">
-                             <div class="altar-glow"></div>
-                             <div class="sigil-ring"></div>
-                             <div class="altar-core"></div>
-                             <div class="altar-sigil">🔷</div>
-                             <div class="altar-veil"></div>
-                         </div>
-                         <div class="mt-3 flex items-center justify-between gap-2">
-                             <div class="flex items-center gap-2 flex-wrap">
-                                 <div class="rune-essence-token" draggable="true" id="essence-token"><span>✨</span><span class="text-xs">Rune Essence</span><span class="font-mono ml-1">x${haveEss}</span></div>
-                             </div>
-                         </div>
-                     </div>
-                 `;
+                const altar = `
+                    <div class="block p-3 md:p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <h2 class="text-xl font-bold">Runic Altar</h2>
+                            <span class="badge"><i class="fa-regular fa-sparkles"></i> Aesthetic Mode</span>
+                        </div>
+                        <div class="altar-zone" id="altar-dropzone">
+                            <div class="altar-glow"></div>
+                            <div class="sigil-ring"></div>
+                            <div class="altar-core"></div>
+                            <div class="altar-sigil">🔷</div>
+                            <div class="altar-veil"></div>
+                        </div>
+                        <div class="mt-3 flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <div class="rune-essence-token" draggable="true" id="essence-token"><span>✨</span><span class="text-xs">Rune Essence</span><span class="font-mono ml-1">x${haveEss}</span></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
 
-                                 const recipeList = `
-                     <div class="block p-4 col-span-1 md:col-span-2">
-                         <h2 class="text-lg font-bold mb-2">Altars</h2>
-                         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-3">${recipeCards}</div>
-                     </div>
-                 `;
+                const recipeList = `
+                    <div class="block p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <h2 class="text-lg font-bold">Altars</h2>
+                            <span class="text-xs text-secondary">Unlocked: ${recipes.filter(r => playerSkill.level >= r.level).length}/${recipes.length}</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">${recipeCards}</div>
+                    </div>
+                `;
 
                 return `
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div class="lg:col-span-2 rc-hero p-4">
+                    <div class="grid grid-cols-12 gap-6">
+                        <div class="col-span-12 xl:col-span-7 2xl:col-span-8 rc-hero p-4 md:p-6">
                             ${altar}
                             <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 rc-controls p-3">
                                 <div class="flex items-center gap-2 flex-wrap">
@@ -1473,7 +1476,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="lg:col-span-1 sticky-panel">
+                        <div class="col-span-12 xl:col-span-5 2xl:col-span-4 sticky-panel">
                             ${recipeList}
                         </div>
                     </div>`;
