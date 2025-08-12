@@ -781,6 +781,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${skillId === 'mining' ? this.renderMiningAssign(action) : ''}
                     ${skillId === 'fishing' ? this.renderFishingAssign(action) : ''}
                     ${skillId === 'farming' ? this.renderFarmingAssign(action) : ''}
+                    ${actionType === 'Start' ? `<div class="mt-3 flex items-center gap-2"><label class="text-xs text-secondary">Duration</label><select class="action-duration-select chimera-button px-2 py-1 rounded" data-skill-id="${skillId}" data-action-id="${action.id}"><option value="5">5m</option><option value="15" selected>15m</option><option value="30">30m</option><option value="60">60m</option></select></div>` : ''}
                     <button class="${actionType.toLowerCase()}-action-btn chimera-button px-4 py-2 rounded-md mt-4" data-skill-id="${skillId}" data-action-id="${action.id}" ${!hasLevel || !canAfford || this.game.state.activeAction ? 'disabled' : ''}>${actionType}</button>
                 </div>
             `;
@@ -876,6 +877,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const tractCost = this.game.getUpgradeCost('farming', 'tractor');
             return `
                 <div class="block p-4 mb-4 border border-farming">
+                    <div class="farming-hero rounded-md p-3 mb-3 flex items-center gap-3">
+                        <span class="text-2xl">🌱</span>
+                        <div>
+                            <div class="text-white font-bold">Verdant Fields</div>
+                            <div class="text-secondary text-xs">Grow bountiful crops with style.</div>
+                        </div>
+                    </div>
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                         <div>
                             <h2 class="text-lg font-bold">Farming Estate</h2>
@@ -1070,7 +1078,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         attachViewEventListeners() {
             const addTaskBtn = document.getElementById('add-task-btn'); if (addTaskBtn) { addTaskBtn.addEventListener('click', () => { const category = document.getElementById('task-category-select').value; const difficulty = document.getElementById('task-difficulty-select').value; this.game.completeRealLifeTask(category, difficulty); const n = document.getElementById('task-name-input'); if (n) n.value = ''; }); }
-            document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => { const duration = parseInt(prompt('Enter duration in minutes:', '15'), 10); if (isNaN(duration) || duration <= 0) return; this.game.startAction(btn.dataset.skillId, btn.dataset.actionId, duration); }); });
+            document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => { const sel = this.mainContent.querySelector(`.action-duration-select[data-skill-id="${btn.dataset.skillId}"][data-action-id="${btn.dataset.actionId}"]`); const duration = sel ? parseInt(sel.value, 10) : 15; if (isNaN(duration) || duration <= 0) return; this.game.startAction(btn.dataset.skillId, btn.dataset.actionId, duration); }); });
             document.querySelectorAll('.craft-action-btn, .light-action-btn').forEach(btn => { btn.addEventListener('click', () => {
                 const s = btn.dataset.skillId; const a = btn.dataset.actionId;
                 if (s === 'runecrafting') {
