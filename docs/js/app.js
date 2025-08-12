@@ -212,64 +212,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (action.endTime && now >= action.endTime) { this.stopAction(); }
             }
 
-            // Workers loop: run independent of activeAction; workers do not consume player stamina
-            if (this.state.workers && Array.isArray(this.state.workers.roster) && this.state.workers.roster.length > 0) {
-                // Upkeep tick per minute (scaled by delta)
-                const upkeepPerMsFood = this.getWorkerFoodUpkeepPerMinute() / 60000;
-                const upkeepPerMsGold = this.getWorkerGoldUpkeepPerMinute() / 60000;
-                let msRemaining = delta;
-                // Process progress and upkeep proportionally to delta without tight loops
-                for (const worker of this.state.workers.roster) {
-                    if (!worker.assignedSkillId || !worker.assignedActionId) continue;
-                    const actionData = (GAME_DATA.ACTIONS[worker.assignedSkillId] || []).find(a => a.id === worker.assignedActionId);
-                    if (!actionData) continue;
-                    const effectiveTime = this.calculateActionTimeForWorker(worker, actionData);
-                    worker.progressMs = (worker.progressMs || 0) + delta;
-                    if (worker.progressMs >= effectiveTime) {
-                        const loops = Math.floor(worker.progressMs / effectiveTime);
-                        this.gainActionRewardsForWorker(worker, actionData, loops);
-                        worker.progressMs = worker.progressMs % effectiveTime;
-                    }
-                }
-                // Upkeep after progress
-                // Consume food or gold proportional to delta for each assigned worker
-                const assignedCount = this.state.workers.roster.filter(w => w.assignedSkillId && w.assignedActionId).length;
-                if (assignedCount > 0) {
-                    const foodCost = upkeepPerMsFood * delta * assignedCount * (1 - this.getHousingUpkeepReduction());
-                    const goldCost = upkeepPerMsGold * delta * assignedCount * (1 - this.getHousingUpkeepReduction());
-                    this.payWorkerUpkeep(foodCost, goldCost);
-                }
-            }
-
-            // Workers loop: run independent of activeAction; workers do not consume player stamina
-            if (this.state.workers && Array.isArray(this.state.workers.roster) && this.state.workers.roster.length > 0) {
-                // Upkeep tick per minute (scaled by delta)
-                const upkeepPerMsFood = this.getWorkerFoodUpkeepPerMinute() / 60000;
-                const upkeepPerMsGold = this.getWorkerGoldUpkeepPerMinute() / 60000;
-                let msRemaining = delta;
-                // Process progress and upkeep proportionally to delta without tight loops
-                for (const worker of this.state.workers.roster) {
-                    if (!worker.assignedSkillId || !worker.assignedActionId) continue;
-                    const actionData = (GAME_DATA.ACTIONS[worker.assignedSkillId] || []).find(a => a.id === worker.assignedActionId);
-                    if (!actionData) continue;
-                    const effectiveTime = this.calculateActionTimeForWorker(worker, actionData);
-                    worker.progressMs = (worker.progressMs || 0) + delta;
-                    if (worker.progressMs >= effectiveTime) {
-                        const loops = Math.floor(worker.progressMs / effectiveTime);
-                        this.gainActionRewardsForWorker(worker, actionData, loops);
-                        worker.progressMs = worker.progressMs % effectiveTime;
-                    }
-                }
-                // Upkeep after progress
-                // Consume food or gold proportional to delta for each assigned worker
-                const assignedCount = this.state.workers.roster.filter(w => w.assignedSkillId && w.assignedActionId).length;
-                if (assignedCount > 0) {
-                    const foodCost = upkeepPerMsFood * delta * assignedCount * (1 - this.getHousingUpkeepReduction());
-                    const goldCost = upkeepPerMsGold * delta * assignedCount * (1 - this.getHousingUpkeepReduction());
-                    this.payWorkerUpkeep(foodCost, goldCost);
-                }
-            }
-
             // Combat loop
             if (this.state.combat.inCombat && this.state.combat.enemy) {
                 const e = this.state.combat.enemy;
