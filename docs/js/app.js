@@ -884,6 +884,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (skillData.type === 'gathering') { actionType = 'Start'; contentHtml = (GAME_DATA.ACTIONS[skillId]||[]).map(action => this.renderActionCard(skillId, action, actionType)).join(''); }
             else if (skillData.type === 'artisan') {
                 actionType = 'Craft'; if (skillId === 'firemaking') { contentHtml = this.renderFiremakingView(); }
+                else if (skillId === 'runecrafting') { contentHtml = this.renderRunecraftingView(); }
                 else { contentHtml = (GAME_DATA.RECIPES[skillId]||[]).map(recipe => this.renderActionCard(skillId, recipe, actionType)).join(''); }
             }
             const workerPanel = (skillData.type === 'gathering' && this.game.state.workers[skillId]) ? this.renderWorkerPanel(skillId) : '';
@@ -995,6 +996,62 @@ document.addEventListener('DOMContentLoaded', () => {
             const bonfireAction = GAME_DATA.RECIPES.firemaking[0]; const bonfireCard = this.renderActionCard('firemaking', bonfireAction, 'Light');
             const bonfireStatus = this.game.state.bonfire.active ? `<p class="text-green-400">Bonfire is active! +${this.game.state.bonfire.xpBoost * 100}% Global Skill XP.</p><p class="text-xs text-secondary">Expires in: ${Math.ceil((this.game.state.bonfire.expiry - Date.now())/60000)} minutes.</p>` : '<p class="text-red-400">Bonfire is not active.</p>';
             return `<div class="col-span-1 md:col-span-2 xl:col-span-3"><div class="block p-4 mb-4"><h2 class="text-lg font-bold text-white mb-2">Bonfire Status</h2>${bonfireStatus}</div></div>${bonfireCard}`;
+        }
+
+        renderRunecraftingView() {
+            const playerSkill = this.game.state.player.skills['runecrafting'];
+            const recipes = GAME_DATA.RECIPES['runecrafting'] || [];
+            const essenceId = 'rune_essence';
+            const haveEss = this.game.state.bank[essenceId] || 0;
+            const recipeCards = recipes.map((r) => {
+                const locked = playerSkill.level < r.level;
+                const mult = Math.max(1, 1 + Math.floor((playerSkill.level - r.level) / 11));
+                const canAfford = haveEss >= (r.input?.[0]?.quantity || 1);
+                return `
+                    <div class="rc-altar-card ${locked ? 'rc-locked' : ''}" data-rc-recipe-id="${r.id}">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-white font-semibold">${r.name}</h3>
+                                <p class="text-xs text-secondary">Req Lv ${r.level} • XP ${r.xp}</p>
+                            </div>
+                            <span class="rune-output-badge text-xs"><span>${GAME_DATA.ITEMS[r.output.itemId].icon || '✨'}</span> x${(r.output.quantity * mult)}</span>
+                        </div>
+                        <div class="text-xs text-secondary">Yield at Lv ${playerSkill.level}: x${mult} per essence</div>
+                        <button class="chimera-button px-3 py-1 rounded-md w-full mt-2 quick-craft-btn" data-recipe-id="${r.id}" ${locked || !canAfford ? 'disabled' : ''}>Quick Craft</button>
+                    </div>
+                `;
+            }).join('');
+
+            const altar = `
+                <div class="block p-4 col-span-1 md:col-span-2">
+                    <h2 class="text-lg font-bold mb-2">Runic Altar</h2>
+                    <div class="altar-zone" id="altar-dropzone">
+                        <div class="altar-glow"></div>
+                        <div class="altar-core"></div>
+                        <div class="altar-sigil">🔷</div>
+                    </div>
+                    <div class="mt-3 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <div class="rune-essence-token" draggable="true" id="essence-token"><span>✨</span><span class="text-xs">Rune Essence</span><span class="font-mono ml-1">x${haveEss}</span></div>
+                            <div class="flex items-center gap-2 text-xs">
+                                <button class="chimera-button px-2 py-1 rounded-md" id="rc-minus">-10</button>
+                                <input id="rc-qty" type="number" min="1" value="${Math.min(25, haveEss)}" class="w-20 p-1 bg-primary border border-border-color rounded-md text-center" />
+                                <button class="chimera-button px-2 py-1 rounded-md" id="rc-plus">+10</button>
+                            </div>
+                        </div>
+                        <button class="chimera-button px-3 py-2 rounded-md" id="rc-craft-btn" disabled>Channel Altar</button>
+                    </div>
+                </div>
+            `;
+
+            const recipeList = `
+                <div class="block p-4">
+                    <h2 class="text-lg font-bold mb-2">Altars</h2>
+                    <div class="grid grid-cols-1 gap-3">${recipeCards}</div>
+                </div>
+            `;
+
+            return `<div class="grid grid-cols-1 md:grid-cols-3 gap-4">${altar}${recipeList}</div>`;
         }
 
         renderBankView() {
@@ -1198,6 +1255,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.renderView();
                 });
             });
+
+            // Runecrafting interactive altar handlers
+            const altar = document.getElementById('altar-dropzone');
+            const essenceToken = document.getElementById('essence-token');
+            const qtyInput = document.getElementById('rc-qty');
+            const btnMinus = document.getElementById('rc-minus');
+            const btnPlus = document.getElementById('rc-plus');
+            const craftBtn = document.getElementById('rc-craft-btn');
+            const haveEss = (this.game.state.bank['rune_essence'] || 0);
+            const selectRecipe = (id) => { document.querySelectorAll('.rc-altar-card').forEach(c => c.classList.toggle('rc-selected', c.dataset.rcRecipeId === id)); if (craftBtn) { craftBtn.dataset.recipeId = id || ''; craftBtn.disabled = !id; } };
+            document.querySelectorAll('.rc-altar-card').forEach(card => { card.addEventListener('click', () => selectRecipe(card.dataset.rcRecipeId)); });
+            document.querySelectorAll('.quick-craft-btn').forEach(btn => { btn.addEventListener('click', (e) => { e.stopPropagation(); const id = btn.dataset.recipeId; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const maxQty = Math.floor((this.game.state.bank['rune_essence'] || 0) / per); if (maxQty <= 0) return; this.game.craftItem('runecrafting', id, Math.min(1, maxQty)); this.render(); }); });
+            if (btnMinus) btnMinus.addEventListener('click', () => { const v = Math.max(1, (parseInt(qtyInput.value || '1', 10) - 10)); qtyInput.value = v; });
+            if (btnPlus) btnPlus.addEventListener('click', () => { const v = Math.min(haveEss, (parseInt(qtyInput.value || '1', 10) + 10)); qtyInput.value = v; });
+            if (qtyInput) qtyInput.addEventListener('change', () => { let v = parseInt(qtyInput.value || '1', 10); if (isNaN(v) || v <= 0) v = 1; v = Math.min(v, haveEss); qtyInput.value = v; });
+            if (craftBtn) craftBtn.addEventListener('click', () => { const id = craftBtn.dataset.recipeId; if (!id) return; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const maxQty = Math.floor((this.game.state.bank['rune_essence'] || 0) / per); const want = Math.min(maxQty, Math.max(1, parseInt(qtyInput.value || '1', 10))); if (want <= 0) return; this.game.craftItem('runecrafting', id, want); if (altar) { for (let i = 0; i < Math.min(10, want); i++) { const spark = document.createElement('div'); spark.className = 'rune-spark'; spark.style.setProperty('--sx', `${(Math.random() - 0.5) * 120}px`); spark.style.setProperty('--sy', `${(Math.random() - 0.2) * 40}px`); spark.style.setProperty('--tx', `${(Math.random() - 0.5) * 40}px`); spark.style.setProperty('--ty', `${-140 - Math.random() * 40}px`); altar.appendChild(spark); setTimeout(() => spark.remove(), 950); } } this.render(); });
+            if (altar) { altar.addEventListener('dragover', (e) => { e.preventDefault(); altar.style.borderColor = 'rgba(88,166,255,0.6)'; }); altar.addEventListener('dragleave', () => { altar.style.borderColor = 'var(--border-color)'; }); altar.addEventListener('drop', (e) => { e.preventDefault(); altar.style.borderColor = 'var(--border-color)'; const sel = document.querySelector('.rc-altar-card.rc-selected'); if (!sel) { this.game.uiManager.showFloatingText('Select an altar first', 'text-yellow-300'); return; } const id = sel.dataset.rcRecipeId; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const have = (this.game.state.bank['rune_essence'] || 0); const maxQty = Math.floor(have / per); const want = Math.min(maxQty, Math.max(1, parseInt(qtyInput?.value || '1', 10))); if (want <= 0) return; this.game.craftItem('runecrafting', id, want); for (let i = 0; i < Math.min(10, want); i++) { const spark = document.createElement('div'); spark.className = 'rune-spark'; spark.style.setProperty('--sx', `${(Math.random() - 0.5) * 120}px`); spark.style.setProperty('--sy', `${(Math.random() - 0.2) * 40}px`); spark.style.setProperty('--tx', `${(Math.random() - 0.5) * 40}px`); spark.style.setProperty('--ty', `${-140 - Math.random() * 40}px`); altar.appendChild(spark); setTimeout(() => spark.remove(), 950); } this.render(); }); }
+            if (essenceToken) { essenceToken.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', 'essence'); }); }
         }
 
         showModal(title, content) {
