@@ -804,7 +804,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p class="text-secondary text-sm">Complete tasks to gain Stamina and level Meta Skills.</p>
                         <div id="add-task-form" class="space-y-3 mt-2">
                             <div class="grid grid-cols-2 gap-2">
-                                ${Object.entries(TASK_CATEGORIES).map(([key, value]) => `<select id="task-category-select" class="w-full p-2 bg-primary border border-border-color rounded-md"><option value="${value}">${key.charAt(0) + key.slice(1).toLowerCase()} (${value})</option></select>`).join('')}
+                                <select id="task-category-select" class="w-full p-2 bg-primary border border-border-color rounded-md">
+                                    ${Object.entries(TASK_CATEGORIES).map(([key, value]) => `<option value="${value}">${key.charAt(0) + key.slice(1).toLowerCase()} (${value})</option>`).join('')}
+                                </select>
                                 <select id="task-difficulty-select" class="w-full p-2 bg-primary border border-border-color rounded-md">
                                     <option value="small">Small</option>
                                     <option value="medium">Medium</option>
@@ -996,7 +998,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const gr = document.getElementById('goto-runecrafting'); if (gr) gr.addEventListener('click', () => { this.currentView = 'runecrafting'; this.render(); });
             const gc = document.getElementById('goto-combat'); if (gc) gc.addEventListener('click', () => { this.currentView = 'combat'; this.render(); });
             const gs = document.getElementById('goto-shop'); if (gs) gs.addEventListener('click', () => { this.currentView = 'shop'; this.render(); });
-            document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => { const duration = parseInt(prompt('Enter duration in minutes:', '15'), 10); if (isNaN(duration) || duration <= 0) return; this.game.startAction(btn.dataset.skillId, btn.dataset.actionId, duration); }); });
+            document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.startAction(btn.dataset.skillId, btn.dataset.actionId); }); });
             document.querySelectorAll('.craft-action-btn, .light-action-btn').forEach(btn => { btn.addEventListener('click', () => {
                 const s = btn.dataset.skillId; const a = btn.dataset.actionId;
                 if (s === 'runecrafting') {
