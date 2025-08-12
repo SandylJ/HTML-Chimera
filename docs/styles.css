@@ -195,3 +195,7 @@ body {
 .rc-altar-card.rc-selected { border-color: rgba(255,255,255,0.4); box-shadow: 0 0 0 1px rgba(88,166,255,0.25) inset; }
 .rc-locked { opacity: 0.55; filter: grayscale(0.2); }
 .bg-primary { background-color: var(--bg-primary); }
+
+@media (min-width: 768px) {
+  .altar-zone { height: 360px; }
+}
