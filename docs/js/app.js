@@ -111,7 +111,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 { id: 'wolf', name: 'Wolf', level: 5, hp: 60, maxHp: 60, attack: 7, defense: 2, gold: [12, 25], drops: [ {id:'raw_shrimp', qty:[1,1], chance:30} ], attackSpeedMs: 1800 },
                 { id: 'skeleton', name: 'Skeleton', level: 10, hp: 120, maxHp: 120, attack: 12, defense: 4, gold: [30, 60], drops: [ {id:'bronze_bar', qty:[1,2], chance:35} ], attackSpeedMs: 1700 },
                 { id: 'troll', name: 'Troll', level: 20, hp: 300, maxHp: 300, attack: 20, defense: 8, gold: [80, 150], drops: [ {id:'item_ancient_key', qty:[1,1], chance:10} ], attackSpeedMs: 1600 },
-            ]
+            ],
+            // Hireable unit classes (DPS/Healers/Tanks). Costs grow exponentially per class owned.
+            UNIT_CLASSES: [
+                { id: 'knight', name: 'Knight', role: 'Tank', icon: '🛡️', dps: 3, healPerSec: 0, baseCost: 50, growth: 1.28, foodPerMin: 0.25 },
+                { id: 'wizard', name: 'Wizard', role: 'Mage', icon: '🪄', dps: 5, healPerSec: 0, baseCost: 70, growth: 1.30, foodPerMin: 0.25 },
+                { id: 'warlock', name: 'Warlock', role: 'Caster', icon: '☄️', dps: 6, healPerSec: 0, baseCost: 85, growth: 1.32, foodPerMin: 0.3 },
+                { id: 'cleric', name: 'Cleric', role: 'Healer', icon: '⛪', dps: 1, healPerSec: 3, baseCost: 60, growth: 1.30, foodPerMin: 0.25 },
+                { id: 'druid', name: 'Druid', role: 'Hybrid', icon: '🌿', dps: 2, healPerSec: 2, baseCost: 80, growth: 1.32, foodPerMin: 0.3 },
+                { id: 'goblin_merc', name: 'Goblin Merc', role: 'Rogue', icon: '🗡️', dps: 2, healPerSec: 0, baseCost: 35, growth: 1.26, foodPerMin: 0.2 },
+            ],
+            FOOD_ITEMS: ['shrimp','sardine'],
         }
     };
 
@@ -157,7 +167,10 @@ document.addEventListener('DOMContentLoaded', () => {
             this.lastUpdate = Date.now();
 
             // Combat state
-            this.combat = { inCombat: false, enemy: null, lastPlayerAttack: 0, lastEnemyAttack: 0, playerAttackSpeedMs: 1600 };
+            this.combat = { inCombat: false, enemy: null, lastPlayerAttack: 0, lastEnemyAttack: 0, playerAttackSpeedMs: 1600, allyDamageBuffer: 0, allyHealBuffer: 0 };
+
+            // Army state
+            this.army = { units: {}, lastUpkeep: Date.now(), hungry: false };
 
             // Clicker state
             this.clicker = { goldPerClick: 1, autoClickers: 0, autoRateMs: 1000, lastAutoTick: Date.now(), upgrades: { clickPowerLevel: 0, autoClickerLevel: 0, multiplierLevel: 0 } };
@@ -196,6 +209,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (now >= action.endTime) { this.stopAction(); }
             }
 
+            // Army upkeep processing
+            this.processArmyUpkeep(now);
+
             // Combat loop
             if (this.state.combat.inCombat && this.state.combat.enemy) {
                 const e = this.state.combat.enemy;
@@ -205,6 +221,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     e.hp = Math.max(0, e.hp - dmg); this.uiManager.showFloatingText(`-${dmg} ${e.name}`, 'text-red-400');
                     if (e.hp <= 0) { this.handleEnemyDefeat(e); }
                 }
+
+                // Allied continuous DPS/Healing
+                const { dpsPerSec, healPerSec } = this.getArmyThroughput();
+                const dps = dpsPerSec * (delta / 1000);
+                const heals = healPerSec * (delta / 1000);
+                if (dps > 0) { e.hp = Math.max(0, e.hp - dps); this.state.combat.allyDamageBuffer += dps; }
+                if (heals > 0) { this.state.player.hp = Math.min(this.state.player.hpMax, this.state.player.hp + heals); this.state.combat.allyHealBuffer += heals; }
+                // Show batched flytext to avoid spam
+                if (this.state.combat.allyDamageBuffer >= 3) { const out = Math.floor(this.state.combat.allyDamageBuffer); this.state.combat.allyDamageBuffer -= out; this.uiManager.showFloatingText(`-${out} (Allies)`, 'text-red-300'); }
+                if (this.state.combat.allyHealBuffer >= 5) { const outH = Math.floor(this.state.combat.allyHealBuffer); this.state.combat.allyHealBuffer -= outH; this.uiManager.showFloatingText(`+${outH} Healed`, 'text-green-300'); }
+                if (e.hp <= 0) { this.handleEnemyDefeat(e); }
+
                 // Enemy attack
                 if (now - this.state.combat.lastEnemyAttack >= e.attackSpeedMs) {
                     this.state.combat.lastEnemyAttack = now; const enemyDmg = Math.max(0, Math.floor(e.attack - (this.state.player.meta_skills[META_SKILLS.RESILIENCE].level - 1) * 0.5));
@@ -353,7 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
         startCombat(enemyId) {
             if (this.state.combat.inCombat) return; const e = JSON.parse(JSON.stringify(GAME_DATA.COMBAT.ENEMIES.find(x => x.id === enemyId))); if (!e) return;
             this.state.combat.inCombat = true; this.state.combat.enemy = e; this.state.player.hp = Math.min(this.state.player.hp, this.state.player.hpMax);
-            this.state.combat.lastPlayerAttack = 0; this.state.combat.lastEnemyAttack = 0; this.uiManager.renderView();
+            this.state.combat.lastPlayerAttack = 0; this.state.combat.lastEnemyAttack = 0; this.state.combat.allyDamageBuffer = 0; this.state.combat.allyHealBuffer = 0; this.uiManager.renderView();
         }
         endCombat(victory) {
             if (!this.state.combat.inCombat) return; if (!victory) { this.uiManager.showModal('Defeated', '<p>You were defeated. Rest to recover HP.</p>'); }
@@ -380,6 +408,71 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         equipWeapon(itemId) { if (!GAME_DATA.ITEMS[itemId]) return; if ((this.state.bank[itemId] || 0) <= 0) return; this.state.player.weapon = itemId; this.uiManager.renderView(); }
 
+        // Army helpers
+        getUnitById(id) { return (GAME_DATA.COMBAT.UNIT_CLASSES || []).find(u => u.id === id); }
+        getUnitCount(id) { return this.state.army.units[id] || 0; }
+        getUnitHireCost(id) {
+            const unit = this.getUnitById(id); if (!unit) return Infinity;
+            const owned = this.getUnitCount(id);
+            return Math.floor(unit.baseCost * Math.pow(unit.growth, owned));
+        }
+        hireUnit(id) {
+            const unit = this.getUnitById(id); if (!unit) return;
+            const cost = this.getUnitHireCost(id);
+            if (!this.spendGold(cost)) { this.uiManager.showModal('Not Enough Gold', `<p>You need ${cost} gold to hire a ${unit.name}.</p>`); return; }
+            this.state.army.units[id] = (this.state.army.units[id] || 0) + 1;
+            this.uiManager.showFloatingText(`+1 ${unit.name} hired`, 'text-green-400');
+            this.uiManager.renderView();
+        }
+        getArmyThroughput() {
+            const classes = GAME_DATA.COMBAT.UNIT_CLASSES || [];
+            let dps = 0; let heal = 0;
+            const hungryPenalty = this.state.army.hungry ? 0.5 : 1;
+            for (const u of classes) {
+                const count = this.getUnitCount(u.id);
+                if (count <= 0) continue;
+                dps += u.dps * count;
+                heal += u.healPerSec * count;
+            }
+            return { dpsPerSec: dps * hungryPenalty, healPerSec: heal * hungryPenalty };
+        }
+        getTotalUpkeepPerMinute() {
+            const classes = GAME_DATA.COMBAT.UNIT_CLASSES || [];
+            let total = 0;
+            for (const u of classes) { const count = this.getUnitCount(u.id); if (count > 0) total += u.foodPerMin * count; }
+            return total; // food points per minute
+        }
+        getAvailableFoodPoints() {
+            // Each cooked food counts as 1 food point
+            const foods = GAME_DATA.COMBAT.FOOD_ITEMS || [];
+            let total = 0;
+            for (const f of foods) total += (this.state.bank[f] || 0);
+            return total;
+        }
+        consumeFoodPoints(pointsNeeded) {
+            let remaining = Math.ceil(pointsNeeded);
+            const foods = (GAME_DATA.COMBAT.FOOD_ITEMS || []).slice();
+            for (const id of foods) {
+                const have = this.state.bank[id] || 0; if (have <= 0) continue;
+                const take = Math.min(have, remaining);
+                if (take > 0) this.removeFromBank(id, take);
+                remaining -= take;
+                if (remaining <= 0) break;
+            }
+            return remaining <= 0;
+        }
+        processArmyUpkeep(now) {
+            const minutesElapsed = (now - this.state.army.lastUpkeep) / 60000;
+            if (minutesElapsed < 0.2) return; // process about every 12s
+            this.state.army.lastUpkeep = now;
+            const upkeepPerMinute = this.getTotalUpkeepPerMinute();
+            if (upkeepPerMinute <= 0) { this.state.army.hungry = false; return; }
+            const cost = upkeepPerMinute * minutesElapsed;
+            const ok = this.consumeFoodPoints(cost);
+            this.state.army.hungry = !ok;
+            if (!ok) this.uiManager.showFloatingText('Army is hungry! Effectiveness reduced.', 'text-yellow-300');
+        }
+
         saveGame() { try { localStorage.setItem('chimeraSaveData_web_v1', JSON.stringify(this.state)); } catch (e) { console.error('Failed to save game:', e); } }
         loadGame() {
             const savedData = localStorage.getItem('chimeraSaveData_web_v1');
@@ -395,6 +488,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (!this.state.player.mastery[skillId]) this.state.player.mastery[skillId] = {};
                         Object.keys(parsedData.player.mastery[skillId]).forEach(actionId => { const mastery = new Mastery(); Object.assign(mastery, parsedData.player.mastery[skillId][actionId]); this.state.player.mastery[skillId][actionId] = mastery; });
                     });
+                    // Backfill new structures
+                    if (!this.state.army) this.state.army = { units: {}, lastUpkeep: Date.now(), hungry: false };
+                    this.state.army.units = this.state.army.units || {};
                     this.state.lastUpdate = Date.now();
                 } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
             }
@@ -410,6 +506,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const createLink = (skillId, skill) => `<a href="#" class="sidebar-link flex items-center p-3" data-view="${skillId}"><i class="fas ${skill.icon} w-6 text-center"></i><div class="flex-grow"><span>${skill.name}</span><div class="w-full xp-bar-bg rounded-full h-1.5 mt-1"><div id="sidebar-xp-${skillId}" class="xp-bar-fill h-1.5 rounded-full"></div></div></div></a>`;
             const gatheringHtml = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'gathering').map(id => createLink(id, GAME_DATA.SKILLS[id])).join(''); document.getElementById('gathering-skills-nav').innerHTML = gatheringHtml;
             const artisanHtml = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'artisan').map(id => createLink(id, GAME_DATA.SKILLS[id])).join(''); document.getElementById('artisan-skills-nav').innerHTML = artisanHtml;
+            // Inject Army link under Core
+            const coreNav = document.querySelector('#sidebar .flex-grow');
+            if (coreNav && !coreNav.querySelector('[data-view="army"]')) {
+                const armyLink = document.createElement('a');
+                armyLink.href = '#'; armyLink.className = 'sidebar-link flex items-center p-3'; armyLink.dataset.view = 'army';
+                armyLink.innerHTML = '<i class="fas fa-helmet-safety w-6 text-center"></i><span>Army</span>';
+                const after = coreNav.querySelector('[data-view="bank"]');
+                if (after && after.parentNode) after.parentNode.insertBefore(armyLink, after.nextSibling);
+            }
         }
         attachSidebarEventListeners() { document.querySelectorAll('.sidebar-link').forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); this.currentView = link.dataset.view; this.render(); }); }); }
         render() { this.updateSidebarActive(); this.renderView(); }
@@ -453,6 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'bank': html = this.renderBankView(); break;
                     case 'meta_skills': html = this.renderMetaSkillsView(); break;
                     case 'combat': html = this.renderCombatView(); break;
+                    case 'army': html = this.renderArmyView(); break;
                     case 'clicker': html = this.renderClickerView(); break;
                     case 'spellbook': html = this.renderSpellbookView(); break;
                     case 'shop': html = this.renderShopView(); break;
@@ -487,6 +593,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <li>Complete real-life tasks here to earn <strong>Stamina</strong>.</li>
                         <li>Use Gathering to gain resources; Artisan to craft gear and boosts.</li>
                         <li>Fight in <strong>Combat</strong> using your crafted gear and food.</li>
+                        <li>Hire an <strong>Army</strong> to bolster combat with DPS and healing.</li>
                         <li>Click in <strong>Clicker</strong> to generate Gold and unlock upgrades.</li>
                         <li>Cast spells in <strong>Spellbook</strong>, buy and open <strong>Chests</strong> in Shop.</li>
                     </ol>
@@ -563,6 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const foodList = Object.entries(this.game.state.bank).filter(([id, q]) => GAME_DATA.ITEMS[id]?.heals).map(([id, q]) => `<button class="eat-food-btn chimera-button px-2 py-1 rounded-md" data-item-id="${id}">${GAME_DATA.ITEMS[id].name} x${q}</button>`).join(' ');
             const weapons = Object.entries(this.game.state.bank).filter(([id, q]) => GAME_DATA.ITEMS[id]?.damage).map(([id, q]) => `<button class="equip-weapon-btn chimera-button px-2 py-1 rounded-md" data-item-id="${id}">${GAME_DATA.ITEMS[id].name}</button>`).join(' ');
             const combatStatus = this.game.state.combat.inCombat && this.game.state.combat.enemy ? `<p class="text-secondary">Fighting: <span class="text-white font-bold">${this.game.state.combat.enemy.name}</span></p>` : '<p class="text-secondary">Not in combat.</p>';
+            const armyBadge = (() => { const { dpsPerSec, healPerSec } = this.game.getArmyThroughput(); const hungry = this.game.state.army.hungry; return `<div class="badge"><i class="fa-solid fa-users"></i> Allies: +${dpsPerSec.toFixed(1)} DPS, +${healPerSec.toFixed(1)} HPS ${hungry ? '<span class="text-yellow-300">(Hungry)</span>' : ''}</div>`; })();
             return `
                 <h1 class="text-2xl font-semibold text-white mb-4">Combat</h1>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -573,6 +681,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="block p-4 space-y-2">
                         <h2 class="text-lg font-bold">Status</h2>
                         ${combatStatus}
+                        <div class="mt-1">${armyBadge}</div>
                         <p class="text-secondary">HP: <span class="font-mono">${Math.floor(this.game.state.player.hp)}/${this.game.state.player.hpMax}</span></p>
                         <button id="end-combat-btn" class="chimera-button px-3 py-2 rounded-md" ${this.game.state.combat.inCombat ? '' : 'disabled'}>Retreat</button>
                     </div>
@@ -586,6 +695,38 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
         renderCombatFooter() { /* placeholder for potential dynamic footer updates */ }
+
+        renderArmyView() {
+            const classes = GAME_DATA.COMBAT.UNIT_CLASSES || [];
+            const cards = classes.map(u => {
+                const owned = this.game.getUnitCount(u.id);
+                const cost = this.game.getUnitHireCost(u.id);
+                return `
+                    <div class="block p-4 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold">${u.icon} ${u.name}</h3>
+                            <p class="text-secondary text-xs">Role: ${u.role}</p>
+                            <p class="text-secondary text-xs">DPS: ${u.dps} • HPS: ${u.healPerSec}</p>
+                            <p class="text-secondary text-xs">Food: ${u.foodPerMin}/min</p>
+                            <p class="text-secondary text-xs">Owned: <span class="font-mono">${owned}</span></p>
+                        </div>
+                        <button class="hire-unit-btn chimera-button px-3 py-2 rounded-md mt-3" data-unit-id="${u.id}">Hire — ${cost} gold</button>
+                    </div>
+                `;
+            }).join('');
+            const upkeep = this.game.getTotalUpkeepPerMinute();
+            const foodAvail = this.game.getAvailableFoodPoints();
+            const hungry = this.game.state.army.hungry;
+            return `
+                <h1 class="text-2xl font-semibold text-white mb-4">Army</h1>
+                <div class="block p-4 mb-4">
+                    <h2 class="text-lg font-bold">Logistics</h2>
+                    <p class="text-secondary">Upkeep: <span class="font-mono">${upkeep.toFixed(2)}</span> food/min • In bank: <span class="font-mono">${foodAvail}</span> food items ${hungry ? '<span class="text-yellow-300">(Hungry)</span>' : ''}</p>
+                    <p class="text-xs text-secondary">Accepted food: ${ (GAME_DATA.COMBAT.FOOD_ITEMS||[]).map(id => GAME_DATA.ITEMS[id]?.name).join(', ') }</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${cards}</div>
+            `;
+        }
 
         renderClickerView() {
             const c = this.game.state.clicker;
@@ -670,6 +811,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const endBtn = document.getElementById('end-combat-btn'); if (endBtn) endBtn.addEventListener('click', () => this.game.endCombat(false));
             document.querySelectorAll('.eat-food-btn').forEach(btn => { btn.addEventListener('click', () => this.game.eatFood(btn.dataset.itemId)); });
             document.querySelectorAll('.equip-weapon-btn').forEach(btn => { btn.addEventListener('click', () => this.game.equipWeapon(btn.dataset.itemId)); });
+
+            // Army
+            document.querySelectorAll('.hire-unit-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireUnit(btn.dataset.unitId)); });
 
             // Clicker
             const big = document.getElementById('big-cookie'); if (big) big.addEventListener('click', () => this.game.addGold(this.game.state.clicker.goldPerClick));
