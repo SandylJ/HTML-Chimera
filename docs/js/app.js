@@ -157,7 +157,17 @@ document.addEventListener('DOMContentLoaded', () => {
             this.lastUpdate = Date.now();
 
             // Combat state
-            this.combat = { inCombat: false, enemy: null, lastPlayerAttack: 0, lastEnemyAttack: 0, playerAttackSpeedMs: 1600 };
+            this.combat = {
+                inCombat: false,
+                enemy: null,
+                lastPlayerAttack: 0,
+                lastEnemyAttack: 0,
+                playerAttackSpeedMs: 1600,
+                comboCount: 0,
+                lastComboHit: 0,
+                ultimateCharge: 0, // 0..100
+                cooldowns: { quickStrike: 0, guard: 0 }
+            };
 
             // Clicker state
             this.clicker = { goldPerClick: 1, autoClickers: 0, autoRateMs: 1000, lastAutoTick: Date.now(), upgrades: { clickPowerLevel: 0, autoClickerLevel: 0, multiplierLevel: 0 } };
@@ -202,13 +212,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Player attack
                 if (now - this.state.combat.lastPlayerAttack >= this.state.combat.playerAttackSpeedMs) {
                     this.state.combat.lastPlayerAttack = now; const dmg = this.calculatePlayerDamage(e);
-                    e.hp = Math.max(0, e.hp - dmg); this.uiManager.showFloatingText(`-${dmg} ${e.name}`, 'text-red-400');
+                    // Crit + combo
+                    const crit = this.rollCrit();
+                    let finalDmg = dmg * (crit ? 1.75 : 1);
+                    finalDmg = Math.floor(finalDmg * this.applyComboMultiplier(now));
+                    e.hp = Math.max(0, e.hp - finalDmg);
+                    const flyType = crit ? 'fly-crit' : 'fly-damage';
+                    this.uiManager.showFloatingText(`-${finalDmg} ${e.name}`, `text-red-400 ${flyType}`);
+                    this.uiManager.shakeScreen(crit ? 1 : 0.6);
+                    this.incrementCombo(now);
+                    this.gainUltimate(finalDmg);
+                    this.uiManager.logBattle(crit ? `Critical hit for ${finalDmg}!` : `Hit for ${finalDmg}.`, crit ? 'good' : 'neutral');
                     if (e.hp <= 0) { this.handleEnemyDefeat(e); }
                 }
                 // Enemy attack
                 if (now - this.state.combat.lastEnemyAttack >= e.attackSpeedMs) {
-                    this.state.combat.lastEnemyAttack = now; const enemyDmg = Math.max(0, Math.floor(e.attack - (this.state.player.meta_skills[META_SKILLS.RESILIENCE].level - 1) * 0.5));
-                    this.state.player.hp = Math.max(0, this.state.player.hp - enemyDmg); this.uiManager.showFloatingText(`-${enemyDmg} HP`, 'text-yellow-400');
+                    this.state.combat.lastEnemyAttack = now; let enemyDmg = Math.max(0, Math.floor(e.attack - (this.state.player.meta_skills[META_SKILLS.RESILIENCE].level - 1) * 0.5));
+                    if (this.hasBuff('guard')) { enemyDmg = Math.floor(enemyDmg * 0.5); this.uiManager.logBattle('Guard absorbed part of the damage.', 'neutral'); }
+                    this.state.player.hp = Math.max(0, this.state.player.hp - enemyDmg); this.uiManager.showFloatingText(`-${enemyDmg} HP`, 'text-yellow-400 fly-damage'); this.uiManager.shakeScreen(0.5);
+                    if (enemyDmg > 0) this.resetCombo();
                     if (this.state.player.hp <= 0) { this.endCombat(false); }
                 }
             }
@@ -366,8 +388,48 @@ document.addEventListener('DOMContentLoaded', () => {
             (enemy.drops || []).forEach(drop => { if (Math.random() * 100 < drop.chance) { const q = Math.floor(Math.random() * (drop.qty[1] - drop.qty[0] + 1)) + drop.qty[0]; this.addToBank(drop.id, q); } });
             // XP to Strength
             this.state.player.meta_skills[META_SKILLS.STRENGTH].addXP(15 + enemy.level * 2, this);
-            this.uiManager.showFloatingText(`${enemy.name} defeated!`, 'text-green-400');
+            this.uiManager.showFloatingText(`${enemy.name} defeated!`, 'text-green-400 fly-level');
+            this.uiManager.logBattle(`${enemy.name} defeated! +${g} gold.`, 'good');
+            this.resetCombo(); this.state.combat.ultimateCharge = 0;
             this.endCombat(true);
+        }
+        rollCrit() { const base = 0.12; const artistryBonus = (this.state.player.meta_skills[META_SKILLS.ARTISTRY].level - 1) * 0.002; return Math.random() < (base + artistryBonus); }
+        applyComboMultiplier(now) {
+            const windowMs = 2200;
+            const withinWindow = (now - this.state.combat.lastComboHit) <= windowMs;
+            const combo = withinWindow ? this.state.combat.comboCount : 0;
+            const mult = 1 + Math.min(0.5, combo * 0.03); // up to +50%
+            return mult;
+        }
+        incrementCombo(now) { if (now - this.state.combat.lastComboHit <= 2200) { this.state.combat.comboCount++; } else { this.state.combat.comboCount = 1; } this.state.combat.lastComboHit = now; }
+        resetCombo() { this.state.combat.comboCount = 0; this.state.combat.lastComboHit = 0; }
+        gainUltimate(amount) { const gain = Math.max(1, Math.floor(amount * 0.6)); this.state.combat.ultimateCharge = Math.min(100, this.state.combat.ultimateCharge + gain); }
+
+        // Abilities
+        canUseQuickStrike() { return Date.now() > this.state.combat.cooldowns.quickStrike; }
+        canUseGuard() { return Date.now() > this.state.combat.cooldowns.guard; }
+        useQuickStrike() {
+            if (!this.state.combat.inCombat || !this.state.combat.enemy) return; if (!this.canUseQuickStrike()) return;
+            const e = this.state.combat.enemy; const dmgBase = this.calculatePlayerDamage(e); const dmg = Math.floor(dmgBase * 0.65);
+            e.hp = Math.max(0, e.hp - dmg);
+            this.state.combat.cooldowns.quickStrike = Date.now() + 4000;
+            this.gainUltimate(dmg);
+            this.uiManager.showFloatingText(`-${dmg} Quick!`, 'text-red-400 fly-damage'); this.uiManager.shakeScreen(0.6); this.uiManager.logBattle(`Quick Strike hit for ${dmg}.`, 'neutral');
+            if (e.hp <= 0) this.handleEnemyDefeat(e); this.uiManager.renderView();
+        }
+        useGuard() {
+            if (!this.state.combat.inCombat) return; if (!this.canUseGuard()) return;
+            this.state.player.activeBuffs['guard'] = Date.now() + 5000; // 5s
+            this.state.combat.cooldowns.guard = Date.now() + 9000;
+            this.uiManager.showFloatingText('Guard Up!', 'text-blue-300 fly-xp'); this.uiManager.logBattle('You brace yourself behind your guard.', 'neutral'); this.uiManager.renderView();
+        }
+        useFinisher() {
+            if (!this.state.combat.inCombat || !this.state.combat.enemy) return; if (this.state.combat.ultimateCharge < 100) return;
+            const e = this.state.combat.enemy; const fin = Math.max(20, Math.floor(e.maxHp * 0.28));
+            e.hp = Math.max(0, e.hp - fin);
+            this.state.combat.ultimateCharge = 0; this.resetCombo();
+            this.uiManager.showFloatingText(`-${fin} FINISH!`, 'text-yellow-300 fly-crit'); this.uiManager.shakeScreen(1.2); this.uiManager.logBattle(`Finisher slams for ${fin}!`, 'good');
+            if (e.hp <= 0) this.handleEnemyDefeat(e); this.uiManager.renderView();
         }
         calculatePlayerDamage(enemy) {
             let base = 5; if (this.state.player.weapon && GAME_DATA.ITEMS[this.state.player.weapon]?.damage) base += GAME_DATA.ITEMS[this.state.player.weapon].damage;
@@ -422,7 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
             Object.keys(this.game.state.player.skills).forEach(id => { const skill = this.game.state.player.skills[id]; const xpBar = document.getElementById(`sidebar-xp-${id}`); if (xpBar) xpBar.style.width = `${(skill.currentXP / skill.xpToNextLevel) * 100}%`; });
             this.updateMasteryBar();
             // If in combat, update view footer elements
-            if (this.currentView === 'combat') this.renderCombatFooter();
+            if (this.currentView === 'combat') { this.renderCombatFooter(); this.updateCombatArena(); }
         }
         updateSidebarActive() { document.querySelectorAll('.sidebar-link').forEach(link => { link.classList.toggle('active', link.dataset.view === this.currentView); }); }
 
@@ -563,29 +625,84 @@ document.addEventListener('DOMContentLoaded', () => {
             const foodList = Object.entries(this.game.state.bank).filter(([id, q]) => GAME_DATA.ITEMS[id]?.heals).map(([id, q]) => `<button class="eat-food-btn chimera-button px-2 py-1 rounded-md" data-item-id="${id}">${GAME_DATA.ITEMS[id].name} x${q}</button>`).join(' ');
             const weapons = Object.entries(this.game.state.bank).filter(([id, q]) => GAME_DATA.ITEMS[id]?.damage).map(([id, q]) => `<button class="equip-weapon-btn chimera-button px-2 py-1 rounded-md" data-item-id="${id}">${GAME_DATA.ITEMS[id].name}</button>`).join(' ');
             const combatStatus = this.game.state.combat.inCombat && this.game.state.combat.enemy ? `<p class="text-secondary">Fighting: <span class="text-white font-bold">${this.game.state.combat.enemy.name}</span></p>` : '<p class="text-secondary">Not in combat.</p>';
+            const enemy = this.game.state.combat.enemy;
+            const enemyName = enemy ? enemy.name : '—';
+            const enemyLevel = enemy ? enemy.level : '—';
+            const playerHp = `${Math.max(0, Math.floor(this.game.state.player.hp))}/${this.game.state.player.hpMax}`;
+            const enemyHp = enemy ? `${Math.max(0, Math.floor(enemy.hp))}/${enemy.maxHp}` : '—';
+            const ult = this.game.state.combat.ultimateCharge;
+
             return `
                 <h1 class="text-2xl font-semibold text-white mb-4">Combat</h1>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <div class="block p-4 space-y-3">
                         <h2 class="text-lg font-bold">Enemies</h2>
                         <div class="space-x-2">${eList}</div>
-                    </div>
-                    <div class="block p-4 space-y-2">
-                        <h2 class="text-lg font-bold">Status</h2>
-                        ${combatStatus}
-                        <p class="text-secondary">HP: <span class="font-mono">${Math.floor(this.game.state.player.hp)}/${this.game.state.player.hpMax}</span></p>
+                        <div class="mt-3">${combatStatus}<div class="text-xs text-secondary mt-1">Your HP: <span class="font-mono">${playerHp}</span></div></div>
                         <button id="end-combat-btn" class="chimera-button px-3 py-2 rounded-md" ${this.game.state.combat.inCombat ? '' : 'disabled'}>Retreat</button>
                     </div>
+
+                    <div class="block p-4 space-y-3">
+                        <div class="combat-arena">
+                            <div class="arena-side">
+                                <div class="arena-avatar">🛡️</div>
+                                <div>
+                                    <div class="flex items-baseline justify-between"><span class="font-bold">You</span><span class="text-xs text-secondary font-mono" id="player-hp-text">${playerHp}</span></div>
+                                    <div class="hp-bar mt-1"><div id="player-hp-fill" class="hp-fill" style="width: ${(this.game.state.player.hp/this.game.state.player.hpMax)*100}%"></div></div>
+                                    <div class="mt-2 flex items-center justify-between">
+                                        <span class="combo-chip" id="combo-chip">Combo x${this.game.state.combat.comboCount || 0}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="arena-center">
+                                <div class="versus">⚡</div>
+                                <div class="ult-bar mt-2"><div id="ult-fill" class="ult-fill" style="width:${ult}%"></div></div>
+                            </div>
+                            <div class="arena-side">
+                                <div class="arena-avatar">💀</div>
+                                <div>
+                                    <div class="flex items-baseline justify-between"><span class="font-bold">${enemyName} <span class="text-xs text-secondary">(Lv ${enemyLevel})</span></span><span class="text-xs text-secondary font-mono" id="enemy-hp-text">${enemyHp}</span></div>
+                                    <div class="hp-bar mt-1"><div id="enemy-hp-fill" class="hp-fill enemy" style="width: ${enemy ? (enemy.hp/enemy.maxHp)*100 : 0}%"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="action-bar">
+                            <button id="btn-quick" class="chimera-button px-3 py-2 rounded-md">Quick Strike</button>
+                            <button id="btn-guard" class="chimera-button px-3 py-2 rounded-md">Guard (5s)</button>
+                            <button id="btn-finisher" class="chimera-button px-3 py-2 rounded-md" ${ult >= 100 ? '' : 'disabled'}>Finisher</button>
+                        </div>
+                    </div>
+
                     <div class="block p-4 space-y-3">
                         <h2 class="text-lg font-bold">Equipment & Food</h2>
                         <p class="text-secondary">Weapon: <span class="text-white">${equipped}</span></p>
                         <div class="space-x-2">${weapons || '<span class="text-secondary">Craft a weapon in Smithing.</span>'}</div>
                         <div class="space-x-2">${foodList || '<span class="text-secondary">Cook food to heal.</span>'}</div>
+                        <div class="mt-4">
+                            <h3 class="font-bold mb-1">Battle Commentary</h3>
+                            <div id="battle-log" class="battle-log"></div>
+                        </div>
                     </div>
                 </div>
             `;
         }
+        updateCombatArena() {
+            const p = this.game.state.player; const c = this.game.state.combat; const e = c.enemy;
+            const pFill = document.getElementById('player-hp-fill'); const pTxt = document.getElementById('player-hp-text'); if (pFill) pFill.style.width = `${(p.hp/p.hpMax)*100}%`; if (pTxt) pTxt.textContent = `${Math.max(0, Math.floor(p.hp))}/${p.hpMax}`;
+            const eFill = document.getElementById('enemy-hp-fill'); const eTxt = document.getElementById('enemy-hp-text'); if (e && eFill) eFill.style.width = `${(e.hp/e.maxHp)*100}%`; if (e && eTxt) eTxt.textContent = `${Math.max(0, Math.floor(e.hp))}/${e.maxHp}`;
+            const ult = document.getElementById('ult-fill'); if (ult) ult.style.width = `${Math.min(100, c.ultimateCharge)}%`;
+            const comboChip = document.getElementById('combo-chip'); if (comboChip) comboChip.textContent = `Combo x${c.comboCount || 0}`;
+            const fin = document.getElementById('btn-finisher'); if (fin) fin.disabled = !(c.ultimateCharge >= 100);
+            const q = document.getElementById('btn-quick'); if (q) q.disabled = !(Date.now() > c.cooldowns.quickStrike);
+            const g = document.getElementById('btn-guard'); if (g) g.disabled = !(Date.now() > c.cooldowns.guard);
+        }
         renderCombatFooter() { /* placeholder for potential dynamic footer updates */ }
+        logBattle(text, mood = 'neutral') {
+            const log = document.getElementById('battle-log'); if (!log) return; const row = document.createElement('div'); row.className = `battle-log-entry ${mood}`;
+            const icon = document.createElement('span'); icon.className = 'icon'; icon.textContent = mood === 'good' ? '✨' : mood === 'bad' ? '⚠️' : '•';
+            const msg = document.createElement('span'); msg.textContent = text; row.appendChild(icon); row.appendChild(msg); log.appendChild(row); log.scrollTop = log.scrollHeight; const max = 60; while (log.children.length > max) log.removeChild(log.firstChild);
+        }
+        shakeScreen(intensity = 1) { const el = this.mainContent; if (!el) return; el.classList.remove('shake'); void el.offsetWidth; el.style.animationDuration = `${Math.max(120, Math.floor(180 * intensity))}ms`; el.classList.add('shake'); setTimeout(() => el.classList.remove('shake'), Math.max(140, Math.floor(220 * intensity))); }
 
         renderClickerView() {
             const c = this.game.state.clicker;
@@ -670,6 +787,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const endBtn = document.getElementById('end-combat-btn'); if (endBtn) endBtn.addEventListener('click', () => this.game.endCombat(false));
             document.querySelectorAll('.eat-food-btn').forEach(btn => { btn.addEventListener('click', () => this.game.eatFood(btn.dataset.itemId)); });
             document.querySelectorAll('.equip-weapon-btn').forEach(btn => { btn.addEventListener('click', () => this.game.equipWeapon(btn.dataset.itemId)); });
+            const q = document.getElementById('btn-quick'); if (q) q.addEventListener('click', () => this.game.useQuickStrike());
+            const g = document.getElementById('btn-guard'); if (g) g.addEventListener('click', () => this.game.useGuard());
+            const f = document.getElementById('btn-finisher'); if (f) f.addEventListener('click', () => this.game.useFinisher());
 
             // Clicker
             const big = document.getElementById('big-cookie'); if (big) big.addEventListener('click', () => this.game.addGold(this.game.state.clicker.goldPerClick));
