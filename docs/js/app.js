@@ -72,16 +72,51 @@ document.addEventListener('DOMContentLoaded', () => {
             dragon_scale: { name: 'Azure Dragon Scale', icon: '🛡️' },
             azure_dragon_eye: { name: 'Azure Dragon Eye', icon: '👁️‍🗨️' },
             legendary_trophy: { name: 'Legendary Trophy', icon: '🏆' },
+
+            // Artisan expansion: higher-tier logs
+            willow_logs: { name: 'Willow Logs', icon: '🪵' },
+            maple_logs: { name: 'Maple Logs', icon: '🪵' },
+            yew_logs: { name: 'Yew Logs', icon: '🪵' },
+            magic_logs: { name: 'Magic Logs', icon: '🪵' },
+
+            // Artisan expansion: additional ores
+            iron_ore: { name: 'Iron Ore', icon: '🪨' },
+            coal: { name: 'Coal', icon: '⚫' },
+            silver_ore: { name: 'Silver Ore', icon: '🪨' },
+            gold_ore: { name: 'Gold Ore', icon: '🪨' },
+            mithril_ore: { name: 'Mithril Ore', icon: '🪨' },
+            adamant_ore: { name: 'Adamant Ore', icon: '🪨' },
+            rune_ore: { name: 'Rune Ore', icon: '🪨' },
+
+            // Artisan expansion: refined bars
+            iron_bar: { name: 'Iron Bar', icon: '⬛' },
+            steel_bar: { name: 'Steel Bar', icon: '⬜' },
+            silver_bar: { name: 'Silver Bar', icon: '◻️' },
+            gold_bar: { name: 'Gold Bar', icon: '🟨' },
+            mithril_bar: { name: 'Mithril Bar', icon: '🟦' },
+            adamant_bar: { name: 'Adamant Bar', icon: '🟩' },
+            rune_bar: { name: 'Rune Bar', icon: '🟪' },
         },
         ACTIONS: {
             woodcutting: [
                 { id: 'normal_tree', name: 'Normal Trees', level: 1, xp: 10, output: { itemId: 'logs', quantity: 1 }, baseTime: 3000, rareDrop: { itemId: 'bird_nest', chance: 1 } },
                 { id: 'oak_tree', name: 'Oak Trees', level: 15, xp: 25, output: { itemId: 'oak_logs', quantity: 1 }, baseTime: 5000, rareDrop: { itemId: 'bird_nest', chance: 1.5 } },
+                { id: 'willow_tree', name: 'Willow Trees', level: 30, xp: 35, output: { itemId: 'willow_logs', quantity: 1 }, baseTime: 6000, rareDrop: { itemId: 'bird_nest', chance: 2 } },
+                { id: 'maple_tree', name: 'Maple Trees', level: 45, xp: 50, output: { itemId: 'maple_logs', quantity: 1 }, baseTime: 7000, rareDrop: { itemId: 'bird_nest', chance: 2.5 } },
+                { id: 'yew_tree', name: 'Yew Trees', level: 60, xp: 70, output: { itemId: 'yew_logs', quantity: 1 }, baseTime: 8000, rareDrop: { itemId: 'bird_nest', chance: 3 } },
+                { id: 'magic_tree', name: 'Magic Trees', level: 75, xp: 90, output: { itemId: 'magic_logs', quantity: 1 }, baseTime: 9000, rareDrop: { itemId: 'bird_nest', chance: 3.5 } },
             ],
             mining: [
                 { id: 'copper_rock', name: 'Copper Rock', level: 1, xp: 12, output: { itemId: 'copper_ore', quantity: 1 }, baseTime: 3500 },
                 { id: 'tin_rock', name: 'Tin Rock', level: 1, xp: 12, output: { itemId: 'tin_ore', quantity: 1 }, baseTime: 3500 },
                 { id: 'essence_rock', name: 'Rune Essence Rock', level: 1, xp: 6, output: { itemId: 'rune_essence', quantity: 1 }, baseTime: 3000 },
+                { id: 'iron_rock', name: 'Iron Rock', level: 15, xp: 20, output: { itemId: 'iron_ore', quantity: 1 }, baseTime: 4200 },
+                { id: 'coal_rock', name: 'Coal Rock', level: 30, xp: 25, output: { itemId: 'coal', quantity: 1 }, baseTime: 4500 },
+                { id: 'silver_rock', name: 'Silver Rock', level: 40, xp: 32, output: { itemId: 'silver_ore', quantity: 1 }, baseTime: 5000 },
+                { id: 'gold_rock', name: 'Gold Rock', level: 55, xp: 40, output: { itemId: 'gold_ore', quantity: 1 }, baseTime: 5500 },
+                { id: 'mithril_rock', name: 'Mithril Rock', level: 70, xp: 50, output: { itemId: 'mithril_ore', quantity: 1 }, baseTime: 6000 },
+                { id: 'adamant_rock', name: 'Adamant Rock', level: 85, xp: 60, output: { itemId: 'adamant_ore', quantity: 1 }, baseTime: 6500 },
+                { id: 'rune_rock', name: 'Rune Rock', level: 95, xp: 70, output: { itemId: 'rune_ore', quantity: 1 }, baseTime: 7000 },
             ],
             farming: [
                 { id: 'potato_patch', name: 'Potato Patch', level: 1, xp: 7, output: { itemId: 'potato', quantity: 1 }, baseTime: 4500 },
@@ -109,9 +144,21 @@ document.addEventListener('DOMContentLoaded', () => {
             smithing: [
                 { id: 'bronze_bar', name: 'Bronze Bar', level: 1, xp: 15, input: [{ itemId: 'copper_ore', quantity: 1 }, { itemId: 'tin_ore', quantity: 1 }], output: { itemId: 'bronze_bar', quantity: 1 }, baseTime: 4000 },
                 { id: 'bronze_dagger', name: 'Bronze Dagger', level: 5, xp: 25, input: [{ itemId: 'bronze_bar', quantity: 1 }], output: { itemId: 'bronze_dagger', quantity: 1 }, baseTime: 5000 },
+                { id: 'iron_bar', name: 'Iron Bar', level: 15, xp: 20, input: [{ itemId: 'iron_ore', quantity: 1 }], output: { itemId: 'iron_bar', quantity: 1 }, baseTime: 4500 },
+                { id: 'steel_bar', name: 'Steel Bar', level: 30, xp: 30, input: [{ itemId: 'iron_ore', quantity: 1 }, { itemId: 'coal', quantity: 2 }], output: { itemId: 'steel_bar', quantity: 1 }, baseTime: 5000 },
+                { id: 'silver_bar', name: 'Silver Bar', level: 40, xp: 28, input: [{ itemId: 'silver_ore', quantity: 1 }], output: { itemId: 'silver_bar', quantity: 1 }, baseTime: 5200 },
+                { id: 'gold_bar', name: 'Gold Bar', level: 55, xp: 35, input: [{ itemId: 'gold_ore', quantity: 1 }], output: { itemId: 'gold_bar', quantity: 1 }, baseTime: 5400 },
+                { id: 'mithril_bar', name: 'Mithril Bar', level: 70, xp: 45, input: [{ itemId: 'mithril_ore', quantity: 1 }, { itemId: 'coal', quantity: 2 }], output: { itemId: 'mithril_bar', quantity: 1 }, baseTime: 6000 },
+                { id: 'adamant_bar', name: 'Adamant Bar', level: 85, xp: 60, input: [{ itemId: 'adamant_ore', quantity: 1 }, { itemId: 'coal', quantity: 3 }], output: { itemId: 'adamant_bar', quantity: 1 }, baseTime: 6500 },
+                { id: 'rune_bar', name: 'Rune Bar', level: 95, xp: 80, input: [{ itemId: 'rune_ore', quantity: 1 }, { itemId: 'coal', quantity: 4 }], output: { itemId: 'rune_bar', quantity: 1 }, baseTime: 7000 },
             ],
             firemaking: [
                 { id: 'bonfire_logs', name: 'Bonfire (Logs)', level: 1, xp: 20, input: [{ itemId: 'logs', quantity: 10 }], output: {}, baseTime: 20000 },
+                { id: 'bonfire_oak', name: 'Bonfire (Oak Logs)', level: 15, xp: 35, input: [{ itemId: 'oak_logs', quantity: 10 }], output: {}, baseTime: 20000 },
+                { id: 'bonfire_willow', name: 'Bonfire (Willow Logs)', level: 30, xp: 50, input: [{ itemId: 'willow_logs', quantity: 10 }], output: {}, baseTime: 20000 },
+                { id: 'bonfire_maple', name: 'Bonfire (Maple Logs)', level: 45, xp: 70, input: [{ itemId: 'maple_logs', quantity: 10 }], output: {}, baseTime: 20000 },
+                { id: 'bonfire_yew', name: 'Bonfire (Yew Logs)', level: 60, xp: 95, input: [{ itemId: 'yew_logs', quantity: 10 }], output: {}, baseTime: 20000 },
+                { id: 'bonfire_magic', name: 'Bonfire (Magic Logs)', level: 75, xp: 125, input: [{ itemId: 'magic_logs', quantity: 10 }], output: {}, baseTime: 20000 },
             ],
             cooking: [
                 { id: 'cook_shrimp', name: 'Cook Shrimp', level: 1, xp: 10, input: [{ itemId: 'raw_shrimp', quantity: 1 }], output: { itemId: 'shrimp', quantity: 1 }, baseTime: 3000 },
@@ -148,15 +195,11 @@ document.addEventListener('DOMContentLoaded', () => {
         ],
         COMBAT: {
             ENEMIES: [
-                { id: 'goblin', name: 'Goblin', level: 2, hp: 30, maxHp: 30, attack: 4, defense: 1, gold: [5, 10], drops: [ {id:'copper_ore', qty:[1,2], chance:50}, {id:'tin_ore', qty:[1,2], chance:50} ], attackSpeedMs: 2000 },
-                { id: 'wolf', name: 'Wolf', level: 5, hp: 60, maxHp: 60, attack: 7, defense: 2, gold: [12, 25], drops: [ {id:'raw_shrimp', qty:[1,1], chance:30} ], attackSpeedMs: 1800 },
-                { id: 'skeleton', name: 'Skeleton', level: 10, hp: 120, maxHp: 120, attack: 12, defense: 4, gold: [30, 60], drops: [ {id:'bronze_bar', qty:[1,2], chance:35} ], attackSpeedMs: 1700 },
-                { id: 'troll', name: 'Troll', level: 20, hp: 300, maxHp: 300, attack: 20, defense: 8, gold: [80, 150], drops: [ {id:'item_ancient_key', qty:[1,1], chance:10} ], attackSpeedMs: 1600 },
-            ],
-            WORKERS: {
-                squire: { id: 'squire', name: 'Squire', emoji: '🛡️', description: 'Assists fighters, increasing DPS.', baseCost: 180, costGrowth: 1.20, dps: 0.5 },
-                medic: { id: 'medic', name: 'Field Medic', emoji: '🏥', description: 'Tends wounds, adding HPS.', baseCost: 200, costGrowth: 1.22, hps: 0.4 }
-            }
+                { id: 'goblin', name: 'Goblin', level: 2, hp: 30, maxHp: 30, attack: 4, defense: 1, gold: [5, 10], drops: [ {id:'copper_ore', qty:[1,2], chance:50}, {id:'tin_ore', qty:[1,2], chance:50}, {id:'logs', qty:[1,2], chance:35}, {id:'rune_essence', qty:[1,2], chance:20} ], attackSpeedMs: 2000 },
+                { id: 'wolf', name: 'Wolf', level: 5, hp: 60, maxHp: 60, attack: 7, defense: 2, gold: [12, 25], drops: [ {id:'raw_shrimp', qty:[1,1], chance:30}, {id:'oak_logs', qty:[1,2], chance:30}, {id:'willow_logs', qty:[1,1], chance:15}, {id:'iron_ore', qty:[1,1], chance:10} ], attackSpeedMs: 1800 },
+                { id: 'skeleton', name: 'Skeleton', level: 10, hp: 120, maxHp: 120, attack: 12, defense: 4, gold: [30, 60], drops: [ {id:'bronze_bar', qty:[1,2], chance:35}, {id:'iron_ore', qty:[1,2], chance:30}, {id:'coal', qty:[1,2], chance:30}, {id:'silver_ore', qty:[1,1], chance:20}, {id:'rune_essence', qty:[2,4], chance:25} ], attackSpeedMs: 1700 },
+                { id: 'troll', name: 'Troll', level: 20, hp: 300, maxHp: 300, attack: 20, defense: 8, gold: [80, 150], drops: [ {id:'item_ancient_key', qty:[1,1], chance:10}, {id:'mithril_ore', qty:[1,2], chance:30}, {id:'adamant_ore', qty:[1,1], chance:20}, {id:'gold_ore', qty:[1,2], chance:25}, {id:'rune_ore', qty:[1,1], chance:8}, {id:'coal', qty:[2,4], chance:40} ], attackSpeedMs: 1600 },
+            ]
         },
         ARMY_CLASSES: {
             knight: { id: 'knight', name: 'Knight', emoji: '🛡️', role: 'Defender', description: 'Armored vanguard that holds the line.', baseCost: 150, costGrowth: 1.22, dps: 3, hps: 0.0, foodPerMin: 0.6 },
@@ -196,6 +239,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         { itemId: 'fire_rune', buy: 14, sell: 4 }
                     ] }
                 ]
+            },
+            LOOT: {
+                // Global rarity weights (sum to arbitrary number)
+                rarityWeights: { common: 75, uncommon: 20, rare: 4, epic: 1 },
+                // Epic, spectacular global loot rolls in addition to enemy drops
+                globalTables: [
+                    { rarity: 'common',  entries: [ {type:'gold', min:5, max:25, weight:3}, {type:'item', id:'feather', min:1, max:3, weight:1} ] },
+                    { rarity: 'uncommon', entries: [ {type:'item', id:'bronze_bar', min:1, max:2, weight:2}, {type:'runes', min:1, max:2, weight:1} ] },
+                    { rarity: 'rare',     entries: [ {type:'item', id:'item_elixir_strength', min:1, max:1, weight:1} ] },
+                    { rarity: 'epic',     entries: [ {type:'item', id:'item_scroll_fortune', min:1, max:1, weight:1} ] }
+                ],
+                perKillRolls: 1, // number of extra global loot rolls per kill
             }
         }
     };
@@ -260,6 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 activeBuffs: {}, // { effectKey: expiryTimestamp }
             };
             this.bank = {};
+            this.bankOrder = [];
             this.activeActions = {}; // { [skillId]: { ...actionState } }
             this.bonfire = { active: false, expiry: 0, xpBoost: 0 };
             this.lastUpdate = Date.now();
@@ -268,10 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.combat = { inCombat: false, enemy: null, lastPlayerAttack: 0, lastEnemyAttack: 0, playerAttackSpeedMs: 1600,
                 auto: { enabled: false, targetId: (GAME_DATA.COMBAT.ENEMIES?.[0]?.id) || null, lastTick: Date.now(), killsFrac: 0,
                     autoClaim: true, lastClaimMs: Date.now(),
-                    buffers: { gold: 0, runes: 0, items: {} } },
-                combatWorkers: { squire: 0, medic: 0 },
-                autoHire: { enabled: false, reserveGold: 0 },
-                drafted: {}
+                    buffers: { gold: 0, runes: 0, items: {} } }
             };
 
             // Clicker state
@@ -367,11 +420,37 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    class GameManager {
-        constructor() { this.state = new GameState(); this.uiManager = new UIManager(this); this.gameLoop = null; }
-        init() { this.loadGame(); this.uiManager.init(); this.gameLoop = setInterval(() => this.update(), 100); setInterval(() => this.saveGame(), 10000); window.addEventListener('beforeunload', () => this.saveGame()); }
-
-        hasBuff(effectKey) { const exp = this.state.player.activeBuffs[effectKey]; return exp && Date.now() < exp; }
+         class GameManager {
+         constructor() { this.state = new GameState(); this.uiManager = new UIManager(this); this.gameLoop = null; }
+         init() { this.loadGame(); this.uiManager.init(); this.gameLoop = setInterval(() => this.update(), 100); setInterval(() => this.saveGame(), 10000); window.addEventListener('beforeunload', () => this.saveGame()); }
+ 
+         hasBuff(effectKey) { const exp = this.state.player.activeBuffs[effectKey]; return exp && Date.now() < exp; }
+ 
+         // Loot system utilities
+         rollWeighted(weightsMap) {
+             const entries = Object.entries(weightsMap);
+             const total = entries.reduce((a,[,w])=>a+(w||0),0) || 1;
+             let r = Math.random() * total;
+             for (const [key, w] of entries) { r -= (w||0); if (r <= 0) return key; }
+             return entries[entries.length-1]?.[0];
+         }
+         rollInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+         rollGlobalLoot() {
+             const ld = GAME_DATA.LOOT || {};
+             const rarity = this.rollWeighted(ld.rarityWeights || { common: 1 });
+             const table = (ld.globalTables || []).find(t => t.rarity === rarity);
+             if (!table) return { gold: 0, runes: 0, items: {} };
+             const totalWeight = (table.entries||[]).reduce((a,e)=>a+(e.weight||1),0) || 1;
+             let r = Math.random() * totalWeight; let pick = null;
+             for (const e of (table.entries||[])) { r -= (e.weight||1); if (r <= 0) { pick = e; break; } }
+             if (!pick) return { gold: 0, runes: 0, items: {} };
+             const out = { gold: 0, runes: 0, items: {} };
+             const qty = this.rollInt(pick.min||1, pick.max||1);
+             if (pick.type === 'gold') out.gold += qty;
+             else if (pick.type === 'runes') out.runes += qty;
+             else if (pick.type === 'item' && pick.id) out.items[pick.id] = (out.items[pick.id]||0) + qty;
+             return out;
+         }
 
         goldMultiplier() { let mult = 1; if (this.hasBuff('doubleGold')) mult *= 2; const gh = GAME_DATA.SPELLS.find(s => s.effect === 'goldBoost'); if (this.hasBuff('goldBoost')) mult *= (1 + (gh?.magnitude || 0)); const artistry = 1 + (this.state.player.meta_skills[META_SKILLS.ARTISTRY].level - 1) * 0.02; return mult * artistry; }
 
@@ -414,18 +493,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const base = this.calculateArmyOutputPerSecond();
                     const hungryPenalty = upkeep.hungry ? 0.5 : 1.0;
                     const rallyMult = this.hasBuff('armyRally') ? 2 : 1;
-                    const armyDps = base.dps * hungryPenalty * rallyMult;
-                    const armyHps = base.hps * hungryPenalty * rallyMult;
-                    // Support contributions (combat workers + drafted civilians)
-                    const cw = this.calculateCombatWorkersOutputPerSecond();
-                    const draft = this.getDraftedSupportOutputPerSecond();
-                    const totalDps = armyDps + (cw.dps || 0) + (draft.dps || 0);
-                    const totalHps = armyHps + (cw.hps || 0) + (draft.hps || 0);
-                    // Keep army.production as army-only for other UIs relying on army state
-                    this.state.army.production = { dps: armyDps, hps: armyHps, hungry: upkeep.hungry };
-                    // Apply damage to enemy and heals to player using total output
-                    const dmg = totalDps * armyDeltaSec;
-                    const heal = totalHps * armyDeltaSec;
+                    const dps = base.dps * hungryPenalty * rallyMult;
+                    const hps = base.hps * hungryPenalty * rallyMult;
+                    this.state.army.production = { dps, hps, hungry: upkeep.hungry };
+                    // Apply damage to enemy and heals to player
+                    const dmg = dps * armyDeltaSec;
+                    const heal = hps * armyDeltaSec;
                     if (dmg > 0) {
                         this.state.combat.enemy.hp = Math.max(0, this.state.combat.enemy.hp - dmg);
                         this.state.army.fly.accumDmg += dmg;
@@ -489,9 +562,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             // Empire auto-hiring
             this.processEmpireAutoHire(now);
-
-            // Combat worker auto-hire
-            this.processCombatWorkerAutoHire(now);
 
             // Hunter mission loop
             this.processHunterMissions(delta);
@@ -699,8 +769,8 @@ document.addEventListener('DOMContentLoaded', () => {
         addGoldRaw(amount) { const final = Math.floor(amount); this.state.player.gold += final; if (final > 0) this.uiManager.notifyResource('gold', final); }
         spendGold(amount) { if (this.state.player.gold < amount) return false; this.state.player.gold -= amount; return true; }
 
-        addToBank(itemId, quantity) { this.state.bank[itemId] = (this.state.bank[itemId] || 0) + quantity; if (quantity > 0) this.uiManager.notifyItem(itemId, quantity); }
-        removeFromBank(itemId, quantity) { this.state.bank[itemId] -= quantity; if (this.state.bank[itemId] <= 0) { delete this.state.bank[itemId]; } }
+        addToBank(itemId, quantity) { this.state.bank[itemId] = (this.state.bank[itemId] || 0) + quantity; if (!this.state.bankOrder) this.state.bankOrder = []; if (!this.state.bankOrder.includes(itemId)) this.state.bankOrder.push(itemId); if (quantity > 0) this.uiManager.notifyItem(itemId, quantity); }
+        removeFromBank(itemId, quantity) { this.state.bank[itemId] -= quantity; if (this.state.bank[itemId] <= 0) { delete this.state.bank[itemId]; if (Array.isArray(this.state.bankOrder)) { this.state.bankOrder = this.state.bankOrder.filter(id => id !== itemId); } } }
 
         // Worker economy
         getHireCost(skillId) {
@@ -796,25 +866,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.uiManager.showFloatingText(`Auto-hired ${GAME_DATA.UNITS[candidateId].name}`, 'text-green-300');
                     // Do not force re-render each tick; header will update via dynamic elements
                 }
-            }
-        }
-
-        processCombatWorkerAutoHire(nowMs) {
-            const auto = this.state.combat?.autoHire; if (!auto || !auto.enabled) return;
-            const last = auto.lastAutoMs || 0; if ((nowMs - last) < 1000) return; auto.lastAutoMs = nowMs;
-            // Choose the cheapest combat worker we can afford (after reserve)
-            const defs = GAME_DATA.COMBAT.WORKERS || {};
-            let bestId = null, bestCost = Infinity;
-            Object.keys(defs).forEach(id => {
-                const cost = this.getCombatWorkerCost(id);
-                if (cost < bestCost) { bestCost = cost; bestId = id; }
-            });
-            if (!bestId) return;
-            const reserve = auto.reserveGold || 0;
-            if (this.state.player.gold - reserve >= bestCost && this.spendGold(bestCost)) {
-                this.state.combat.combatWorkers[bestId] = (this.state.combat.combatWorkers[bestId] || 0) + 1;
-                this.uiManager.notifyResource('gold', -bestCost);
-                this.uiManager.showFloatingText(`Auto-hired ${GAME_DATA.COMBAT.WORKERS[bestId].name}`, 'text-green-300');
             }
         }
 
@@ -956,42 +1007,34 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!this.state.combat.inCombat) return; if (!victory) { this.uiManager.showModal('Defeated', '<p>You were defeated. Rest to recover HP.</p>'); }
             this.state.combat.inCombat = false; this.state.combat.enemy = null; this.uiManager.renderView();
         }
-        // Combat Workers
-        getCombatWorkerCost(id) {
-            const def = GAME_DATA.COMBAT.WORKERS?.[id]; if (!def) return Infinity;
-            const owned = this.state.combat?.combatWorkers?.[id] || 0;
-            return Math.floor(def.baseCost * Math.pow(def.costGrowth || 1.2, owned));
-        }
-        hireCombatWorker(id) {
-            const def = GAME_DATA.COMBAT.WORKERS?.[id]; if (!def) return;
-            const price = this.getCombatWorkerCost(id);
-            if (!this.spendGold(price)) { this.uiManager.showModal('Insufficient GP', `<p>You need ${price} GP to hire a ${def.name}.</p>`); return; }
-            if (!this.state.combat.combatWorkers) this.state.combat.combatWorkers = {};
-            this.state.combat.combatWorkers[id] = (this.state.combat.combatWorkers[id] || 0) + 1;
-            this.uiManager.playSound('hire');
-            this.uiManager.showFloatingText(`+1 ${def.name}`, 'text-green-300');
-            this.uiManager.renderView();
-        }
-        calculateCombatWorkersOutputPerSecond() {
-            const cw = this.state.combat?.combatWorkers || {};
-            let dps = 0, hps = 0;
-            Object.keys(GAME_DATA.COMBAT.WORKERS || {}).forEach(id => {
-                const def = GAME_DATA.COMBAT.WORKERS[id]; const qty = cw[id] || 0; if (qty <= 0) return;
-                if (def.dps) dps += def.dps * qty;
-                if (def.hps) hps += def.hps * qty;
-            });
-            return { dps, hps };
-        }
-        handleEnemyDefeat(enemy) {
-            // Gold
-            const g = Math.floor(Math.random() * (enemy.gold[1] - enemy.gold[0] + 1)) + enemy.gold[0]; this.addGold(g);
-            // Drops
-            (enemy.drops || []).forEach(drop => { if (Math.random() * 100 < drop.chance) { const q = Math.floor(Math.random() * (drop.qty[1] - drop.qty[0] + 1)) + drop.qty[0]; this.addToBank(drop.id, q); } });
-            // XP to Strength
-            this.state.player.meta_skills[META_SKILLS.STRENGTH].addXP(15 + enemy.level * 2, this);
-            this.uiManager.showFloatingText(`${enemy.name} defeated!`, 'text-green-400');
-            this.endCombat(true);
-        }
+                 handleEnemyDefeat(enemy) {
+             // Roll rewards
+             const g = Math.floor(Math.random() * (enemy.gold[1] - enemy.gold[0] + 1)) + enemy.gold[0];
+             const itemsMap = {};
+             (enemy.drops || []).forEach(drop => {
+                 const chance = drop.chance || 0;
+                 if (Math.random() * 100 < chance) {
+                     const [qmin, qmax] = Array.isArray(drop.qty) ? drop.qty : [drop.qty || 1, drop.qty || 1];
+                     const q = Math.floor(Math.random() * (qmax - qmin + 1)) + qmin;
+                     itemsMap[drop.id] = (itemsMap[drop.id] || 0) + q;
+                 }
+             });
+             // Global loot rolls (epic system)
+             const rolls = (GAME_DATA.LOOT?.perKillRolls) || 0;
+             for (let i = 0; i < rolls; i++) {
+                 const extra = this.rollGlobalLoot();
+                 if (extra.gold) this.enqueueWarSpoils(extra.gold, {});
+                 if (extra.runes) this.state.combat.auto.buffers.runes = (this.state.combat.auto.buffers.runes||0) + extra.runes;
+                 Object.entries(extra.items || {}).forEach(([id, q]) => { itemsMap[id] = (itemsMap[id] || 0) + q; });
+             }
+             // Route through War Spoils to unify behavior with auto-combat
+             this.enqueueWarSpoils(g, itemsMap);
+             this.autoClaimWarSpoils();
+             // XP to Strength
+             this.state.player.meta_skills[META_SKILLS.STRENGTH].addXP(15 + enemy.level * 2, this);
+             this.uiManager.showFloatingText(`${enemy.name} defeated!`, 'text-green-400');
+             this.endCombat(true);
+         }
         calculatePlayerDamage(enemy) {
             let base = 5; if (this.state.player.weapon && GAME_DATA.ITEMS[this.state.player.weapon]?.damage) base += GAME_DATA.ITEMS[this.state.player.weapon].damage;
             const strBonus = 1 + (this.state.player.meta_skills[META_SKILLS.STRENGTH].level - 1) * 0.03; const dmg = Math.max(1, Math.floor((base * strBonus) - enemy.defense * 0.5));
@@ -1009,16 +1052,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     Object.assign(this.state, parsedData);
                     // Migrate single activeAction -> activeActions map
                     if (!this.state.activeActions) this.state.activeActions = {};
+                    // Backfill bankOrder from existing bank keys if missing
+                    if (!Array.isArray(this.state.bankOrder)) this.state.bankOrder = Object.keys(this.state.bank || {});
                     if (this.state.activeAction) {
                         const aa = this.state.activeAction;
                         if (aa.skillId) this.state.activeActions[aa.skillId] = aa;
                         delete this.state.activeAction;
                     }
                     // Ensure hunter state exists
-                    if (!this.state.hunter) this.state.hunter = { roster: [], missions: [], nextHunterId: 1 };
-                    if (!Array.isArray(this.state.hunter.roster)) this.state.hunter.roster = [];
-                    if (!Array.isArray(this.state.hunter.missions)) this.state.hunter.missions = [];
-                    if (typeof this.state.hunter.nextHunterId !== 'number') this.state.hunter.nextHunterId = 1;
+                                if (!this.state.hunter) this.state.hunter = { roster: [], missions: [], nextHunterId: 1 };
+            if (!Array.isArray(this.state.hunter.roster)) this.state.hunter.roster = [];
+            if (!Array.isArray(this.state.hunter.missions)) this.state.hunter.missions = [];
+            if (typeof this.state.hunter.nextHunterId !== 'number') this.state.hunter.nextHunterId = 1;
+            // Purge any ids from bankOrder that no longer exist in bank
+            if (Array.isArray(this.state.bankOrder)) this.state.bankOrder = this.state.bankOrder.filter(id => (this.state.bank[id]||0) > 0);
                     // Rehydrate skill objects
                     Object.keys(GAME_DATA.SKILLS).forEach(id => { const skill = new Skill(id, GAME_DATA.SKILLS[id].name); if (parsedData.player.skills?.[id]) Object.assign(skill, parsedData.player.skills[id]); this.state.player.skills[id] = skill; });
                     Object.values(META_SKILLS).forEach(name => { const skill = new Skill(name, name); if (parsedData.player.meta_skills?.[name]) Object.assign(skill, parsedData.player.meta_skills[name]); this.state.player.meta_skills[name] = skill; });
@@ -1052,12 +1099,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     Object.keys(GAME_DATA.ARMY_CLASSES).forEach(id => { if (typeof this.state.army.units[id] !== 'number') this.state.army.units[id] = 0; });
                     // Backfill combat auto-battle defaults if missing
                     if (!this.state.combat) this.state.combat = { inCombat: false, enemy: null, lastPlayerAttack: 0, lastEnemyAttack: 0, playerAttackSpeedMs: 1600 };
-                    if (!this.state.combat.auto) this.state.combat.auto = { enabled: false, targetId: (GAME_DATA.COMBAT.ENEMIES?.[0]?.id) || null, lastTick: Date.now(), killsFrac: 0, buffers: { gold: 0, runes: 0, items: {} } };
+                    if (!this.state.combat.auto) this.state.combat.auto = { enabled: false, targetId: (GAME_DATA.COMBAT.ENEMIES?.[0]?.id) || null, lastTick: Date.now(), killsFrac: 0, buffers: { gold: 0, runes: 0, items: {} }, raid: { composition: {}, startedAt: 0, graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } } };
                     if (typeof this.state.combat.auto.autoClaim !== 'boolean') this.state.combat.auto.autoClaim = true;
                     if (!this.state.combat.auto.lastClaimMs) this.state.combat.auto.lastClaimMs = Date.now();
-                    if (!this.state.combat.combatWorkers) this.state.combat.combatWorkers = { squire: 0, medic: 0 };
-                    if (!this.state.combat.autoHire) this.state.combat.autoHire = { enabled: false, reserveGold: 0 };
-                    if (!this.state.combat.drafted) this.state.combat.drafted = {};
+                    if (!this.state.combat.auto.stats) this.state.combat.auto.stats = { gold: 0, runes: 0, items: {} };
                  } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
              }
          }
@@ -1090,7 +1135,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Use cooked foods first; each food heals value ~ treat 1 HP heal as 1 food unit
             const foodIds = Object.keys(this.state.bank).filter(id => GAME_DATA.ITEMS[id]?.heals).sort((a,b) => (GAME_DATA.ITEMS[a].heals||0)-(GAME_DATA.ITEMS[b].heals||0));
             const out = this.calculateArmyOutputPerSecond();
-            const requiredFoodUnits = (out.foodPerMin / 60) * deltaSec; // food units per sec
+            // Slightly increased upkeep to make raid loops more expensive
+            const requiredFoodUnits = (out.foodPerMin / 60) * deltaSec * 1.15; // 15% more upkeep
             this.state.army.upkeep.foodBuffer += requiredFoodUnits;
             let needed = Math.floor(this.state.army.upkeep.foodBuffer);
             if (needed > 0) {
@@ -1106,6 +1152,54 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const hungry = needed > 0; // unmet demand
             this.state.army.upkeep.hungry = hungry;
+            return { hungry, out };
+        }
+        // Composition-limited output for Raids selection
+        calculateCompositionOutput(composition) {
+            const comp = composition || {};
+            let dps = 0, hps = 0, foodPerMin = 0;
+            for (const [unitId, qtyRaw] of Object.entries(comp)) {
+                const qty = Math.max(0, qtyRaw | 0);
+                if (qty <= 0) continue;
+                const def = GAME_DATA.ARMY_CLASSES[unitId];
+                if (!def) continue;
+                dps += (def.dps || 0) * qty;
+                hps += (def.hps || 0) * qty;
+                foodPerMin += (def.foodPerMin || 0) * qty;
+            }
+            const up = this.state.army.upgrades || {};
+            dps *= (1 + 0.08 * (up.offenseLevel || 0));
+            hps *= (1 + 0.08 * (up.supportLevel || 0));
+            foodPerMin *= Math.pow(0.94, (up.logisticsLevel || 0));
+            const stance = this.state.army.stance || 'balanced';
+            if (stance === 'aggressive') { dps *= 1.25; hps *= 0.8; }
+            if (stance === 'defensive') { dps *= 0.8; hps *= 1.25; }
+            return { dps, hps, foodPerMin };
+        }
+        // Upkeep processor for selected composition (used in Raids auto)
+        consumeUpkeepForComposition(composition, deltaSec) {
+            const auto = this.state.combat.auto;
+            if (!auto.raid) auto.raid = { composition: {}, startedAt: 0, graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } };
+            const upkeepState = auto.raid.upkeep;
+            const foodIds = Object.keys(this.state.bank).filter(id => GAME_DATA.ITEMS[id]?.heals).sort((a,b) => (GAME_DATA.ITEMS[a].heals||0)-(GAME_DATA.ITEMS[b].heals||0));
+            const out = this.calculateCompositionOutput(composition);
+            // Slightly increased upkeep to make raid loops more expensive
+            const requiredFoodUnits = (out.foodPerMin / 60) * deltaSec * 1.15;
+            upkeepState.foodBuffer += requiredFoodUnits;
+            let needed = Math.floor(upkeepState.foodBuffer);
+            if (needed > 0) {
+                for (const fid of foodIds) {
+                    if (needed <= 0) break;
+                    let have = this.state.bank[fid] || 0;
+                    if (have <= 0) continue;
+                    const take = Math.min(have, needed);
+                    this.removeFromBank(fid, take);
+                    needed -= take;
+                }
+                upkeepState.foodBuffer -= Math.floor(upkeepState.foodBuffer);
+            }
+            const hungry = needed > 0;
+            upkeepState.hungry = hungry;
             return { hungry, out };
         }
         rallyArmy(durationMs = 60000, runeCost = 2) {
@@ -1197,15 +1291,33 @@ document.addEventListener('DOMContentLoaded', () => {
             if (deltaSec < 0.1) { auto.lastTick = now; return; }
             auto.lastTick = now;
 
-            // Army upkeep and output snapshot
-            const upkeep = this.consumeArmyUpkeep(deltaSec);
-            const base = this.calculateArmyOutputPerSecond();
-            const hungryPenalty = upkeep.hungry ? 0.5 : 1.0;
             const rallyMult = this.hasBuff('armyRally') ? 2 : 1;
-            const armyDps = (base.dps || 0) * hungryPenalty * rallyMult;
-            const cw = this.calculateCombatWorkersOutputPerSecond();
-            const draft = this.getDraftedSupportOutputPerSecond();
-            const dps = armyDps + (cw.dps || 0) + (draft.dps || 0);
+
+            // Determine whether to use selected composition or entire army
+            const comp = auto.raid?.composition || {};
+            const useComp = comp && Object.keys(comp).length > 0;
+
+            let dps = 0;
+            if (useComp) {
+                // Grace window before upkeep applies
+                const graceMs = auto.raid?.graceMs || 120000;
+                const startedAt = auto.raid?.startedAt || now;
+                const inGrace = (now - startedAt) < graceMs;
+                let hungryPenalty = 1.0;
+                if (!inGrace) {
+                    const upkeep = this.consumeUpkeepForComposition(comp, deltaSec);
+                    hungryPenalty = upkeep.hungry ? 0.5 : 1.0;
+                }
+                const out = this.calculateCompositionOutput(comp);
+                dps = (out.dps || 0) * hungryPenalty * rallyMult;
+            } else {
+                // Legacy behavior: whole army raids and consumes upkeep
+                const upkeep = this.consumeArmyUpkeep(deltaSec);
+                const base = this.calculateArmyOutputPerSecond();
+                const hungryPenalty = upkeep.hungry ? 0.5 : 1.0;
+                dps = (base.dps || 0) * hungryPenalty * rallyMult;
+            }
+
             // Choose target
             const target = (GAME_DATA.COMBAT.ENEMIES || []).find(e => e.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
             if (!target || !target.maxHp || dps <= 0) return;
@@ -1214,111 +1326,108 @@ document.addEventListener('DOMContentLoaded', () => {
             const wholeKills = Math.floor(auto.killsFrac);
             if (wholeKills > 0) {
                 auto.killsFrac -= wholeKills;
-
                 // Roll rewards per kill
-                for (let i = 0; i < wholeKills; i++) {
-                    // Gold roll within enemy range, add raw to buffer
-                    const minG = Array.isArray(target.gold) ? (target.gold[0] || 0) : 0;
-                    const maxG = Array.isArray(target.gold) ? (target.gold[1] || 0) : 0;
-                    const g = Math.floor(Math.random() * (maxG - minG + 1)) + minG;
-                    auto.buffers.gold = (auto.buffers.gold || 0) + g;
-                    // Drops
-                    (target.drops || []).forEach(drop => {
-                        const chance = drop.chance || 0; // percent
-                        if (Math.random() * 100 < chance) {
-                            const [qmin, qmax] = Array.isArray(drop.qty) ? drop.qty : [drop.qty || 1, drop.qty || 1];
-                            const qty = Math.floor(Math.random() * (qmax - qmin + 1)) + qmin;
-                            if (!auto.buffers.items) auto.buffers.items = {};
-                            auto.buffers.items[drop.id] = (auto.buffers.items[drop.id] || 0) + qty;
-                        }
-                    });
-                }
+                                 for (let i = 0; i < wholeKills; i++) {
+                     // Gold roll within enemy range, add raw to buffer
+                     const minG = Array.isArray(target.gold) ? (target.gold[0] || 0) : 0;
+                     const maxG = Array.isArray(target.gold) ? (target.gold[1] || 0) : 0;
+                     const g = Math.floor(Math.random() * (maxG - minG + 1)) + minG;
+                     auto.buffers.gold = (auto.buffers.gold || 0) + g;
+                     // Drops
+                     (target.drops || []).forEach(drop => {
+                         const chance = drop.chance || 0; // percent
+                         if (Math.random() * 100 < chance) {
+                             const [qmin, qmax] = Array.isArray(drop.qty) ? drop.qty : [drop.qty || 1, drop.qty || 1];
+                             const qty = Math.floor(Math.random() * (qmax - qmin + 1)) + qmin;
+                             if (!auto.buffers.items) auto.buffers.items = {};
+                             auto.buffers.items[drop.id] = (auto.buffers.items[drop.id] || 0) + qty;
+                         }
+                     });
+                     // Global loot rolls (epic system)
+                     const extraRolls = (GAME_DATA.LOOT?.perKillRolls) || 0;
+                     for (let r = 0; r < extraRolls; r++) {
+                         const ex = this.rollGlobalLoot();
+                         if (ex.gold) auto.buffers.gold = (auto.buffers.gold||0) + ex.gold;
+                         if (ex.runes) auto.buffers.runes = (auto.buffers.runes||0) + ex.runes;
+                         Object.entries(ex.items || {}).forEach(([id, q]) => {
+                             if (!auto.buffers.items) auto.buffers.items = {};
+                             auto.buffers.items[id] = (auto.buffers.items[id] || 0) + q;
+                         });
+                     }
+                 }
             }
 
             // Auto-claim spoils if enabled
-            if (auto.autoClaim) {
-                const goldWhole = Math.floor(auto.buffers.gold || 0);
+            this.autoClaimWarSpoils();
+        }
+
+                 claimWarSpoils() {
+                           const auto = this.state.combat?.auto; if (!auto) return;
+              const goldAmt = Math.floor(auto.buffers?.gold || 0);
+              const runeAmt = Math.floor(auto.buffers?.runes || 0);
+              const items = auto.buffers?.items || {};
+              const stats = auto.stats || (auto.stats = { gold: 0, runes: 0, items: {} });
+              if (goldAmt > 0) stats.gold += goldAmt;
+              if (runeAmt > 0) stats.runes += runeAmt;
+              Object.entries(items).forEach(([id, qty]) => { if (qty > 0) { stats.items[id] = (stats.items[id] || 0) + qty; } });
+              if (goldAmt > 0) this.addGold(goldAmt);
+              if (runeAmt > 0) { this.state.player.runes += runeAmt; this.uiManager.notifyResource('runes', runeAmt); }
+              Object.entries(items).forEach(([id, qty]) => { if (qty > 0) this.addToBank(id, qty); });
+              // Reset buffers
+              auto.buffers = { gold: 0, runes: 0, items: {} };
+              this.uiManager.showFloatingText('War spoils claimed!', 'text-yellow-300');
+              this.uiManager.playSound('upgrade');
+              this.uiManager.renderView();
+          }
+        clearWarSpoils() { const auto = this.state.combat?.auto; if (!auto) return; auto.buffers = { gold: 0, runes: 0, items: {} }; this.uiManager.renderView(); }
+
+        // War spoils helpers (unify manual and auto combat rewards)
+        enqueueWarSpoils(goldAmount = 0, itemsMap = {}) {
+            if (!this.state.combat || !this.state.combat.auto) {
+                // Backfill minimal structure if missing
+                this.state.combat = this.state.combat || {};
+                this.state.combat.auto = this.state.combat.auto || { buffers: { gold: 0, runes: 0, items: {} }, autoClaim: true, lastTick: Date.now(), killsFrac: 0 };
+            }
+            const buffers = this.state.combat.auto.buffers || (this.state.combat.auto.buffers = { gold: 0, runes: 0, items: {} });
+            if (goldAmount && goldAmount > 0) buffers.gold = (buffers.gold || 0) + Math.floor(goldAmount);
+            const items = buffers.items || (buffers.items = {});
+            Object.entries(itemsMap || {}).forEach(([id, qty]) => {
+                if (!qty || qty <= 0) return;
+                items[id] = (items[id] || 0) + Math.floor(qty);
+            });
+        }
+
+        autoClaimWarSpoils() {
+                          const auto = this.state.combat?.auto; if (!auto) return;
+              if (auto.autoClaim) {
+                const stats = auto.stats || (auto.stats = { gold: 0, runes: 0, items: {} });
+                const goldWhole = Math.floor(auto.buffers?.gold || 0);
                 if (goldWhole > 0) {
                     this.addGold(goldWhole);
+                    stats.gold += goldWhole;
                     auto.buffers.gold -= goldWhole;
+                }
+                const runeWhole = Math.floor(auto.buffers?.runes || 0);
+                if (runeWhole > 0) {
+                    this.state.player.runes += runeWhole;
+                    this.uiManager.notifyResource('runes', runeWhole);
+                    stats.runes += runeWhole;
+                    auto.buffers.runes -= runeWhole;
                 }
                 const itemsBuf = auto.buffers.items || {};
                 Object.keys(itemsBuf).forEach(id => {
                     const qty = Math.floor(itemsBuf[id] || 0);
                     if (qty > 0) {
                         this.addToBank(id, qty);
+                        stats.items[id] = (stats.items[id] || 0) + qty;
                         itemsBuf[id] -= qty;
                         if (itemsBuf[id] <= 0) delete itemsBuf[id];
                     }
                 });
-            }
-        }
-
-        claimWarSpoils() {
-            const auto = this.state.combat?.auto; if (!auto) return;
-            const goldAmt = Math.floor(auto.buffers?.gold || 0);
-            const items = auto.buffers?.items || {};
-            if (goldAmt > 0) this.addGold(goldAmt);
-            Object.entries(items).forEach(([id, qty]) => { if (qty > 0) this.addToBank(id, qty); });
-            // Reset buffers
-            auto.buffers = { gold: 0, runes: 0, items: {} };
-            this.uiManager.showFloatingText('War spoils claimed!', 'text-yellow-300');
-            this.uiManager.playSound('upgrade');
-            this.uiManager.renderView();
-        }
-        clearWarSpoils() { const auto = this.state.combat?.auto; if (!auto) return; auto.buffers = { gold: 0, runes: 0, items: {} }; this.uiManager.renderView(); }
-
-        // Drafting system: temporarily assign existing workers as combat support
-        getDraftedSupportOutputPerSecond() {
-            const drafted = this.state.combat?.drafted || {};
-            let dps = 0, hps = 0;
-            // Simple mapping: miners add small DPS, cooks (cooking) add HPS, smithing adds DPS, farming adds HPS
-            const map = {
-                mining: { dpsPer: 0.05 },
-                woodcutting: { dpsPer: 0.03 },
-                smithing: { dpsPer: 0.06 },
-                cooking: { hpsPer: 0.08 },
-                farming: { hpsPer: 0.05 },
-                fishing: { hpsPer: 0.03 },
-                hunter: { dpsPer: 0.07 },
-                divination: { hpsPer: 0.02 },
-                archaeology: { dpsPer: 0.02 }
-            };
-            Object.keys(drafted).forEach(skillId => {
-                const qty = drafted[skillId] || 0; if (qty <= 0) return;
-                const cfg = map[skillId] || {};
-                if (cfg.dpsPer) dps += cfg.dpsPer * qty;
-                if (cfg.hpsPer) hps += cfg.hpsPer * qty;
-            });
-            return { dps, hps };
-        }
-        draftWorkers(skillId, count) {
-            this.ensureWorkerState();
-            const ws = this.state.workers[skillId]; if (!ws) return false;
-            const assigned = Object.values(ws.assigned || {}).reduce((a,b)=>a+(b||0),0);
-            const free = Math.max(0, (ws.total || 0) - assigned);
-            const take = Math.max(0, Math.min(free, count)); if (take <= 0) return false;
-            if (!this.state.combat.drafted) this.state.combat.drafted = {};
-            this.state.combat.drafted[skillId] = (this.state.combat.drafted[skillId] || 0) + take;
-            this.uiManager.showFloatingText(`Drafted ${take} ${GAME_DATA.SKILLS[skillId]?.name||skillId}`, 'text-yellow-300');
-            this.uiManager.renderView();
-            return true;
-        }
-        recallDrafted(skillId, count) {
-            if (!this.state.combat?.drafted) return false;
-            const have = this.state.combat.drafted[skillId] || 0;
-            const giveBack = Math.max(0, Math.min(have, count)); if (giveBack <= 0) return false;
-            this.state.combat.drafted[skillId] = have - giveBack;
-            if (this.state.combat.drafted[skillId] <= 0) delete this.state.combat.drafted[skillId];
-            this.uiManager.showFloatingText(`Recalled ${giveBack} ${GAME_DATA.SKILLS[skillId]?.name||skillId}`, 'text-green-300');
-            this.uiManager.renderView();
-            return true;
-        }
-        recallAllDrafted() {
-            if (!this.state.combat?.drafted) return;
-            this.state.combat.drafted = {};
-            this.uiManager.renderView();
-        }
+              }
+              // Refresh combat footer if visible
+              this.uiManager.renderCombatFooter();
+         }
     }
 
     class UIManager {
@@ -1336,7 +1445,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const gatheringHtml = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'gathering').map(id => createLink(id, GAME_DATA.SKILLS[id])).join(''); document.getElementById('gathering-skills-nav').innerHTML = gatheringHtml;
             const artisanHtml = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'artisan').map(id => createLink(id, GAME_DATA.SKILLS[id])).join(''); document.getElementById('artisan-skills-nav').innerHTML = artisanHtml;
         }
-        attachSidebarEventListeners() { document.querySelectorAll('.sidebar-link').forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); this.currentView = link.dataset.view; this.render(); }); }); }
+        attachSidebarEventListeners() { const sidebar = document.getElementById('sidebar'); if (!sidebar) return; sidebar.addEventListener('click', (e) => { const link = e.target.closest('.sidebar-link'); if (!link || !sidebar.contains(link)) return; e.preventDefault(); this.currentView = link.dataset.view; this.render(); }); }
 
         updateHeaderBars() {
             const goldDisplay = document.getElementById('gold-display'); if (goldDisplay) goldDisplay.textContent = Math.floor(this.game.state.player.gold).toLocaleString() + ' GP'; const dashGp = document.getElementById('dash-gp'); if (dashGp) dashGp.textContent = Math.floor(this.game.state.player.gold).toLocaleString();
@@ -1882,9 +1991,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         renderBankView() {
-            let itemsHtml = Object.entries(this.game.state.bank).map(([itemId, quantity]) => { const itemData = GAME_DATA.ITEMS[itemId]; if (!itemData) return ''; return `<div class="block p-2 flex flex-col items-center justify-center text-center tooltip"><span class="tooltiptext">${itemData.name}</span><span class="text-3xl">${itemData.icon || '❔'}</span><span class="font-mono text-white mt-1">${quantity.toLocaleString()}</span></div>`; }).join('');
-            if (itemsHtml === '') { itemsHtml = `<p class="text-secondary col-span-full text-center">Your bank is empty. Gather some resources!</p>`; }
-            return `<h1 class="text-2xl font-semibold text-white mb-4">Bank</h1><div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4">${itemsHtml}</div>`;
+            const order = Array.isArray(this.game.state.bankOrder) ? this.game.state.bankOrder : Object.keys(this.game.state.bank);
+            const itemsHtml = order.filter(id => (this.game.state.bank[id]||0) > 0).map((itemId, idx) => {
+                const quantity = this.game.state.bank[itemId] || 0;
+                const itemData = GAME_DATA.ITEMS[itemId]; if (!itemData) return '';
+                const descParts = [];
+                if (itemData.heals) descParts.push(`Restores ${itemData.heals} HP`);
+                if (itemData.damage) descParts.push(`Weapon • +${itemData.damage} ATK`);
+                if (['air_rune','mind_rune','water_rune','earth_rune','fire_rune','body_rune','cosmic_rune','chaos_rune','nature_rune','law_rune','death_rune','blood_rune'].includes(itemId)) descParts.push('Spell component');
+                const desc = descParts.join(' • ') || 'A curious item of unknown power.';
+                return `
+                    <div class="bank-slot block p-2 flex flex-col items-center justify-center text-center glass-card rounded-md"
+                         draggable="true" data-item-id="${itemId}" data-index="${idx}">
+                        <div class="epic-tooltip">
+                            <div class="icon text-3xl">${itemData.icon || '❔'}</div>
+                            <div class="panel">
+                                <div class="name">${itemData.name}</div>
+                                <div class="desc">${desc}</div>
+                                <div class="qty">Owned: <span class="font-mono">${quantity.toLocaleString()}</span></div>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+            const grid = itemsHtml || `<p class="text-secondary col-span-full text-center">Your bank is empty. Gather some resources!</p>`;
+            return `<h1 class="text-2xl font-semibold text-white mb-4">Bank</h1><div id="bank-grid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4">${grid}</div>`;
         }
 
         renderMetaSkillsView() {
@@ -1955,7 +2085,7 @@ document.addEventListener('DOMContentLoaded', () => {
                    </div>`
                 : `<p class="text-secondary">Choose a foe from the left to begin combat.</p>`;
 
-            const allies = this.game.state.army.production || { dps: 0, hps: 0 }; const support = this.game.calculateCombatWorkersOutputPerSecond(); const drafted = this.game.getDraftedSupportOutputPerSecond(); const totalDps = (allies.dps||0)+(support.dps||0)+(drafted.dps||0); const totalHps = (allies.hps||0)+(support.hps||0)+(drafted.hps||0);
+            const allies = this.game.state.army.production || { dps: 0, hps: 0 };
             const rallyCta = rallyActive
                 ? `<button id="army-rally" class="chimera-button imperial-button px-3 py-2 rounded-md opacity-80">Rallying… ${rallyRemaining}s</button>`
                 : `<button id="army-rally" class="chimera-button imperial-button juicy-button px-3 py-2 rounded-md">Rally Army — 2 Runes</button>`;
@@ -1963,12 +2093,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Auto-battle metrics (no consumption here)
             const auto = this.game.state.combat.auto || { enabled: false, targetId: (GAME_DATA.COMBAT.ENEMIES?.[0]?.id)||null, buffers: { gold:0, items:{} } };
             const target = (GAME_DATA.COMBAT.ENEMIES || []).find(x => x.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
-            const base = this.game.calculateArmyOutputPerSecond();
-            const hungryPenalty = this.game.state.army.upkeep?.hungry ? 0.5 : 1.0;
+            const raidComp = this.game.state.combat.auto?.raid?.composition || {};
+            const useComp = raidComp && Object.keys(raidComp).length > 0;
+            const base = useComp ? this.game.calculateCompositionOutput(raidComp) : this.game.calculateArmyOutputPerSecond();
+            const hungryPenalty = useComp ? (this.game.state.combat.auto.raid.upkeep?.hungry ? 0.5 : 1.0) : (this.game.state.army.upkeep?.hungry ? 0.5 : 1.0);
             const rallyMult = this.game.hasBuff('armyRally') ? 2 : 1;
-            const supportNow = this.game.calculateCombatWorkersOutputPerSecond();
-            const draftedNow = this.game.getDraftedSupportOutputPerSecond();
-            const estDps = ((base.dps || 0) + (supportNow.dps||0) + (draftedNow.dps||0)) * hungryPenalty * rallyMult;
+            const estDps = (base.dps || 0) * hungryPenalty * rallyMult;
             const killsPerSec = (target && target.maxHp > 0) ? (estDps / target.maxHp) : 0;
             const avgGold = target && Array.isArray(target.gold) ? (target.gold[0] + target.gold[1]) / 2 : 0;
             const estGoldPerSec = killsPerSec * avgGold * this.game.goldMultiplier();
@@ -1986,7 +2116,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class="text-secondary text-sm">Face fearsome foes. Rally your army and unleash powerful spells.</p>
                         </div>
                         <div class="flex items-center gap-2">
-                            <span class="badge"><i class="fas fa-users"></i> Force: DPS ${Math.max(0, totalDps || 0).toFixed(1)} • HPS ${Math.max(0, totalHps || 0).toFixed(1)}${this.game.state.army.upkeep?.hungry ? ' <span class=\"text-red-400 ml-1\">Hungry</span>' : ''}</span>
+                            <span class="badge"><i class="fas fa-users"></i> Allies: DPS ${Math.max(0, allies.dps || 0).toFixed(1)} • HPS ${Math.max(0, allies.hps || 0).toFixed(1)}${this.game.state.army.upkeep?.hungry ? ' <span class="text-red-400 ml-1">Hungry</span>' : ''}</span>
                             ${rallyCta}
                         </div>
                     </div>
@@ -1996,27 +2126,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="block p-4 rounded-md">
                             <h2 class="text-lg font-bold mb-2">Enemies</h2>
                             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-3">${enemiesGrid}</div>
-                        </div>
-                        <div class="block p-4 rounded-md">
-                            <h2 class="text-lg font-bold mb-2">Battle Support</h2>
-                            <div class="flex items-center justify-between mb-2">
-                                <div class="text-xs text-secondary">Auto-hire</div>
-                                <label class="text-xs"><input id="cw-auto-toggle" type="checkbox" ${this.game.state.combat?.autoHire?.enabled?'checked':''}/> Enable</label>
-                            </div>
-                            <div class="flex items-center gap-2 mb-3">
-                                <label class="text-xs text-secondary">Reserve</label>
-                                <input id="cw-auto-reserve" class="chimera-button px-2 py-1 rounded w-20 text-right" type="number" min="0" value="${this.game.state.combat?.autoHire?.reserveGold||0}" />
-                            </div>
-                            <div class="space-y-2">
-                                ${Object.keys(GAME_DATA.COMBAT.WORKERS).map(id=>{ const w=GAME_DATA.COMBAT.WORKERS[id]; const owned=this.game.state.combat?.combatWorkers?.[id]||0; const price=this.game.getCombatWorkerCost(id); const line = [w.dps?`+${w.dps}/s DPS each`:null, w.hps?`+${w.hps}/s HPS each`:null].filter(Boolean).join(' • '); return `<div class=\"flex items-center justify-between gap-2\"><div><div class=\"font-semibold\">${w.emoji} ${w.name} <span class=\"text-secondary font-normal\">x${owned}</span></div><div class=\"text-xs text-secondary\">${w.description} • ${line}</div></div><button class=\"hire-combat-worker-btn chimera-button juicy-button px-2 py-1 rounded-md\" data-cw-id=\"${id}\">Hire — ${price} GP</button></div>`; }).join('')}
-                            </div>
-                            <div class="mt-3">
-                                <h3 class="text-sm font-semibold mb-1">Draft Civilians</h3>
-                                <div class="space-y-2">
-                                    ${Object.keys(this.game.state.workers || {}).map(sid=>{ const skill=GAME_DATA.SKILLS[sid]; if(!skill) return ''; const ws=this.game.state.workers[ sid ]||{total:0,assigned:{}}; const assigned=Object.values(ws.assigned||{}).reduce((a,b)=>a+(b||0),0); const free=Math.max(0,(ws.total||0)-assigned-(this.game.state.combat?.drafted?.[sid]||0)); const drafted=this.game.state.combat?.drafted?.[sid]||0; return `<div class=\"flex items-center justify-between gap-2\"><div class=\"text-xs\"><span class=\"font-semibold\"><i class=\"fas ${skill.icon}\"></i> ${skill.name}</span><span class=\"text-secondary ml-2\">Free: ${free} • Drafted: ${drafted}</span></div><div class=\"flex items-center gap-1\"><button class=\"draft-btn chimera-button px-2 py-1 rounded\" data-skill-id=\"${sid}\" data-delta=\"+1\" ${free<=0?'disabled':''}>+1</button><button class=\"draft-btn chimera-button px-2 py-1 rounded\" data-skill-id=\"${sid}\" data-delta=\"-1\" ${drafted<=0?'disabled':''}>-1</button></div></div>`; }).join('')}
-                                </div>
-                                <div class="mt-2"><button id="recall-all-drafted" class="chimera-button px-3 py-2 rounded-md" ${Object.keys(this.game.state.combat?.drafted||{}).length===0?'disabled':''}>Recall All</button></div>
-                            </div>
                         </div>
                     </div>
                     <div class="block battle-arena p-4 rounded-md flex flex-col gap-3">
@@ -2060,6 +2169,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="block p-3 rounded-md">
                             <h3 class="text-md font-bold mb-2">War Spoils</h3>
                             <div class="text-sm mb-1">Gold: <span id="war-spoils-gold" class="font-mono text-yellow-300">${Math.floor(auto.buffers?.gold||0).toLocaleString()}</span></div>
+                            <div class="text-sm mb-1">Runes: <span id="war-spoils-runes" class="font-mono text-purple-300">${Math.floor(auto.buffers?.runes||0).toLocaleString()}</span></div>
                             <div id="war-spoils-items" class="flex flex-wrap gap-2 mb-2">${itemsHtml}</div>
                             <div class="flex items-center gap-2">
                                 <button id="claim-war-spoils" class="chimera-button juicy-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Claim All</button>
@@ -2081,13 +2191,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             // Update items list
             const itemsContainer = document.getElementById('war-spoils-items');
-            if (itemsContainer) {
-                const entries = Object.entries(auto.buffers?.items || {});
-                const html = entries.length
-                    ? entries.map(([id, q]) => `<span class="badge">${GAME_DATA.ITEMS[id]?.icon||'❔'} ${GAME_DATA.ITEMS[id]?.name||id} x${q}</span>`).join(' ')
-                    : '<span class="text-secondary text-xs">No items yet.</span>';
-                itemsContainer.innerHTML = html;
-            }
+                         if (itemsContainer) {
+                 const entries = Object.entries(auto.buffers?.items || {});
+                 const html = entries.length
+                     ? entries.map(([id, q]) => `<span class="badge">${GAME_DATA.ITEMS[id]?.icon||'❔'} ${GAME_DATA.ITEMS[id]?.name||id} x${q}</span>`).join(' ')
+                     : '<span class="text-secondary text-xs">No items yet.</span>';
+                 itemsContainer.innerHTML = html;
+             }
+             // Update runes
+             const runesEl = document.getElementById('war-spoils-runes');
+             if (runesEl) runesEl.textContent = Math.floor(auto.buffers?.runes || 0).toLocaleString();
             // Update auto-battle ring and metrics
             const ring = document.getElementById('auto-kill-ring');
             const progText = document.getElementById('auto-kill-progress');
@@ -2095,12 +2208,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const prog = Math.max(0, Math.min(1, (auto.killsFrac || 0) % 1));
                 if (ring) ring.style.setProperty('--ring-pct', prog);
                 if (progText) progText.textContent = `${Math.floor(prog * 100)}%`;
-                const base = this.game.calculateArmyOutputPerSecond();
-                const hungryPenalty = this.game.state.army.upkeep?.hungry ? 0.5 : 1.0;
+                const comp = this.game.state.combat.auto?.raid?.composition || {};
+                const useComp = comp && Object.keys(comp).length > 0;
+                const base = useComp ? this.game.calculateCompositionOutput(comp) : this.game.calculateArmyOutputPerSecond();
+                const hungryPenalty = useComp ? (this.game.state.combat.auto.raid.upkeep?.hungry ? 0.5 : 1.0) : (this.game.state.army.upkeep?.hungry ? 0.5 : 1.0);
                 const rallyMult = this.game.hasBuff('armyRally') ? 2 : 1;
-                const supportNow = this.game.calculateCombatWorkersOutputPerSecond();
-                const draftedNow = this.game.getDraftedSupportOutputPerSecond();
-                const estDps = ((base.dps || 0) + (supportNow.dps||0) + (draftedNow.dps||0)) * hungryPenalty * rallyMult;
+                const estDps = (base.dps || 0) * hungryPenalty * rallyMult;
                 const target = (GAME_DATA.COMBAT.ENEMIES || []).find(x => x.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
                 const kps = (target && target.maxHp > 0) ? (estDps / target.maxHp) : 0;
                 const gps = kps * (target && Array.isArray(target.gold) ? (target.gold[0] + target.gold[1]) / 2 : 0) * this.game.goldMultiplier();
@@ -2341,6 +2454,38 @@ document.addEventListener('DOMContentLoaded', () => {
         attachViewEventListeners() {
             const addTaskBtn = document.getElementById('add-task-btn'); if (addTaskBtn) { addTaskBtn.addEventListener('click', () => { const category = document.getElementById('task-category-select').value; const difficulty = document.getElementById('task-difficulty-select').value; this.game.completeRealLifeTask(category, difficulty); const n = document.getElementById('task-name-input'); if (n) n.value = ''; }); }
             const ge = document.getElementById('goto-empire'); if (ge) ge.addEventListener('click', () => { this.currentView = 'clicker'; this.render(); });
+            // Bank drag-and-drop swap handlers
+            const bankGrid = document.getElementById('bank-grid');
+            if (bankGrid) {
+                let dragIndex = null;
+                bankGrid.querySelectorAll('.bank-slot').forEach(slot => {
+                    slot.addEventListener('dragstart', (e) => {
+                        dragIndex = parseInt(slot.getAttribute('data-index') || '-1', 10);
+                        e.dataTransfer.effectAllowed = 'move';
+                        e.dataTransfer.setData('text/plain', String(dragIndex));
+                        slot.classList.add('dragging');
+                    });
+                    slot.addEventListener('dragend', () => slot.classList.remove('dragging'));
+                    slot.addEventListener('dragover', (e) => { e.preventDefault(); slot.classList.add('drag-over'); });
+                    slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+                    slot.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        slot.classList.remove('drag-over');
+                        const fromStr = e.dataTransfer.getData('text/plain');
+                        const fromIdx = parseInt(fromStr || '-1', 10);
+                        const toIdx = parseInt(slot.getAttribute('data-index') || '-1', 10);
+                        if (isNaN(fromIdx) || isNaN(toIdx) || fromIdx === toIdx) return;
+                        const order = Array.isArray(this.game.state.bankOrder) ? [...this.game.state.bankOrder] : Object.keys(this.game.state.bank);
+                        if (!order[fromIdx] || !order[toIdx]) return;
+                        // Swap positions
+                        const tmp = order[fromIdx];
+                        order[fromIdx] = order[toIdx];
+                        order[toIdx] = tmp;
+                        this.game.state.bankOrder = order;
+                        this.renderView();
+                    });
+                });
+            }
             const gw = document.getElementById('goto-woodcutting'); if (gw) gw.addEventListener('click', () => { this.currentView = 'woodcutting'; this.render(); });
             const gr = document.getElementById('goto-runecrafting'); if (gr) gr.addEventListener('click', () => { this.currentView = 'runecrafting'; this.render(); });
             const gc = document.getElementById('goto-combat'); if (gc) gc.addEventListener('click', () => { this.currentView = 'combat'; this.render(); });
@@ -2389,10 +2534,47 @@ document.addEventListener('DOMContentLoaded', () => {
             // Auto-battle controls (shared by Combat and Raids)
             const abToggle = document.getElementById('auto-battle-toggle'); if (abToggle) abToggle.addEventListener('change', (e) => { this.game.state.combat.auto.enabled = !!e.target.checked; this.game.state.combat.auto.lastTick = Date.now(); });
             const abTarget = document.getElementById('auto-target-select'); if (abTarget) abTarget.addEventListener('change', (e) => { this.game.state.combat.auto.targetId = e.target.value; });
+            // Raid composition controls
+            const raidInputs = Array.from(document.querySelectorAll('.raid-comp-input'));
+            const raidAssigners = Array.from(document.querySelectorAll('.raid-assign-unit'));
+            const clampAssignment = (uid, val) => {
+                const free = (function(){
+                    const reserved = {};
+                    for (const m of (this.game.state.army.deployments?.active || [])) {
+                        for (const [rid, qty] of Object.entries(m.composition || {})) reserved[rid] = (reserved[rid] || 0) + qty;
+                    }
+                    const owned = this.game.state.army.units?.[uid] || 0;
+                    return Math.max(0, owned - (reserved[uid] || 0));
+                }).call(this);
+                return Math.max(0, Math.min(free, val));
+            };
+            raidAssigners.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const uid = btn.getAttribute('data-unit-id'); const dir = btn.getAttribute('data-dir');
+                    const input = document.querySelector(`.raid-comp-input[data-unit-id="${uid}"]`);
+                    if (!input) return;
+                    let v = parseInt(input.value || '0', 10) || 0;
+                    v = dir === '+1' ? v + 1 : v - 1;
+                    v = clampAssignment(uid, v);
+                    input.value = String(v);
+                    const auto = this.game.state.combat.auto; if (!auto.raid) auto.raid = { composition: {}, startedAt: 0, graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } };
+                    auto.raid.composition[uid] = v;
+                });
+            });
+            raidInputs.forEach(inp => {
+                inp.addEventListener('change', () => {
+                    const uid = inp.getAttribute('data-unit-id');
+                    let v = parseInt(inp.value || '0', 10) || 0;
+                    v = clampAssignment(uid, v);
+                    inp.value = String(v);
+                    const auto = this.game.state.combat.auto; if (!auto.raid) auto.raid = { composition: {}, startedAt: 0, graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } };
+                    auto.raid.composition[uid] = v;
+                });
+            });
             const claimBtn = document.getElementById('claim-war-spoils'); if (claimBtn) claimBtn.addEventListener('click', () => this.game.claimWarSpoils());
             const clearBtn = document.getElementById('clear-war-spoils'); if (clearBtn) clearBtn.addEventListener('click', () => this.game.clearWarSpoils());
             const abPlayPause = document.getElementById('auto-battle-playpause');
-            if (abPlayPause) abPlayPause.addEventListener('click', () => { const auto = this.game.state.combat.auto; auto.enabled = !auto.enabled; auto.lastTick = Date.now(); this.renderView(); });
+            if (abPlayPause) abPlayPause.addEventListener('click', () => { const auto = this.game.state.combat.auto; auto.enabled = !auto.enabled; auto.lastTick = Date.now(); if (!auto.raid) auto.raid = { composition: {}, startedAt: 0, graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } }; if (auto.enabled) { auto.raid.startedAt = Date.now(); auto.killsFrac = 0; } this.renderView(); });
             const abAutoClaim = document.getElementById('auto-claim-toggle');
             if (abAutoClaim) abAutoClaim.addEventListener('click', () => { const auto = this.game.state.combat.auto; auto.autoClaim = !auto.autoClaim; this.renderView(); });
             document.querySelectorAll('.select-raid-target').forEach(btn => { btn.addEventListener('click', () => { this.game.state.combat.auto.targetId = btn.dataset.enemyId; this.renderView(); }); });
@@ -2487,13 +2669,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.game.buyItem(btn.dataset.itemId, 1);
             }); });
             document.querySelectorAll('.merchant-sell-btn').forEach(btn => { btn.addEventListener('click', () => this.game.sellItem(btn.dataset.itemId, 1)); });
-            // Combat worker hiring
-            document.querySelectorAll('.hire-combat-worker-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireCombatWorker(btn.dataset.cwId)); });
-            const cwAutoToggle = document.getElementById('cw-auto-toggle'); if (cwAutoToggle) cwAutoToggle.addEventListener('change', (e) => { this.game.state.combat.autoHire.enabled = !!e.target.checked; });
-            const cwAutoReserve = document.getElementById('cw-auto-reserve'); if (cwAutoReserve) cwAutoReserve.addEventListener('change', (e) => { const v = parseInt(e.target.value||'0',10); this.game.state.combat.autoHire.reserveGold = isNaN(v)?0:Math.max(0,v); });
-            // Drafting controls
-            document.querySelectorAll('.draft-btn').forEach(btn => { btn.addEventListener('click', () => { const sid = btn.dataset.skillId; const delta = parseInt(btn.dataset.delta, 10); if (delta > 0) this.game.draftWorkers(sid, delta); else this.game.recallDrafted(sid, -delta); }); });
-            const recallAll = document.getElementById('recall-all-drafted'); if (recallAll) recallAll.addEventListener('click', () => this.game.recallAllDrafted());
         }
 
         showModal(title, content) {
@@ -2860,12 +3035,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const target = (GAME_DATA.COMBAT.ENEMIES || []).find(x => x.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
             const targetOptions = (GAME_DATA.COMBAT.ENEMIES || []).map(x => `<option value="${x.id}" ${auto.targetId===x.id?'selected':''}>${x.name} (Lv ${x.level})</option>`).join('');
 
-            const base = this.game.calculateArmyOutputPerSecond();
-            const hungryPenalty = this.game.state.army.upkeep?.hungry ? 0.5 : 1.0;
+            const raidComp = this.game.state.combat.auto?.raid?.composition || {};
+            const useComp = raidComp && Object.keys(raidComp).length > 0;
+            const base = useComp ? this.game.calculateCompositionOutput(raidComp) : this.game.calculateArmyOutputPerSecond();
+            const hungryPenalty = useComp ? (this.game.state.combat.auto.raid.upkeep?.hungry ? 0.5 : 1.0) : (this.game.state.army.upkeep?.hungry ? 0.5 : 1.0);
             const rallyMult = this.game.hasBuff('armyRally') ? 2 : 1;
-            const supportNow = this.game.calculateCombatWorkersOutputPerSecond();
-            const draftedNow = this.game.getDraftedSupportOutputPerSecond();
-            const estDps = ((base.dps || 0) + (supportNow.dps||0) + (draftedNow.dps||0)) * hungryPenalty * rallyMult;
+            const estDps = (base.dps || 0) * hungryPenalty * rallyMult;
             const killsPerSec = (target && target.maxHp > 0) ? (estDps / target.maxHp) : 0;
             const avgGold = target && Array.isArray(target.gold) ? (target.gold[0] + target.gold[1]) / 2 : 0;
             const estGoldPerSec = killsPerSec * avgGold * this.game.goldMultiplier();
@@ -2874,7 +3049,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const itemsHtml = itemsEntries.length ? itemsEntries.map(([id,q]) => `<span class="spoils-item">${GAME_DATA.ITEMS[id]?.icon||'❔'} ${GAME_DATA.ITEMS[id]?.name||id} x${q}</span>`).join(' ') : '<span class="text-secondary text-xs">No items yet.</span>';
             const spoilsEmpty = (Math.floor(auto.buffers?.gold||0) <= 0) && itemsEntries.length === 0;
             const killProgress = Math.max(0, Math.min(1, (auto.killsFrac || 0) % 1));
-            const allies = this.game.state.army.production || { dps: 0, hps: 0 }; const support = this.game.calculateCombatWorkersOutputPerSecond(); const drafted = this.game.getDraftedSupportOutputPerSecond(); const totalDps = (allies.dps||0)+(support.dps||0)+(drafted.dps||0); const totalHps = (allies.hps||0)+(support.hps||0)+(drafted.hps||0);
+            const allies = this.game.state.army.production || { dps: 0, hps: 0 };
             const armyUnitsTotal = Object.values(this.game.state.army.units || {}).reduce((a,b)=>a+(b||0),0);
             const emptyState = armyUnitsTotal > 0 ? '' : `
                 <div class="block p-4 rounded-md mb-4">
@@ -2887,11 +3062,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>`;
 
+            const freeUnits = (() => {
+                const reserved = {};
+                for (const m of (this.game.state.army.deployments?.active || [])) {
+                    for (const [uid, qty] of Object.entries(m.composition || {})) reserved[uid] = (reserved[uid] || 0) + qty;
+                }
+                const out = {};
+                for (const id of Object.keys(GAME_DATA.ARMY_CLASSES)) {
+                    const owned = this.game.state.army.units?.[id] || 0;
+                    out[id] = Math.max(0, owned - (reserved[id] || 0));
+                }
+                return out;
+            })();
+
             const legionChips = Object.keys(GAME_DATA.ARMY_CLASSES).map(id => {
                 const def = GAME_DATA.ARMY_CLASSES[id];
                 const owned = this.game.state.army.units?.[id] || 0;
                 if (!owned) return '';
-                return `<div class="unit-chip"><span>${def.emoji}</span><span class="text-xs">${def.name}</span><span class="font-mono text-white">x${owned}</span></div>`;
+                const free = freeUnits[id] || 0;
+                return `<div class="unit-chip"><span>${def.emoji}</span><span class="text-xs">${def.name}</span><span class="font-mono text-white">x${owned}</span><span class="text-[10px] text-secondary ml-1">(${free} free)</span></div>`;
             }).join('');
 
             return `
@@ -2949,18 +3138,32 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                     <div class="flex flex-col gap-4">
-                        <div class="block p-4 rounded-md space-y-3 spoils-panel">
+                                                <div class="block p-4 rounded-md space-y-3 spoils-panel">
                             <h2 class="text-lg font-bold">War Spoils</h2>
-                            <div class="text-sm mb-1">Gold: <span id="war-spoils-gold" class="font-mono spoils-gold">${Math.floor(auto.buffers?.gold||0).toLocaleString()}</span></div>
+                            <div class="text-sm mb-1">Gold (buffer): <span id="war-spoils-gold" class="font-mono spoils-gold">${Math.floor(auto.buffers?.gold||0).toLocaleString()}</span></div>
+                            <div class="text-sm mb-1">Runes (buffer): <span id="war-spoils-runes" class="font-mono text-purple-300">${Math.floor(auto.buffers?.runes||0).toLocaleString()}</span></div>
                             <div id="war-spoils-items" class="flex flex-wrap gap-2">${itemsHtml}</div>
                             <div class="flex items-center gap-2">
                                 <button id="claim-war-spoils" class="chimera-button juicy-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Claim All</button>
                                 <button id="clear-war-spoils" class="chimera-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Clear</button>
                             </div>
+                            ${(function(){ const s=this.game.state.combat.auto?.stats||{gold:0,runes:0,items:{}}; const itemCount=Object.values(s.items||{}).reduce((a,b)=>a+(b||0),0); return `<div class=\"text-[11px] text-secondary\">Claimed (session): <span class=\"font-mono text-yellow-300\">${(s.gold||0).toLocaleString()}</span> GP • <span class=\"font-mono text-purple-300\">${(s.runes||0).toLocaleString()}</span> runes • <span class=\"font-mono text-white\">${itemCount}</span> items</div>`; }).call(this)}
+                        </div>
+                        <div class="block p-4 rounded-md">
+                            <h2 class="text-lg font-bold mb-2">Raid Composition</h2>
+                            <div class="space-y-2">
+                                ${Object.keys(GAME_DATA.ARMY_CLASSES).map(uid => {
+                                    const d = GAME_DATA.ARMY_CLASSES[uid];
+                                    const free = freeUnits[uid] || 0;
+                                    const current = auto.raid?.composition?.[uid] || 0;
+                                    return `<div class=\"flex items-center justify-between\">\n                                        <span class=\"text-xs text-secondary\">${d.emoji} ${d.name}</span>\n                                        <div class=\"flex items-center gap-1\">\n                                            <button class=\"chimera-button px-2 py-1 rounded-md raid-assign-unit\" data-unit-id=\"${uid}\" data-dir=\"-1\">-</button>\n                                            <input type=\"number\" min=\"0\" max=\"${free}\" value=\"${current}\" class=\"w-16 p-1 bg-primary border border-border-color rounded-md text-center raid-comp-input\" data-unit-id=\"${uid}\" />\n                                            <button class=\"chimera-button px-2 py-1 rounded-md raid-assign-unit\" data-unit-id=\"${uid}\" data-dir=\"+1\">+</button>\n                                        </div>\n                                    </div>`;
+                                }).join('')}
+                            </div>
+                            <div class="text-xs text-secondary mt-2">Grace: first 2m no rations consumed.</div>
                         </div>
                         <div class="block p-4 rounded-md">
                             <h2 class="text-lg font-bold mb-2">Legion</h2>
-                            <div class="flex flex-wrap gap-2">${legionChips || '<span class="text-secondary text-xs">No units yet.</span>'}</div>
+                            <div class="flex flex-wrap gap-2">${legionChips || '<span class=\"text-secondary text-xs\">No units yet.</span>'}</div>
                         </div>
                     </div>
                 </div>
