@@ -72,16 +72,51 @@ document.addEventListener('DOMContentLoaded', () => {
             dragon_scale: { name: 'Azure Dragon Scale', icon: '🛡️' },
             azure_dragon_eye: { name: 'Azure Dragon Eye', icon: '👁️‍🗨️' },
             legendary_trophy: { name: 'Legendary Trophy', icon: '🏆' },
+
+            // Artisan expansion: higher-tier logs
+            willow_logs: { name: 'Willow Logs', icon: '🪵' },
+            maple_logs: { name: 'Maple Logs', icon: '🪵' },
+            yew_logs: { name: 'Yew Logs', icon: '🪵' },
+            magic_logs: { name: 'Magic Logs', icon: '🪵' },
+
+            // Artisan expansion: additional ores
+            iron_ore: { name: 'Iron Ore', icon: '🪨' },
+            coal: { name: 'Coal', icon: '⚫' },
+            silver_ore: { name: 'Silver Ore', icon: '🪨' },
+            gold_ore: { name: 'Gold Ore', icon: '🪨' },
+            mithril_ore: { name: 'Mithril Ore', icon: '🪨' },
+            adamant_ore: { name: 'Adamant Ore', icon: '🪨' },
+            rune_ore: { name: 'Rune Ore', icon: '🪨' },
+
+            // Artisan expansion: refined bars
+            iron_bar: { name: 'Iron Bar', icon: '⬛' },
+            steel_bar: { name: 'Steel Bar', icon: '⬜' },
+            silver_bar: { name: 'Silver Bar', icon: '◻️' },
+            gold_bar: { name: 'Gold Bar', icon: '🟨' },
+            mithril_bar: { name: 'Mithril Bar', icon: '🟦' },
+            adamant_bar: { name: 'Adamant Bar', icon: '🟩' },
+            rune_bar: { name: 'Rune Bar', icon: '🟪' },
         },
         ACTIONS: {
             woodcutting: [
                 { id: 'normal_tree', name: 'Normal Trees', level: 1, xp: 10, output: { itemId: 'logs', quantity: 1 }, baseTime: 3000, rareDrop: { itemId: 'bird_nest', chance: 1 } },
                 { id: 'oak_tree', name: 'Oak Trees', level: 15, xp: 25, output: { itemId: 'oak_logs', quantity: 1 }, baseTime: 5000, rareDrop: { itemId: 'bird_nest', chance: 1.5 } },
+                { id: 'willow_tree', name: 'Willow Trees', level: 30, xp: 35, output: { itemId: 'willow_logs', quantity: 1 }, baseTime: 6000, rareDrop: { itemId: 'bird_nest', chance: 2 } },
+                { id: 'maple_tree', name: 'Maple Trees', level: 45, xp: 50, output: { itemId: 'maple_logs', quantity: 1 }, baseTime: 7000, rareDrop: { itemId: 'bird_nest', chance: 2.5 } },
+                { id: 'yew_tree', name: 'Yew Trees', level: 60, xp: 70, output: { itemId: 'yew_logs', quantity: 1 }, baseTime: 8000, rareDrop: { itemId: 'bird_nest', chance: 3 } },
+                { id: 'magic_tree', name: 'Magic Trees', level: 75, xp: 90, output: { itemId: 'magic_logs', quantity: 1 }, baseTime: 9000, rareDrop: { itemId: 'bird_nest', chance: 3.5 } },
             ],
             mining: [
                 { id: 'copper_rock', name: 'Copper Rock', level: 1, xp: 12, output: { itemId: 'copper_ore', quantity: 1 }, baseTime: 3500 },
                 { id: 'tin_rock', name: 'Tin Rock', level: 1, xp: 12, output: { itemId: 'tin_ore', quantity: 1 }, baseTime: 3500 },
                 { id: 'essence_rock', name: 'Rune Essence Rock', level: 1, xp: 6, output: { itemId: 'rune_essence', quantity: 1 }, baseTime: 3000 },
+                { id: 'iron_rock', name: 'Iron Rock', level: 15, xp: 20, output: { itemId: 'iron_ore', quantity: 1 }, baseTime: 4200 },
+                { id: 'coal_rock', name: 'Coal Rock', level: 30, xp: 25, output: { itemId: 'coal', quantity: 1 }, baseTime: 4500 },
+                { id: 'silver_rock', name: 'Silver Rock', level: 40, xp: 32, output: { itemId: 'silver_ore', quantity: 1 }, baseTime: 5000 },
+                { id: 'gold_rock', name: 'Gold Rock', level: 55, xp: 40, output: { itemId: 'gold_ore', quantity: 1 }, baseTime: 5500 },
+                { id: 'mithril_rock', name: 'Mithril Rock', level: 70, xp: 50, output: { itemId: 'mithril_ore', quantity: 1 }, baseTime: 6000 },
+                { id: 'adamant_rock', name: 'Adamant Rock', level: 85, xp: 60, output: { itemId: 'adamant_ore', quantity: 1 }, baseTime: 6500 },
+                { id: 'rune_rock', name: 'Rune Rock', level: 95, xp: 70, output: { itemId: 'rune_ore', quantity: 1 }, baseTime: 7000 },
             ],
             farming: [
                 { id: 'potato_patch', name: 'Potato Patch', level: 1, xp: 7, output: { itemId: 'potato', quantity: 1 }, baseTime: 4500 },
@@ -109,9 +144,21 @@ document.addEventListener('DOMContentLoaded', () => {
             smithing: [
                 { id: 'bronze_bar', name: 'Bronze Bar', level: 1, xp: 15, input: [{ itemId: 'copper_ore', quantity: 1 }, { itemId: 'tin_ore', quantity: 1 }], output: { itemId: 'bronze_bar', quantity: 1 }, baseTime: 4000 },
                 { id: 'bronze_dagger', name: 'Bronze Dagger', level: 5, xp: 25, input: [{ itemId: 'bronze_bar', quantity: 1 }], output: { itemId: 'bronze_dagger', quantity: 1 }, baseTime: 5000 },
+                { id: 'iron_bar', name: 'Iron Bar', level: 15, xp: 20, input: [{ itemId: 'iron_ore', quantity: 1 }], output: { itemId: 'iron_bar', quantity: 1 }, baseTime: 4500 },
+                { id: 'steel_bar', name: 'Steel Bar', level: 30, xp: 30, input: [{ itemId: 'iron_ore', quantity: 1 }, { itemId: 'coal', quantity: 2 }], output: { itemId: 'steel_bar', quantity: 1 }, baseTime: 5000 },
+                { id: 'silver_bar', name: 'Silver Bar', level: 40, xp: 28, input: [{ itemId: 'silver_ore', quantity: 1 }], output: { itemId: 'silver_bar', quantity: 1 }, baseTime: 5200 },
+                { id: 'gold_bar', name: 'Gold Bar', level: 55, xp: 35, input: [{ itemId: 'gold_ore', quantity: 1 }], output: { itemId: 'gold_bar', quantity: 1 }, baseTime: 5400 },
+                { id: 'mithril_bar', name: 'Mithril Bar', level: 70, xp: 45, input: [{ itemId: 'mithril_ore', quantity: 1 }, { itemId: 'coal', quantity: 2 }], output: { itemId: 'mithril_bar', quantity: 1 }, baseTime: 6000 },
+                { id: 'adamant_bar', name: 'Adamant Bar', level: 85, xp: 60, input: [{ itemId: 'adamant_ore', quantity: 1 }, { itemId: 'coal', quantity: 3 }], output: { itemId: 'adamant_bar', quantity: 1 }, baseTime: 6500 },
+                { id: 'rune_bar', name: 'Rune Bar', level: 95, xp: 80, input: [{ itemId: 'rune_ore', quantity: 1 }, { itemId: 'coal', quantity: 4 }], output: { itemId: 'rune_bar', quantity: 1 }, baseTime: 7000 },
             ],
             firemaking: [
                 { id: 'bonfire_logs', name: 'Bonfire (Logs)', level: 1, xp: 20, input: [{ itemId: 'logs', quantity: 10 }], output: {}, baseTime: 20000 },
+                { id: 'bonfire_oak', name: 'Bonfire (Oak Logs)', level: 15, xp: 35, input: [{ itemId: 'oak_logs', quantity: 10 }], output: {}, baseTime: 20000 },
+                { id: 'bonfire_willow', name: 'Bonfire (Willow Logs)', level: 30, xp: 50, input: [{ itemId: 'willow_logs', quantity: 10 }], output: {}, baseTime: 20000 },
+                { id: 'bonfire_maple', name: 'Bonfire (Maple Logs)', level: 45, xp: 70, input: [{ itemId: 'maple_logs', quantity: 10 }], output: {}, baseTime: 20000 },
+                { id: 'bonfire_yew', name: 'Bonfire (Yew Logs)', level: 60, xp: 95, input: [{ itemId: 'yew_logs', quantity: 10 }], output: {}, baseTime: 20000 },
+                { id: 'bonfire_magic', name: 'Bonfire (Magic Logs)', level: 75, xp: 125, input: [{ itemId: 'magic_logs', quantity: 10 }], output: {}, baseTime: 20000 },
             ],
             cooking: [
                 { id: 'cook_shrimp', name: 'Cook Shrimp', level: 1, xp: 10, input: [{ itemId: 'raw_shrimp', quantity: 1 }], output: { itemId: 'shrimp', quantity: 1 }, baseTime: 3000 },
@@ -148,10 +195,10 @@ document.addEventListener('DOMContentLoaded', () => {
         ],
         COMBAT: {
             ENEMIES: [
-                { id: 'goblin', name: 'Goblin', level: 2, hp: 30, maxHp: 30, attack: 4, defense: 1, gold: [5, 10], drops: [ {id:'copper_ore', qty:[1,2], chance:50}, {id:'tin_ore', qty:[1,2], chance:50} ], attackSpeedMs: 2000 },
-                { id: 'wolf', name: 'Wolf', level: 5, hp: 60, maxHp: 60, attack: 7, defense: 2, gold: [12, 25], drops: [ {id:'raw_shrimp', qty:[1,1], chance:30} ], attackSpeedMs: 1800 },
-                { id: 'skeleton', name: 'Skeleton', level: 10, hp: 120, maxHp: 120, attack: 12, defense: 4, gold: [30, 60], drops: [ {id:'bronze_bar', qty:[1,2], chance:35} ], attackSpeedMs: 1700 },
-                { id: 'troll', name: 'Troll', level: 20, hp: 300, maxHp: 300, attack: 20, defense: 8, gold: [80, 150], drops: [ {id:'item_ancient_key', qty:[1,1], chance:10} ], attackSpeedMs: 1600 },
+                { id: 'goblin', name: 'Goblin', level: 2, hp: 30, maxHp: 30, attack: 4, defense: 1, gold: [5, 10], drops: [ {id:'copper_ore', qty:[1,2], chance:50}, {id:'tin_ore', qty:[1,2], chance:50}, {id:'logs', qty:[1,2], chance:35}, {id:'rune_essence', qty:[1,2], chance:20} ], attackSpeedMs: 2000 },
+                { id: 'wolf', name: 'Wolf', level: 5, hp: 60, maxHp: 60, attack: 7, defense: 2, gold: [12, 25], drops: [ {id:'raw_shrimp', qty:[1,1], chance:30}, {id:'oak_logs', qty:[1,2], chance:30}, {id:'willow_logs', qty:[1,1], chance:15}, {id:'iron_ore', qty:[1,1], chance:10} ], attackSpeedMs: 1800 },
+                { id: 'skeleton', name: 'Skeleton', level: 10, hp: 120, maxHp: 120, attack: 12, defense: 4, gold: [30, 60], drops: [ {id:'bronze_bar', qty:[1,2], chance:35}, {id:'iron_ore', qty:[1,2], chance:30}, {id:'coal', qty:[1,2], chance:30}, {id:'silver_ore', qty:[1,1], chance:20}, {id:'rune_essence', qty:[2,4], chance:25} ], attackSpeedMs: 1700 },
+                { id: 'troll', name: 'Troll', level: 20, hp: 300, maxHp: 300, attack: 20, defense: 8, gold: [80, 150], drops: [ {id:'item_ancient_key', qty:[1,1], chance:10}, {id:'mithril_ore', qty:[1,2], chance:30}, {id:'adamant_ore', qty:[1,1], chance:20}, {id:'gold_ore', qty:[1,2], chance:25}, {id:'rune_ore', qty:[1,1], chance:8}, {id:'coal', qty:[2,4], chance:40} ], attackSpeedMs: 1600 },
             ]
         },
         ARMY_CLASSES: {
