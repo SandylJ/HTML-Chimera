@@ -268,6 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 activeBuffs: {}, // { effectKey: expiryTimestamp }
             };
             this.bank = {};
+            this.bankOrder = [];
             this.activeActions = {}; // { [skillId]: { ...actionState } }
             this.bonfire = { active: false, expiry: 0, xpBoost: 0 };
             this.lastUpdate = Date.now();
@@ -721,8 +722,8 @@ document.addEventListener('DOMContentLoaded', () => {
         addGoldRaw(amount) { const final = Math.floor(amount); this.state.player.gold += final; if (final > 0) this.uiManager.notifyResource('gold', final); }
         spendGold(amount) { if (this.state.player.gold < amount) return false; this.state.player.gold -= amount; return true; }
 
-        addToBank(itemId, quantity) { this.state.bank[itemId] = (this.state.bank[itemId] || 0) + quantity; if (quantity > 0) this.uiManager.notifyItem(itemId, quantity); }
-        removeFromBank(itemId, quantity) { this.state.bank[itemId] -= quantity; if (this.state.bank[itemId] <= 0) { delete this.state.bank[itemId]; } }
+        addToBank(itemId, quantity) { this.state.bank[itemId] = (this.state.bank[itemId] || 0) + quantity; if (!this.state.bankOrder) this.state.bankOrder = []; if (!this.state.bankOrder.includes(itemId)) this.state.bankOrder.push(itemId); if (quantity > 0) this.uiManager.notifyItem(itemId, quantity); }
+        removeFromBank(itemId, quantity) { this.state.bank[itemId] -= quantity; if (this.state.bank[itemId] <= 0) { delete this.state.bank[itemId]; if (Array.isArray(this.state.bankOrder)) { this.state.bankOrder = this.state.bankOrder.filter(id => id !== itemId); } } }
 
         // Worker economy
         getHireCost(skillId) {
@@ -1004,16 +1005,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     Object.assign(this.state, parsedData);
                     // Migrate single activeAction -> activeActions map
                     if (!this.state.activeActions) this.state.activeActions = {};
+                    // Backfill bankOrder from existing bank keys if missing
+                    if (!Array.isArray(this.state.bankOrder)) this.state.bankOrder = Object.keys(this.state.bank || {});
                     if (this.state.activeAction) {
                         const aa = this.state.activeAction;
                         if (aa.skillId) this.state.activeActions[aa.skillId] = aa;
                         delete this.state.activeAction;
                     }
                     // Ensure hunter state exists
-                    if (!this.state.hunter) this.state.hunter = { roster: [], missions: [], nextHunterId: 1 };
-                    if (!Array.isArray(this.state.hunter.roster)) this.state.hunter.roster = [];
-                    if (!Array.isArray(this.state.hunter.missions)) this.state.hunter.missions = [];
-                    if (typeof this.state.hunter.nextHunterId !== 'number') this.state.hunter.nextHunterId = 1;
+                                if (!this.state.hunter) this.state.hunter = { roster: [], missions: [], nextHunterId: 1 };
+            if (!Array.isArray(this.state.hunter.roster)) this.state.hunter.roster = [];
+            if (!Array.isArray(this.state.hunter.missions)) this.state.hunter.missions = [];
+            if (typeof this.state.hunter.nextHunterId !== 'number') this.state.hunter.nextHunterId = 1;
+            // Purge any ids from bankOrder that no longer exist in bank
+            if (Array.isArray(this.state.bankOrder)) this.state.bankOrder = this.state.bankOrder.filter(id => (this.state.bank[id]||0) > 0);
                     // Rehydrate skill objects
                     Object.keys(GAME_DATA.SKILLS).forEach(id => { const skill = new Skill(id, GAME_DATA.SKILLS[id].name); if (parsedData.player.skills?.[id]) Object.assign(skill, parsedData.player.skills[id]); this.state.player.skills[id] = skill; });
                     Object.values(META_SKILLS).forEach(name => { const skill = new Skill(name, name); if (parsedData.player.meta_skills?.[name]) Object.assign(skill, parsedData.player.meta_skills[name]); this.state.player.meta_skills[name] = skill; });
@@ -1930,9 +1935,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         renderBankView() {
-            let itemsHtml = Object.entries(this.game.state.bank).map(([itemId, quantity]) => { const itemData = GAME_DATA.ITEMS[itemId]; if (!itemData) return ''; return `<div class="block p-2 flex flex-col items-center justify-center text-center tooltip"><span class="tooltiptext">${itemData.name}</span><span class="text-3xl">${itemData.icon || '❔'}</span><span class="font-mono text-white mt-1">${quantity.toLocaleString()}</span></div>`; }).join('');
-            if (itemsHtml === '') { itemsHtml = `<p class="text-secondary col-span-full text-center">Your bank is empty. Gather some resources!</p>`; }
-            return `<h1 class="text-2xl font-semibold text-white mb-4">Bank</h1><div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4">${itemsHtml}</div>`;
+            const order = Array.isArray(this.game.state.bankOrder) ? this.game.state.bankOrder : Object.keys(this.game.state.bank);
+            const itemsHtml = order.filter(id => (this.game.state.bank[id]||0) > 0).map((itemId, idx) => {
+                const quantity = this.game.state.bank[itemId] || 0;
+                const itemData = GAME_DATA.ITEMS[itemId]; if (!itemData) return '';
+                const descParts = [];
+                if (itemData.heals) descParts.push(`Restores ${itemData.heals} HP`);
+                if (itemData.damage) descParts.push(`Weapon • +${itemData.damage} ATK`);
+                if (['air_rune','mind_rune','water_rune','earth_rune','fire_rune','body_rune','cosmic_rune','chaos_rune','nature_rune','law_rune','death_rune','blood_rune'].includes(itemId)) descParts.push('Spell component');
+                const desc = descParts.join(' • ') || 'A curious item of unknown power.';
+                return `
+                    <div class="bank-slot block p-2 flex flex-col items-center justify-center text-center glass-card rounded-md"
+                         draggable="true" data-item-id="${itemId}" data-index="${idx}">
+                        <div class="epic-tooltip">
+                            <div class="icon text-3xl">${itemData.icon || '❔'}</div>
+                            <div class="panel">
+                                <div class="name">${itemData.name}</div>
+                                <div class="desc">${desc}</div>
+                                <div class="qty">Owned: <span class="font-mono">${quantity.toLocaleString()}</span></div>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+            const grid = itemsHtml || `<p class="text-secondary col-span-full text-center">Your bank is empty. Gather some resources!</p>`;
+            return `<h1 class="text-2xl font-semibold text-white mb-4">Bank</h1><div id="bank-grid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4">${grid}</div>`;
         }
 
         renderMetaSkillsView() {
@@ -2370,6 +2396,38 @@ document.addEventListener('DOMContentLoaded', () => {
         attachViewEventListeners() {
             const addTaskBtn = document.getElementById('add-task-btn'); if (addTaskBtn) { addTaskBtn.addEventListener('click', () => { const category = document.getElementById('task-category-select').value; const difficulty = document.getElementById('task-difficulty-select').value; this.game.completeRealLifeTask(category, difficulty); const n = document.getElementById('task-name-input'); if (n) n.value = ''; }); }
             const ge = document.getElementById('goto-empire'); if (ge) ge.addEventListener('click', () => { this.currentView = 'clicker'; this.render(); });
+            // Bank drag-and-drop swap handlers
+            const bankGrid = document.getElementById('bank-grid');
+            if (bankGrid) {
+                let dragIndex = null;
+                bankGrid.querySelectorAll('.bank-slot').forEach(slot => {
+                    slot.addEventListener('dragstart', (e) => {
+                        dragIndex = parseInt(slot.getAttribute('data-index') || '-1', 10);
+                        e.dataTransfer.effectAllowed = 'move';
+                        e.dataTransfer.setData('text/plain', String(dragIndex));
+                        slot.classList.add('dragging');
+                    });
+                    slot.addEventListener('dragend', () => slot.classList.remove('dragging'));
+                    slot.addEventListener('dragover', (e) => { e.preventDefault(); slot.classList.add('drag-over'); });
+                    slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+                    slot.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        slot.classList.remove('drag-over');
+                        const fromStr = e.dataTransfer.getData('text/plain');
+                        const fromIdx = parseInt(fromStr || '-1', 10);
+                        const toIdx = parseInt(slot.getAttribute('data-index') || '-1', 10);
+                        if (isNaN(fromIdx) || isNaN(toIdx) || fromIdx === toIdx) return;
+                        const order = Array.isArray(this.game.state.bankOrder) ? [...this.game.state.bankOrder] : Object.keys(this.game.state.bank);
+                        if (!order[fromIdx] || !order[toIdx]) return;
+                        // Swap positions
+                        const tmp = order[fromIdx];
+                        order[fromIdx] = order[toIdx];
+                        order[toIdx] = tmp;
+                        this.game.state.bankOrder = order;
+                        this.renderView();
+                    });
+                });
+            }
             const gw = document.getElementById('goto-woodcutting'); if (gw) gw.addEventListener('click', () => { this.currentView = 'woodcutting'; this.render(); });
             const gr = document.getElementById('goto-runecrafting'); if (gr) gr.addEventListener('click', () => { this.currentView = 'runecrafting'; this.render(); });
             const gc = document.getElementById('goto-combat'); if (gc) gc.addEventListener('click', () => { this.currentView = 'combat'; this.render(); });
