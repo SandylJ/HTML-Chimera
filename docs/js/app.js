@@ -1384,7 +1384,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const gatheringHtml = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'gathering').map(id => createLink(id, GAME_DATA.SKILLS[id])).join(''); document.getElementById('gathering-skills-nav').innerHTML = gatheringHtml;
             const artisanHtml = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'artisan').map(id => createLink(id, GAME_DATA.SKILLS[id])).join(''); document.getElementById('artisan-skills-nav').innerHTML = artisanHtml;
         }
-        attachSidebarEventListeners() { document.querySelectorAll('.sidebar-link').forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); this.currentView = link.dataset.view; this.render(); }); }); }
+        attachSidebarEventListeners() { const sidebar = document.getElementById('sidebar'); if (!sidebar) return; sidebar.addEventListener('click', (e) => { const link = e.target.closest('.sidebar-link'); if (!link || !sidebar.contains(link)) return; e.preventDefault(); this.currentView = link.dataset.view; this.render(); }); }
 
         updateHeaderBars() {
             const goldDisplay = document.getElementById('gold-display'); if (goldDisplay) goldDisplay.textContent = Math.floor(this.game.state.player.gold).toLocaleString() + ' GP'; const dashGp = document.getElementById('dash-gp'); if (dashGp) dashGp.textContent = Math.floor(this.game.state.player.gold).toLocaleString();
