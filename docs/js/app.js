@@ -192,6 +192,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         { itemId: 'fire_rune', buy: 14, sell: 4 }
                     ] }
                 ]
+            },
+            LOOT: {
+                // Global rarity weights (sum to arbitrary number)
+                rarityWeights: { common: 75, uncommon: 20, rare: 4, epic: 1 },
+                // Epic, spectacular global loot rolls in addition to enemy drops
+                globalTables: [
+                    { rarity: 'common',  entries: [ {type:'gold', min:5, max:25, weight:3}, {type:'item', id:'feather', min:1, max:3, weight:1} ] },
+                    { rarity: 'uncommon', entries: [ {type:'item', id:'bronze_bar', min:1, max:2, weight:2}, {type:'runes', min:1, max:2, weight:1} ] },
+                    { rarity: 'rare',     entries: [ {type:'item', id:'item_elixir_strength', min:1, max:1, weight:1} ] },
+                    { rarity: 'epic',     entries: [ {type:'item', id:'item_scroll_fortune', min:1, max:1, weight:1} ] }
+                ],
+                perKillRolls: 1, // number of extra global loot rolls per kill
             }
         }
     };
@@ -360,11 +372,37 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    class GameManager {
-        constructor() { this.state = new GameState(); this.uiManager = new UIManager(this); this.gameLoop = null; }
-        init() { this.loadGame(); this.uiManager.init(); this.gameLoop = setInterval(() => this.update(), 100); setInterval(() => this.saveGame(), 10000); window.addEventListener('beforeunload', () => this.saveGame()); }
-
-        hasBuff(effectKey) { const exp = this.state.player.activeBuffs[effectKey]; return exp && Date.now() < exp; }
+         class GameManager {
+         constructor() { this.state = new GameState(); this.uiManager = new UIManager(this); this.gameLoop = null; }
+         init() { this.loadGame(); this.uiManager.init(); this.gameLoop = setInterval(() => this.update(), 100); setInterval(() => this.saveGame(), 10000); window.addEventListener('beforeunload', () => this.saveGame()); }
+ 
+         hasBuff(effectKey) { const exp = this.state.player.activeBuffs[effectKey]; return exp && Date.now() < exp; }
+ 
+         // Loot system utilities
+         rollWeighted(weightsMap) {
+             const entries = Object.entries(weightsMap);
+             const total = entries.reduce((a,[,w])=>a+(w||0),0) || 1;
+             let r = Math.random() * total;
+             for (const [key, w] of entries) { r -= (w||0); if (r <= 0) return key; }
+             return entries[entries.length-1]?.[0];
+         }
+         rollInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+         rollGlobalLoot() {
+             const ld = GAME_DATA.LOOT || {};
+             const rarity = this.rollWeighted(ld.rarityWeights || { common: 1 });
+             const table = (ld.globalTables || []).find(t => t.rarity === rarity);
+             if (!table) return { gold: 0, runes: 0, items: {} };
+             const totalWeight = (table.entries||[]).reduce((a,e)=>a+(e.weight||1),0) || 1;
+             let r = Math.random() * totalWeight; let pick = null;
+             for (const e of (table.entries||[])) { r -= (e.weight||1); if (r <= 0) { pick = e; break; } }
+             if (!pick) return { gold: 0, runes: 0, items: {} };
+             const out = { gold: 0, runes: 0, items: {} };
+             const qty = this.rollInt(pick.min||1, pick.max||1);
+             if (pick.type === 'gold') out.gold += qty;
+             else if (pick.type === 'runes') out.runes += qty;
+             else if (pick.type === 'item' && pick.id) out.items[pick.id] = (out.items[pick.id]||0) + qty;
+             return out;
+         }
 
         goldMultiplier() { let mult = 1; if (this.hasBuff('doubleGold')) mult *= 2; const gh = GAME_DATA.SPELLS.find(s => s.effect === 'goldBoost'); if (this.hasBuff('goldBoost')) mult *= (1 + (gh?.magnitude || 0)); const artistry = 1 + (this.state.player.meta_skills[META_SKILLS.ARTISTRY].level - 1) * 0.02; return mult * artistry; }
 
@@ -921,16 +959,34 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!this.state.combat.inCombat) return; if (!victory) { this.uiManager.showModal('Defeated', '<p>You were defeated. Rest to recover HP.</p>'); }
             this.state.combat.inCombat = false; this.state.combat.enemy = null; this.uiManager.renderView();
         }
-        handleEnemyDefeat(enemy) {
-            // Gold
-            const g = Math.floor(Math.random() * (enemy.gold[1] - enemy.gold[0] + 1)) + enemy.gold[0]; this.addGold(g);
-            // Drops
-            (enemy.drops || []).forEach(drop => { if (Math.random() * 100 < drop.chance) { const q = Math.floor(Math.random() * (drop.qty[1] - drop.qty[0] + 1)) + drop.qty[0]; this.addToBank(drop.id, q); } });
-            // XP to Strength
-            this.state.player.meta_skills[META_SKILLS.STRENGTH].addXP(15 + enemy.level * 2, this);
-            this.uiManager.showFloatingText(`${enemy.name} defeated!`, 'text-green-400');
-            this.endCombat(true);
-        }
+                 handleEnemyDefeat(enemy) {
+             // Roll rewards
+             const g = Math.floor(Math.random() * (enemy.gold[1] - enemy.gold[0] + 1)) + enemy.gold[0];
+             const itemsMap = {};
+             (enemy.drops || []).forEach(drop => {
+                 const chance = drop.chance || 0;
+                 if (Math.random() * 100 < chance) {
+                     const [qmin, qmax] = Array.isArray(drop.qty) ? drop.qty : [drop.qty || 1, drop.qty || 1];
+                     const q = Math.floor(Math.random() * (qmax - qmin + 1)) + qmin;
+                     itemsMap[drop.id] = (itemsMap[drop.id] || 0) + q;
+                 }
+             });
+             // Global loot rolls (epic system)
+             const rolls = (GAME_DATA.LOOT?.perKillRolls) || 0;
+             for (let i = 0; i < rolls; i++) {
+                 const extra = this.rollGlobalLoot();
+                 if (extra.gold) this.enqueueWarSpoils(extra.gold, {});
+                 if (extra.runes) this.state.combat.auto.buffers.runes = (this.state.combat.auto.buffers.runes||0) + extra.runes;
+                 Object.entries(extra.items || {}).forEach(([id, q]) => { itemsMap[id] = (itemsMap[id] || 0) + q; });
+             }
+             // Route through War Spoils to unify behavior with auto-combat
+             this.enqueueWarSpoils(g, itemsMap);
+             this.autoClaimWarSpoils();
+             // XP to Strength
+             this.state.player.meta_skills[META_SKILLS.STRENGTH].addXP(15 + enemy.level * 2, this);
+             this.uiManager.showFloatingText(`${enemy.name} defeated!`, 'text-green-400');
+             this.endCombat(true);
+         }
         calculatePlayerDamage(enemy) {
             let base = 5; if (this.state.player.weapon && GAME_DATA.ITEMS[this.state.player.weapon]?.damage) base += GAME_DATA.ITEMS[this.state.player.weapon].damage;
             const strBonus = 1 + (this.state.player.meta_skills[META_SKILLS.STRENGTH].level - 1) * 0.03; const dmg = Math.max(1, Math.floor((base * strBonus) - enemy.defense * 0.5));
@@ -1026,7 +1082,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Use cooked foods first; each food heals value ~ treat 1 HP heal as 1 food unit
             const foodIds = Object.keys(this.state.bank).filter(id => GAME_DATA.ITEMS[id]?.heals).sort((a,b) => (GAME_DATA.ITEMS[a].heals||0)-(GAME_DATA.ITEMS[b].heals||0));
             const out = this.calculateArmyOutputPerSecond();
-            const requiredFoodUnits = (out.foodPerMin / 60) * deltaSec; // food units per sec
+            // Slightly increased upkeep to make raid loops more expensive
+            const requiredFoodUnits = (out.foodPerMin / 60) * deltaSec * 1.15; // 15% more upkeep
             this.state.army.upkeep.foodBuffer += requiredFoodUnits;
             let needed = Math.floor(this.state.army.upkeep.foodBuffer);
             if (needed > 0) {
@@ -1073,7 +1130,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const upkeepState = auto.raid.upkeep;
             const foodIds = Object.keys(this.state.bank).filter(id => GAME_DATA.ITEMS[id]?.heals).sort((a,b) => (GAME_DATA.ITEMS[a].heals||0)-(GAME_DATA.ITEMS[b].heals||0));
             const out = this.calculateCompositionOutput(composition);
-            const requiredFoodUnits = (out.foodPerMin / 60) * deltaSec;
+            // Slightly increased upkeep to make raid loops more expensive
+            const requiredFoodUnits = (out.foodPerMin / 60) * deltaSec * 1.15;
             upkeepState.foodBuffer += requiredFoodUnits;
             let needed = Math.floor(upkeepState.foodBuffer);
             if (needed > 0) {
@@ -1216,31 +1274,85 @@ document.addEventListener('DOMContentLoaded', () => {
             if (wholeKills > 0) {
                 auto.killsFrac -= wholeKills;
                 // Roll rewards per kill
-                for (let i = 0; i < wholeKills; i++) {
-                    // Gold roll within enemy range, add raw to buffer
-                    const minG = Array.isArray(target.gold) ? (target.gold[0] || 0) : 0;
-                    const maxG = Array.isArray(target.gold) ? (target.gold[1] || 0) : 0;
-                    const g = Math.floor(Math.random() * (maxG - minG + 1)) + minG;
-                    auto.buffers.gold = (auto.buffers.gold || 0) + g;
-                    // Drops
-                    (target.drops || []).forEach(drop => {
-                        const chance = drop.chance || 0; // percent
-                        if (Math.random() * 100 < chance) {
-                            const [qmin, qmax] = Array.isArray(drop.qty) ? drop.qty : [drop.qty || 1, drop.qty || 1];
-                            const qty = Math.floor(Math.random() * (qmax - qmin + 1)) + qmin;
-                            if (!auto.buffers.items) auto.buffers.items = {};
-                            auto.buffers.items[drop.id] = (auto.buffers.items[drop.id] || 0) + qty;
-                        }
-                    });
-                }
+                                 for (let i = 0; i < wholeKills; i++) {
+                     // Gold roll within enemy range, add raw to buffer
+                     const minG = Array.isArray(target.gold) ? (target.gold[0] || 0) : 0;
+                     const maxG = Array.isArray(target.gold) ? (target.gold[1] || 0) : 0;
+                     const g = Math.floor(Math.random() * (maxG - minG + 1)) + minG;
+                     auto.buffers.gold = (auto.buffers.gold || 0) + g;
+                     // Drops
+                     (target.drops || []).forEach(drop => {
+                         const chance = drop.chance || 0; // percent
+                         if (Math.random() * 100 < chance) {
+                             const [qmin, qmax] = Array.isArray(drop.qty) ? drop.qty : [drop.qty || 1, drop.qty || 1];
+                             const qty = Math.floor(Math.random() * (qmax - qmin + 1)) + qmin;
+                             if (!auto.buffers.items) auto.buffers.items = {};
+                             auto.buffers.items[drop.id] = (auto.buffers.items[drop.id] || 0) + qty;
+                         }
+                     });
+                     // Global loot rolls (epic system)
+                     const extraRolls = (GAME_DATA.LOOT?.perKillRolls) || 0;
+                     for (let r = 0; r < extraRolls; r++) {
+                         const ex = this.rollGlobalLoot();
+                         if (ex.gold) auto.buffers.gold = (auto.buffers.gold||0) + ex.gold;
+                         if (ex.runes) auto.buffers.runes = (auto.buffers.runes||0) + ex.runes;
+                         Object.entries(ex.items || {}).forEach(([id, q]) => {
+                             if (!auto.buffers.items) auto.buffers.items = {};
+                             auto.buffers.items[id] = (auto.buffers.items[id] || 0) + q;
+                         });
+                     }
+                 }
             }
 
             // Auto-claim spoils if enabled
+            this.autoClaimWarSpoils();
+        }
+
+                 claimWarSpoils() {
+             const auto = this.state.combat?.auto; if (!auto) return;
+             const goldAmt = Math.floor(auto.buffers?.gold || 0);
+             const runeAmt = Math.floor(auto.buffers?.runes || 0);
+             const items = auto.buffers?.items || {};
+             if (goldAmt > 0) this.addGold(goldAmt);
+             if (runeAmt > 0) { this.state.player.runes += runeAmt; this.uiManager.notifyResource('runes', runeAmt); }
+             Object.entries(items).forEach(([id, qty]) => { if (qty > 0) this.addToBank(id, qty); });
+             // Reset buffers
+             auto.buffers = { gold: 0, runes: 0, items: {} };
+             this.uiManager.showFloatingText('War spoils claimed!', 'text-yellow-300');
+             this.uiManager.playSound('upgrade');
+             this.uiManager.renderView();
+         }
+        clearWarSpoils() { const auto = this.state.combat?.auto; if (!auto) return; auto.buffers = { gold: 0, runes: 0, items: {} }; this.uiManager.renderView(); }
+
+        // War spoils helpers (unify manual and auto combat rewards)
+        enqueueWarSpoils(goldAmount = 0, itemsMap = {}) {
+            if (!this.state.combat || !this.state.combat.auto) {
+                // Backfill minimal structure if missing
+                this.state.combat = this.state.combat || {};
+                this.state.combat.auto = this.state.combat.auto || { buffers: { gold: 0, runes: 0, items: {} }, autoClaim: true, lastTick: Date.now(), killsFrac: 0 };
+            }
+            const buffers = this.state.combat.auto.buffers || (this.state.combat.auto.buffers = { gold: 0, runes: 0, items: {} });
+            if (goldAmount && goldAmount > 0) buffers.gold = (buffers.gold || 0) + Math.floor(goldAmount);
+            const items = buffers.items || (buffers.items = {});
+            Object.entries(itemsMap || {}).forEach(([id, qty]) => {
+                if (!qty || qty <= 0) return;
+                items[id] = (items[id] || 0) + Math.floor(qty);
+            });
+        }
+
+        autoClaimWarSpoils() {
+            const auto = this.state.combat?.auto; if (!auto) return;
             if (auto.autoClaim) {
-                const goldWhole = Math.floor(auto.buffers.gold || 0);
+                const goldWhole = Math.floor(auto.buffers?.gold || 0);
                 if (goldWhole > 0) {
                     this.addGold(goldWhole);
                     auto.buffers.gold -= goldWhole;
+                }
+                const runeWhole = Math.floor(auto.buffers?.runes || 0);
+                if (runeWhole > 0) {
+                    this.state.player.runes += runeWhole;
+                    this.uiManager.notifyResource('runes', runeWhole);
+                    auto.buffers.runes -= runeWhole;
                 }
                 const itemsBuf = auto.buffers.items || {};
                 Object.keys(itemsBuf).forEach(id => {
@@ -1252,21 +1364,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             }
+            // Refresh combat footer if visible
+            this.uiManager.renderCombatFooter();
         }
-
-        claimWarSpoils() {
-            const auto = this.state.combat?.auto; if (!auto) return;
-            const goldAmt = Math.floor(auto.buffers?.gold || 0);
-            const items = auto.buffers?.items || {};
-            if (goldAmt > 0) this.addGold(goldAmt);
-            Object.entries(items).forEach(([id, qty]) => { if (qty > 0) this.addToBank(id, qty); });
-            // Reset buffers
-            auto.buffers = { gold: 0, runes: 0, items: {} };
-            this.uiManager.showFloatingText('War spoils claimed!', 'text-yellow-300');
-            this.uiManager.playSound('upgrade');
-            this.uiManager.renderView();
-        }
-        clearWarSpoils() { const auto = this.state.combat?.auto; if (!auto) return; auto.buffers = { gold: 0, runes: 0, items: {} }; this.uiManager.renderView(); }
     }
 
     class UIManager {
@@ -1987,6 +2087,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="block p-3 rounded-md">
                             <h3 class="text-md font-bold mb-2">War Spoils</h3>
                             <div class="text-sm mb-1">Gold: <span id="war-spoils-gold" class="font-mono text-yellow-300">${Math.floor(auto.buffers?.gold||0).toLocaleString()}</span></div>
+                            <div class="text-sm mb-1">Runes: <span id="war-spoils-runes" class="font-mono text-purple-300">${Math.floor(auto.buffers?.runes||0).toLocaleString()}</span></div>
                             <div id="war-spoils-items" class="flex flex-wrap gap-2 mb-2">${itemsHtml}</div>
                             <div class="flex items-center gap-2">
                                 <button id="claim-war-spoils" class="chimera-button juicy-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Claim All</button>
@@ -2008,13 +2109,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             // Update items list
             const itemsContainer = document.getElementById('war-spoils-items');
-            if (itemsContainer) {
-                const entries = Object.entries(auto.buffers?.items || {});
-                const html = entries.length
-                    ? entries.map(([id, q]) => `<span class="badge">${GAME_DATA.ITEMS[id]?.icon||'❔'} ${GAME_DATA.ITEMS[id]?.name||id} x${q}</span>`).join(' ')
-                    : '<span class="text-secondary text-xs">No items yet.</span>';
-                itemsContainer.innerHTML = html;
-            }
+                         if (itemsContainer) {
+                 const entries = Object.entries(auto.buffers?.items || {});
+                 const html = entries.length
+                     ? entries.map(([id, q]) => `<span class="badge">${GAME_DATA.ITEMS[id]?.icon||'❔'} ${GAME_DATA.ITEMS[id]?.name||id} x${q}</span>`).join(' ')
+                     : '<span class="text-secondary text-xs">No items yet.</span>';
+                 itemsContainer.innerHTML = html;
+             }
+             // Update runes
+             const runesEl = document.getElementById('war-spoils-runes');
+             if (runesEl) runesEl.textContent = Math.floor(auto.buffers?.runes || 0).toLocaleString();
             // Update auto-battle ring and metrics
             const ring = document.getElementById('auto-kill-ring');
             const progText = document.getElementById('auto-kill-progress');
@@ -2920,12 +3024,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="flex flex-col gap-4">
                         <div class="block p-4 rounded-md space-y-3 spoils-panel">
                             <h2 class="text-lg font-bold">War Spoils</h2>
-                            <div class="text-sm mb-1">Gold: <span id="war-spoils-gold" class="font-mono spoils-gold">${Math.floor(auto.buffers?.gold||0).toLocaleString()}</span></div>
-                            <div id="war-spoils-items" class="flex flex-wrap gap-2">${itemsHtml}</div>
-                            <div class="flex items-center gap-2">
-                                <button id="claim-war-spoils" class="chimera-button juicy-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Claim All</button>
-                                <button id="clear-war-spoils" class="chimera-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Clear</button>
-                            </div>
+                                                         <div class="text-sm mb-1">Gold: <span id="war-spoils-gold" class="font-mono spoils-gold">${Math.floor(auto.buffers?.gold||0).toLocaleString()}</span></div>
+                             <div class="text-sm mb-1">Runes: <span id="war-spoils-runes" class="font-mono text-purple-300">${Math.floor(auto.buffers?.runes||0).toLocaleString()}</span></div>
+                             <div id="war-spoils-items" class="flex flex-wrap gap-2">${itemsHtml}</div>
+                             <div class="flex items-center gap-2">
+                                 <button id="claim-war-spoils" class="chimera-button juicy-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Claim All</button>
+                                 <button id="clear-war-spoils" class="chimera-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Clear</button>
+                             </div>
                         </div>
                         <div class="block p-4 rounded-md">
                             <h2 class="text-lg font-bold mb-2">Raid Composition</h2>
