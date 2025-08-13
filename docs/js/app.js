@@ -265,13 +265,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ],
         COMBAT: {
             ENEMIES: [
-<<<<<<< HEAD
-                { id: 'goblin', name: 'Goblin', level: 2, hp: 30, maxHp: 30, attack: 4, defense: 1, gold: [5, 10], drops: [ {id:'copper_ore', qty:[1,2], chance:50}, {id:'tin_ore', qty:[1,2], chance:50}, {id:'logs', qty:[1,2], chance:35}, {id:'rune_essence', qty:[1,2], chance:20} ], attackSpeedMs: 2000 },
-                { id: 'wolf', name: 'Wolf', level: 5, hp: 60, maxHp: 60, attack: 7, defense: 2, gold: [12, 25], drops: [ {id:'raw_shrimp', qty:[1,1], chance:30}, {id:'oak_logs', qty:[1,2], chance:30}, {id:'willow_logs', qty:[1,1], chance:15}, {id:'iron_ore', qty:[1,1], chance:10} ], attackSpeedMs: 1800 },
-                { id: 'zombie', name: 'Zombie', level: 8, hp: 100, maxHp: 100, attack: 10, defense: 3, gold: [20, 45], drops: [ {id:'rotten_flesh', qty:[1,3], chance:65}, {id:'zombie_brain', qty:[1,1], chance:15}, {id:'zombie_tooth', qty:[1,2], chance:18}, {id:'tattered_cloth', qty:[1,2], chance:28} ], sharedDropTable: 'undead_common', attackSpeedMs: 1850 },
-                { id: 'skeleton', name: 'Skeleton', level: 10, hp: 120, maxHp: 120, attack: 12, defense: 4, gold: [30, 60], drops: [ {id:'bone_shard', qty:[1,3], chance:60}, {id:'skeletal_hand', qty:[1,1], chance:12}, {id:'tattered_cloth', qty:[1,2], chance:30}, {id:'grave_dust', qty:[1,2], chance:22}, {id:'rune_essence', qty:[2,4], chance:20} ], sharedDropTable: 'undead_common', attackSpeedMs: 1700 },
-                { id: 'troll', name: 'Troll', level: 20, hp: 300, maxHp: 300, attack: 20, defense: 8, gold: [80, 150], drops: [ {id:'item_ancient_key', qty:[1,1], chance:10}, {id:'mithril_ore', qty:[1,2], chance:30}, {id:'adamant_ore', qty:[1,1], chance:20}, {id:'gold_ore', qty:[1,2], chance:25}, {id:'rune_ore', qty:[1,1], chance:8}, {id:'coal', qty:[2,4], chance:40} ], attackSpeedMs: 1600 },
-=======
                 // Arena foes (Combat tab)
                 { id: 'goblin', name: 'Goblin', level: 2, hp: 30, maxHp: 30, attack: 4, defense: 1, gold: [5, 10], drops: [ {id:'copper_ore', qty:[1,2], chance:50}, {id:'tin_ore', qty:[1,2], chance:50}, {id:'logs', qty:[1,2], chance:35}, {id:'rune_essence', qty:[1,2], chance:20}, {id:'arena_medal', qty:[1,1], chance:5} ], attackSpeedMs: 2000, arena:true },
                 { id: 'wolf', name: 'Wolf', level: 5, hp: 60, maxHp: 60, attack: 7, defense: 2, gold: [12, 25], drops: [ {id:'raw_shrimp', qty:[1,1], chance:30}, {id:'oak_logs', qty:[1,2], chance:30}, {id:'willow_logs', qty:[1,1], chance:15}, {id:'iron_ore', qty:[1,1], chance:10}, {id:'gladiator_emblem', qty:[1,1], chance:3} ], attackSpeedMs: 1800, arena:true },
@@ -284,8 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 { id: 'phoenix', name: 'Ashen Phoenix', level: 34, hp: 800, maxHp: 800, attack: 34, defense: 12, gold: [180, 320], drops: [ {id:'phoenix_feather', qty:[1,2], chance:12}, {id:'gold_bar', qty:[1,2], chance:35} ], attackSpeedMs: 1450, raid:true },
                 { id: 'titan', name: 'Frost Titan', level: 46, hp: 1600, maxHp: 1600, attack: 48, defense: 18, gold: [320, 620], drops: [ {id:'titan_core', qty:[1,1], chance:10}, {id:'mithril_bar', qty:[1,2], chance:28}, {id:'adamant_bar', qty:[1,1], chance:20} ], attackSpeedMs: 1400, raid:true },
                 { id: 'astral_drake', name: 'Astral Drake', level: 58, hp: 2600, maxHp: 2600, attack: 62, defense: 22, gold: [520, 980], drops: [ {id:'celestial_ore', qty:[1,2], chance:18}, {id:'mythic_relic', qty:[1,1], chance:6} ], attackSpeedMs: 1350, raid:true },
-                { id: 'void_emperor', name: 'The Void Emperor', level: 72, hp: 4200, maxHp: 4200, attack: 82, defense: 28, gold: [900, 1600], drops: [ {id:'ascendant_sigil', qty:[1,1], chance:5}, {id:'raid_insignia', qty:[1,2], chance:22}, {id:'rune_ore', qty:[1,1], chance:14} ], attackSpeedMs: 1300, raid:true },
->>>>>>> origin/main
+                { id: 'void_emperor', name: 'The Void Emperor', level: 72, hp: 4200, maxHp: 4200, attack: 82, defense: 28, gold: [900, 1600], drops: [ {id:'ascendant_sigil', qty:[1,1], chance:5}, {id:'raid_insignia', qty:[1,2], chance:22}, {id:'rune_ore', qty:[1,1], chance:14} ], attackSpeedMs: 1300, raid:true }
             ]
         },
         ARMY_CLASSES: {
@@ -353,7 +345,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     { rarity: 'epic',     entries: [ {type:'item', id:'item_scroll_fortune', min:1, max:1, weight:1} ] }
                 ],
                 perKillRolls: 1, // number of extra global loot rolls per kill
-<<<<<<< HEAD
                 // Shared themed tables
                 sharedTables: {
                     undead_common: [
@@ -369,8 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         { id: 'ectoplasm', qty: [1,1], weight: 1, chance: 8 },
                         { id: 'cursed_coin', qty: [1,2], weight: 1, chance: 5 }
                     ]
-                }
-=======
+                },
                 // Unique loot pools per mode
                 arenaTables: [
                     { rarity: 'uncommon', entries: [ {type:'item', id:'arena_medal', min:1, max:1, weight:3}, {type:'item', id:'gladiator_emblem', min:1, max:1, weight:1} ] },
@@ -381,7 +371,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     { rarity: 'rare',     entries: [ {type:'item', id:'phoenix_feather', min:1, max:1, weight:1}, {type:'item', id:'titan_core', min:1, max:1, weight:1} ] },
                     { rarity: 'epic',     entries: [ {type:'item', id:'mythic_relic', min:1, max:1, weight:1}, {type:'item', id:'ascendant_sigil', min:1, max:1, weight:1} ] }
                 ]
->>>>>>> origin/main
             }
         }
     };
@@ -588,6 +577,46 @@ document.addEventListener('DOMContentLoaded', () => {
              else if (pick.type === 'item' && pick.id) out.items[pick.id] = (out.items[pick.id]||0) + qty;
              return out;
          }
+        rollContextLoot(mode) {
+            const ld = GAME_DATA.LOOT || {};
+            const key = mode === 'raid' ? 'raidTables' : 'arenaTables';
+            const tables = ld[key] || [];
+            if (!tables.length) return { gold: 0, runes: 0, items: {} };
+            const rarity = this.rollWeighted({
+                common: 0, // no-op
+                uncommon: 20,
+                rare: 4,
+                epic: 1
+            });
+            const table = tables.find(t => t.rarity === rarity);
+            if (!table) return { gold: 0, runes: 0, items: {} };
+            const totalWeight = (table.entries||[]).reduce((a,e)=>a+(e.weight||1),0) || 1;
+            let r = Math.random() * totalWeight; let pick = null;
+            for (const e of (table.entries||[])) { r -= (e.weight||1); if (r <= 0) { pick = e; break; } }
+            if (!pick) return { gold: 0, runes: 0, items: {} };
+            const out = { gold: 0, runes: 0, items: {} };
+            const qty = this.rollInt(pick.min||1, pick.max||1);
+            if (pick.type === 'gold') out.gold += qty;
+            else if (pick.type === 'runes') out.runes += qty;
+            else if (pick.type === 'item' && pick.id) out.items[pick.id] = (out.items[pick.id]||0) + qty;
+            return out;
+        }
+        rollSharedTable(key) {
+            const tables = GAME_DATA.LOOT?.sharedTables || {};
+            const entries = tables[key] || [];
+            if (!entries.length) return null;
+            const totalWeight = entries.reduce((a,e)=>a+(e.weight||1),0) || 1;
+            let r = Math.random() * totalWeight;
+            let pick = null;
+            for (const e of entries) { r -= (e.weight||1); if (r <= 0) { pick = e; break; } }
+            if (!pick) return null;
+            // Chance gate if present
+            const chance = pick.chance || 100;
+            if (Math.random() * 100 > chance) return null;
+            const [qmin, qmax] = Array.isArray(pick.qty) ? pick.qty : [pick.qty || 1, pick.qty || 1];
+            const qty = this.rollInt(qmin, qmax);
+            return { id: pick.id, qty };
+        }
         goldMultiplier() { let mult = 1; if (this.hasBuff('doubleGold')) mult *= 2; const gh = GAME_DATA.SPELLS.find(s => s.effect === 'goldBoost'); if (this.hasBuff('goldBoost')) mult *= (1 + (gh?.magnitude || 0)); const artistry = 1 + (this.state.player.meta_skills[META_SKILLS.ARTISTRY].level - 1) * 0.02; return mult * artistry; }
 
         // Golden item helpers
@@ -1499,8 +1528,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return total;
         }
-<<<<<<< HEAD
-=======
         // Determine current auto-battle mode from UI view
         getAutoBattleMode() {
             const v = this.uiManager?.currentView;
@@ -1509,7 +1536,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Default to raid if composition is set, else arena
             return (this.state.combat?.auto?.raid && Object.keys(this.state.combat.auto.raid.composition||{}).length>0) ? 'raid' : 'arena';
         }
->>>>>>> origin/main
         // Passive auto-combat processor (army raids)
         processAutoCombat() {
             const auto = this.state.combat?.auto; if (!auto || !auto.enabled) return;
@@ -2231,8 +2257,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
             }).join('');
-<<<<<<< HEAD
-=======
             return `
                 <div class="block p-4 mb-4 border border-hunter medieval-glow">
                     <div class="flex items-center justify-between mb-3">
@@ -2367,7 +2391,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const itemsHtml = itemsEntries.length ? itemsEntries.map(([id,q]) => `<span class="badge">${GAME_DATA.ITEMS[id]?.icon||'❔'} ${GAME_DATA.ITEMS[id]?.name||id} x${q}</span>`).join(' ') : '<span class="text-secondary text-xs">No items yet.</span>';
             const spoilsEmpty = (Math.floor(auto.buffers?.gold||0) <= 0) && itemsEntries.length === 0;
             const killProgress = Math.max(0, Math.min(1, (auto.killsFrac || 0) % 1));
->>>>>>> origin/main
             return `
                 <div class="block combat-hero p-5 rounded-md mb-4">
                     <div class="flex items-center justify-between">
@@ -2376,12 +2399,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class="text-secondary text-sm">Face fearsome foes. Rally your army and unleash powerful spells.</p>
                         </div>
                         <div class="flex items-center gap-2">
-<<<<<<< HEAD
-                            <span class="badge"><i class="fas fa-users"></i> Allies: DPS ${Math.max(0, allies.dps || 0).toFixed(1)} • HPS ${Math.max(0, allies.hps || 0).toFixed(1)}${this.state.army.upkeep?.hungry ? ' <span class="text-red-400 ml-1">Hungry</span>' : ''}</span>
-                            ${rallyCta}
-=======
                             <span class="badge"><i class="fas fa-users"></i> Allies: DPS ${Math.max(0, allies.dps || 0).toFixed(1)} • HPS ${Math.max(0, allies.hps || 0).toFixed(1)}${this.game.state.army.upkeep?.hungry ? ' <span class="text-red-400 ml-1">Hungry</span>' : ''}</span>
->>>>>>> origin/main
+                            ${rallyCta}
                         </div>
                     </div>
                 </div>
@@ -2589,9 +2608,6 @@ document.addEventListener('DOMContentLoaded', () => {
             `).join('');
             return `<h1 class="text-2xl font-semibold text-white mb-4">Shop</h1><div class="grid grid-cols-1 md:grid-cols-3 gap-4">${chestCards}</div>`;
         }
-<<<<<<< HEAD
-=======
-
         renderWorkforceView() {
             this.game.ensureWorkerState();
             const gatheringSkillIds = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'gathering');
@@ -2781,7 +2797,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => { c.style.opacity = '0'; }, 620); setTimeout(() => c.remove(), 900);
             }
         }
-
         initNotify() { if (!this._notify) this._notify = { map: {}, timers: {} }; this._notify.stack = document.getElementById('top-notification-stack'); }
         createOrUpdateNotification(key, options) {
             this.initNotify(); const stack = this._notify.stack; if (!stack) return; const ttlMs = 2600; const existing = this._notify.map[key];
@@ -2922,12 +2937,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.game.craftItem(s, a, 1);
                 }
             }); });
-<<<<<<< HEAD
- 
-             // Combat
-=======
             // Combat
->>>>>>> origin/main
             document.querySelectorAll('.start-combat-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.startCombat(btn.dataset.enemyId); this.currentView = 'combat'; this.render(); }); });
             const endBtn = document.getElementById('end-combat-btn'); if (endBtn) endBtn.addEventListener('click', () => this.game.endCombat(false));
             document.querySelectorAll('.eat-food-btn').forEach(btn => { btn.addEventListener('click', () => this.game.eatFood(btn.dataset.itemId)); });
@@ -2986,7 +2996,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const autoToggle = document.getElementById('auto-hire-toggle'); if (autoToggle) autoToggle.addEventListener('change', (e) => { this.game.state.empire.auto.enabled = !!e.target.checked; });
             const autoMode = document.getElementById('auto-hire-mode'); if (autoMode) autoMode.addEventListener('change', (e) => { const val = e.target.value; this.game.state.empire.auto.mode = (val==='roi'||val==='miner_only')?val:'cheapest'; });
             const autoReserve = document.getElementById('auto-hire-reserve'); if (autoReserve) autoReserve.addEventListener('change', (e) => { const v = parseInt(e.target.value||'0',10); this.game.state.empire.auto.reserveGold = Math.max(0, isNaN(v)?0:v); });
-
             // Spells
             document.querySelectorAll('.cast-spell-btn').forEach(btn => { btn.addEventListener('click', () => this.game.castSpell(btn.dataset.spellId)); });
             // Shop
@@ -3063,7 +3072,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const ar = document.getElementById('army-rally'); if (ar) ar.addEventListener('click', (e) => { const r = this.game.state.player.activeBuffs?.['armyRally']; if (!r || Date.now() >= r) { const rect = e.currentTarget.getBoundingClientRect(); this.juiceBurst('upgrade', rect.left + rect.width/2, rect.top + rect.height/2); } this.game.rallyArmy(); });
             document.querySelectorAll('.army-upgrade-btn').forEach(btn => { btn.addEventListener('click', () => this.game.upgradeArmy(btn.dataset.type)); });
             document.querySelectorAll('input[name="army-stance"]').forEach(r => { r.addEventListener('change', () => this.game.setArmyStance(r.value)); });
->>>>>>> origin/main
             // Merchant
             document.querySelectorAll('.merchant-tab').forEach(btn => { btn.addEventListener('click', () => { this.game.state.merchant.selectedStallId = btn.dataset.stallId; this.renderView(); }); });
             document.querySelectorAll('.merchant-buy-btn').forEach(btn => { btn.addEventListener('click', (e) => {
@@ -3072,8 +3080,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }); });
             document.querySelectorAll('.merchant-sell-btn').forEach(btn => { btn.addEventListener('click', () => this.game.sellItem(btn.dataset.itemId, 1)); });
         }
-<<<<<<< HEAD
-=======
 
         showModal(title, content) {
             this.initNotify();
@@ -3095,50 +3101,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 return '';
             };
             const typeClass = detectType(text, className);
-
             const floatText = document.createElement('div');
             floatText.className = `floating-text ${typeClass} ${className || ''}`.trim();
             floatText.textContent = text;
-
             const gameRect = this.floatingTextContainer.getBoundingClientRect();
-            const baseX = gameRect.width / 2;
-            const baseY = gameRect.height / 3;
-
+            const baseX = gameRect.width / 2; const baseY = gameRect.height / 3;
             const lane = this._fly.nextLane; this._fly.nextLane = (this._fly.nextLane + 1) % this._fly.maxLanes;
-            const jitterX = (Math.random() - 0.5) * 80; // -40..+40
-            const y = baseY - lane * this._fly.laneHeight;
-
-            floatText.style.left = `${baseX + jitterX}px`;
-            floatText.style.top = `${y}px`;
-
+            const jitterX = (Math.random() - 0.5) * 80; const y = baseY - lane * this._fly.laneHeight;
+            floatText.style.left = `${baseX + jitterX}px`; floatText.style.top = `${y}px`;
             this.floatingTextContainer.appendChild(floatText);
             const duration = typeClass === 'fly-crit' || typeClass === 'fly-level' ? 1900 : (typeClass === 'fly-loot' ? 1800 : 1600);
             setTimeout(() => floatText.remove(), duration);
         }
 
-        // Dopamine helpers
-        pulseAt(el) {
-            if (!el) return; el.classList.remove('pulse-pop'); void el.offsetWidth; el.classList.add('pulse-pop');
-            setTimeout(() => el && el.classList && el.classList.remove('pulse-pop'), 260);
-        }
-        _ensureAudio() {
-            if (!this._audioCtx) {
-                const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; this._audioCtx = new AC();
-            }
-            return this._audioCtx;
-        }
+        pulseAt(el) { if (!el) return; el.classList.remove('pulse-pop'); void el.offsetWidth; el.classList.add('pulse-pop'); setTimeout(() => el && el.classList && el.classList.remove('pulse-pop'), 260); }
+        _ensureAudio() { if (!this._audioCtx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; this._audioCtx = new AC(); } return this._audioCtx; }
         playSound(type) {
-            const ctx = this._ensureAudio(); if (!ctx) return;
-            const now = ctx.currentTime; const osc = ctx.createOscillator(); const gain = ctx.createGain();
+            const ctx = this._ensureAudio(); if (!ctx) return; const now = ctx.currentTime; const osc = ctx.createOscillator(); const gain = ctx.createGain();
             osc.type = 'triangle';
             if (type === 'hire') { osc.frequency.setValueAtTime(740, now); osc.frequency.exponentialRampToValueAtTime(1180, now + 0.18); }
             else if (type === 'upgrade') { osc.frequency.setValueAtTime(520, now); osc.frequency.exponentialRampToValueAtTime(1040, now + 0.22); }
             else { osc.frequency.setValueAtTime(660, now); osc.frequency.exponentialRampToValueAtTime(770, now + 0.08); }
-            gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.start(now); osc.stop(now + 0.26);
+            gain.gain.setValueAtTime(0.0001, now); gain.gain.exponentialRampToValueAtTime(0.12, now + 0.02); gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+            osc.connect(gain); gain.connect(ctx.destination); osc.start(now); osc.stop(now + 0.26);
         }
         juiceBurst(kind, clientX, clientY) {
             const containerRect = this.floatingTextContainer.getBoundingClientRect();
@@ -3149,8 +3134,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const p = document.createElement('div'); p.className = 'confetti-piece'; p.style.left = `${x}px`; p.style.top = `${y}px`;
                 p.style.backgroundColor = colors[Math.floor(Math.random()*colors.length)];
                 const dx = (Math.random() - 0.5) * 180; const dy = - (Math.random() * 160 + 80); const rot = (Math.random() - 0.5) * 260;
-                p.style.opacity = '1'; p.style.transform = `translate3d(-50%, -50%, 0) rotate(${rot}deg)`;
-                this.floatingTextContainer.appendChild(p);
+                p.style.opacity = '1'; p.style.transform = `translate3d(-50%, -50%, 0) rotate(${rot}deg)`; this.floatingTextContainer.appendChild(p);
                 requestAnimationFrame(() => { p.style.transition = 'transform 900ms cubic-bezier(.15,.55,.2,1), opacity 900ms ease'; p.style.transform = `translate3d(${dx}px, ${dy}px, 0) rotate(${rot+180}deg)`; p.style.opacity = '0'; });
                 setTimeout(() => p.remove(), 950);
             }
@@ -3429,7 +3413,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const recruits = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${unitCards}</div>`;
             return `<h1 class="text-2xl font-semibold text-white mb-4">Army</h1>${hero}${upgrades}${recruits}`;
         }
->>>>>>> origin/main
         renderRaidsView() {
             const auto = this.game.state.combat.auto || { enabled: false, targetId: ((GAME_DATA.COMBAT.ENEMIES||[]).find(e=>e.raid)?.id)||null, buffers: { gold:0, items:{} } };
             const buffs = this.game.state.player.activeBuffs || {};
