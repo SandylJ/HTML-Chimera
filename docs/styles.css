@@ -282,3 +282,5 @@ body {
 .spoils-item { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border:1px solid rgba(255,255,255,0.08); border-radius:9999px; background: rgba(2,6,23,0.5); }
 /* Auto-battle hint */
 .auto-hint { font-size: 11px; color: var(--text-secondary); }
+/* Raids hero add-ons */
+.raids-hero { background: radial-gradient(120% 120% at 0% 0%, rgba(255,0,128,0.12), rgba(88,166,255,0.08)), linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0)); border: 1px solid var(--border-color); box-shadow: 0 12px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.04); }

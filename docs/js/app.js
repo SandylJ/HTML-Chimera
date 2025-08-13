@@ -1210,7 +1210,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.renderSidebar(); this.attachSidebarEventListeners(); this.render();
         }
         render() {
-            this.renderView(); this.updateSidebarActive(); this.updateHeaderBars(); this.attachViewEventListeners(); this.updateMasteryBar(); if (this.currentView === 'combat') this.renderCombatFooter();
+            this.renderView(); this.updateSidebarActive(); this.updateHeaderBars(); this.attachViewEventListeners(); this.updateMasteryBar(); if (this.currentView === 'combat' || this.currentView === 'raids') this.renderCombatFooter();
         }
         renderSidebar() {
             const createLink = (skillId, skill) => `<a href="#" class="sidebar-link flex items-center p-3" data-view="${skillId}"><i class="fas ${skill.icon} w-6 text-center"></i><div class="flex-grow"><span>${skill.name}</span><div class="w-full xp-bar-bg rounded-full h-1.5 mt-1"><div id="sidebar-xp-${skillId}" class="xp-bar-fill h-1.5 rounded-full"></div></div></div></a>`;
@@ -1245,8 +1245,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const stamina = this.game.state.player.stamina; const staminaMax = this.game.state.player.staminaMax;
             const staminaValueEl = document.getElementById('stamina-value'); const staminaFillEl = document.getElementById('stamina-bar-fill'); if (staminaValueEl && staminaFillEl) { staminaValueEl.textContent = `${Math.floor(stamina)}/${staminaMax}`; staminaFillEl.style.width = `${(stamina / staminaMax) * 100}%`; }
             const armyLpEl2 = document.getElementById('army-lp-display'); if (armyLpEl2 && this.game.calculateArmyLifePoints) { const lp = this.game.calculateArmyLifePoints(); armyLpEl2.textContent = `${lp.toLocaleString()} LP`; }
-            // If in combat, show Ally badge refresh
-            if (this.currentView === 'combat') this.renderCombatFooter();
+            // If in combat or raids, show Ally badge refresh
+            if (this.currentView === 'combat' || this.currentView === 'raids') this.renderCombatFooter();
             Object.keys(this.game.state.player.skills).forEach(id => { const skill = this.game.state.player.skills[id]; const xpBar = document.getElementById(`sidebar-xp-${id}`); if (xpBar) xpBar.style.width = `${(skill.currentXP / skill.xpToNextLevel) * 100}%`; });
             this.updateMasteryBar();
             // If in combat, update view footer elements
@@ -1300,6 +1300,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'bank': html = this.renderBankView(); break;
                     case 'meta_skills': html = this.renderMetaSkillsView(); break;
                     case 'combat': html = this.renderCombatView(); break;
+                    case 'raids': html = this.renderRaidsView(); break;
                     case 'army': html = this.renderArmyView(); break;
                     case 'clicker': html = this.renderClickerView(); break;
                     case 'workforce': html = this.renderWorkforceView(); break;
@@ -1928,7 +1929,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
         renderCombatFooter() {
-            if (this.currentView !== 'combat') return;
+            if (this.currentView !== 'combat' && this.currentView !== 'raids') return;
             const auto = this.game.state.combat?.auto; if (!auto) return;
             // Update gold
             const goldEl = document.getElementById('war-spoils-gold');
@@ -2241,16 +2242,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const endBtn = document.getElementById('end-combat-btn'); if (endBtn) endBtn.addEventListener('click', () => this.game.endCombat(false));
             document.querySelectorAll('.eat-food-btn').forEach(btn => { btn.addEventListener('click', () => this.game.eatFood(btn.dataset.itemId)); });
             document.querySelectorAll('.equip-weapon-btn').forEach(btn => { btn.addEventListener('click', () => this.game.equipWeapon(btn.dataset.itemId)); });
-            // Auto-battle controls
+            // Auto-battle controls (shared by Combat and Raids)
             const abToggle = document.getElementById('auto-battle-toggle'); if (abToggle) abToggle.addEventListener('change', (e) => { this.game.state.combat.auto.enabled = !!e.target.checked; this.game.state.combat.auto.lastTick = Date.now(); });
             const abTarget = document.getElementById('auto-target-select'); if (abTarget) abTarget.addEventListener('change', (e) => { this.game.state.combat.auto.targetId = e.target.value; });
             const claimBtn = document.getElementById('claim-war-spoils'); if (claimBtn) claimBtn.addEventListener('click', () => this.game.claimWarSpoils());
             const clearBtn = document.getElementById('clear-war-spoils'); if (clearBtn) clearBtn.addEventListener('click', () => this.game.clearWarSpoils());
-            // New epic auto-battler controls
             const abPlayPause = document.getElementById('auto-battle-playpause');
             if (abPlayPause) abPlayPause.addEventListener('click', () => { const auto = this.game.state.combat.auto; auto.enabled = !auto.enabled; auto.lastTick = Date.now(); this.renderView(); });
             const abAutoClaim = document.getElementById('auto-claim-toggle');
             if (abAutoClaim) abAutoClaim.addEventListener('click', () => { const auto = this.game.state.combat.auto; auto.autoClaim = !auto.autoClaim; this.renderView(); });
+            document.querySelectorAll('.select-raid-target').forEach(btn => { btn.addEventListener('click', () => { this.game.state.combat.auto.targetId = btn.dataset.enemyId; this.renderView(); }); });
 
             // Empire hiring events
             document.querySelectorAll('.hire-unit-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.hireEmpireUnit(btn.dataset.unitId); this.pulseAt(btn); this.game.uiManager.playSound('hire'); }); });
@@ -2699,30 +2700,93 @@ document.addEventListener('DOMContentLoaded', () => {
             const recruits = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${unitCards}</div>`;
             return `<h1 class="text-2xl font-semibold text-white mb-4">Army</h1>${hero}${upgrades}${recruits}`;
         }
-        renderCombatFooter() {
-            if (this.currentView !== 'combat') return;
-            const auto = this.game.state.combat?.auto; if (!auto) return;
-            // Update gold
-            const goldEl = document.getElementById('war-spoils-gold');
-            if (goldEl) {
-                const goldAmt = Math.floor(auto.buffers?.gold || 0);
-                goldEl.textContent = goldAmt.toLocaleString();
-            }
-            // Update items list
-            const itemsContainer = document.getElementById('war-spoils-items');
-            if (itemsContainer) {
-                const entries = Object.entries(auto.buffers?.items || {});
-                const html = entries.length
-                    ? entries.map(([id, q]) => `<span class="badge">${GAME_DATA.ITEMS[id]?.icon||'❔'} ${GAME_DATA.ITEMS[id]?.name||id} x${q}</span>`).join(' ')
-                    : '<span class="text-secondary text-xs">No items yet.</span>';
-                itemsContainer.innerHTML = html;
-            }
-            // Toggle buttons
-            const claimBtn = document.getElementById('claim-war-spoils');
-            const clearBtn = document.getElementById('clear-war-spoils');
-            const spoilsEmpty = (Math.floor(auto.buffers?.gold || 0) <= 0) && Object.keys(auto.buffers?.items || {}).length === 0;
-            if (claimBtn) claimBtn.disabled = spoilsEmpty;
-            if (clearBtn) clearBtn.disabled = spoilsEmpty;
+        renderRaidsView() {
+            const auto = this.game.state.combat.auto || { enabled: false, targetId: (GAME_DATA.COMBAT.ENEMIES?.[0]?.id)||null, buffers: { gold:0, items:{} } };
+            const buffs = this.game.state.player.activeBuffs || {};
+            const rallyActive = buffs['armyRally'] && Date.now() < buffs['armyRally'];
+            const rallyRemaining = rallyActive ? Math.ceil((buffs['armyRally'] - Date.now())/1000) : 0;
+
+            const target = (GAME_DATA.COMBAT.ENEMIES || []).find(x => x.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
+            const targetOptions = (GAME_DATA.COMBAT.ENEMIES || []).map(x => `<option value="${x.id}" ${auto.targetId===x.id?'selected':''}>${x.name} (Lv ${x.level})</option>`).join('');
+
+            const base = this.game.calculateArmyOutputPerSecond();
+            const hungryPenalty = this.game.state.army.upkeep?.hungry ? 0.5 : 1.0;
+            const rallyMult = this.game.hasBuff('armyRally') ? 2 : 1;
+            const estDps = (base.dps || 0) * hungryPenalty * rallyMult;
+            const killsPerSec = (target && target.maxHp > 0) ? (estDps / target.maxHp) : 0;
+            const avgGold = target && Array.isArray(target.gold) ? (target.gold[0] + target.gold[1]) / 2 : 0;
+            const estGoldPerSec = killsPerSec * avgGold * this.game.goldMultiplier();
+
+            const itemsEntries = Object.entries(auto.buffers?.items || {});
+            const itemsHtml = itemsEntries.length ? itemsEntries.map(([id,q]) => `<span class="spoils-item">${GAME_DATA.ITEMS[id]?.icon||'❔'} ${GAME_DATA.ITEMS[id]?.name||id} x${q}</span>`).join(' ') : '<span class="text-secondary text-xs">No items yet.</span>';
+            const spoilsEmpty = (Math.floor(auto.buffers?.gold||0) <= 0) && itemsEntries.length === 0;
+            const killProgress = Math.max(0, Math.min(1, (auto.killsFrac || 0) % 1));
+            const allies = this.game.state.army.production || { dps: 0, hps: 0 };
+
+            return `
+                <div class="block p-5 mb-5 medieval-glow combat-hero">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="text-2xl">🐉</div>
+                            <div>
+                                <h1 class="text-xl font-extrabold tracking-wide">Raids Command</h1>
+                                <p class="text-secondary text-sm">Send your legion on auto-battles to earn GP and loot.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="badge"><i class="fas fa-users"></i> DPS ${Math.max(0, allies.dps || 0).toFixed(1)} • HPS ${Math.max(0, allies.hps || 0).toFixed(1)}${this.game.state.army.upkeep?.hungry ? ' <span class="text-red-400 ml-1">Hungry</span>' : ''}</span>
+                            <button id="army-rally" class="chimera-button juicy-button imperial-button px-4 py-3 rounded-md font-extrabold tracking-wide">${rallyActive ? `Rally Active • ${rallyRemaining}s` : 'Rally Troops'}</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div class="block p-4 rounded-md space-y-3">
+                        <h2 class="text-lg font-bold">Targets</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-3">
+                            ${(GAME_DATA.COMBAT.ENEMIES||[]).map(e => `
+                                <div class="enemy-card glass-card p-4 rounded-md flex items-center justify-between">
+                                    <div>
+                                        <div class="font-bold">${e.name}</div>
+                                        <div class="text-xs text-secondary">Lv ${e.level} • ${e.maxHp} HP</div>
+                                    </div>
+                                    <button class="chimera-button juicy-button px-3 py-2 rounded-md select-raid-target" data-enemy-id="${e.id}">Target</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="block battle-arena p-4 rounded-md flex flex-col gap-3">
+                        <h2 class="text-lg font-bold">Auto Battler</h2>
+                        <div class="flex items-center gap-3">
+                            <div id="auto-kill-ring" class="ring" style="--ring-pct:${killProgress}">
+                                <div class="ring-center">
+                                    <div class="text-center">
+                                        <div class="text-xs text-secondary">Next Kill</div>
+                                        <div id="auto-kill-progress" class="font-mono text-white">${Math.floor(killProgress*100)}%</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <button id="auto-battle-playpause" class="chimera-button juicy-button px-3 py-2 rounded-md">${auto.enabled ? 'Pause Auto' : 'Start Auto'}</button>
+                                    <button id="auto-claim-toggle" class="chimera-button px-3 py-2 rounded-md ${auto.autoClaim ? 'imperial-button' : ''}">${auto.autoClaim ? 'Auto-Claim ON' : 'Auto-Claim OFF'}</button>
+                                    <select id="auto-target-select" class="chimera-button px-2 py-1 rounded">${targetOptions}</select>
+                                </div>
+                                <div class="text-xs text-secondary">Kills/s: <span id="auto-kps" class="text-white font-mono">${killsPerSec.toFixed(2)}</span> • Gold/s: <span id="auto-gps" class="text-white font-mono">${estGoldPerSec.toFixed(1)}</span></div>
+                                <div class="auto-hint">Auto-battles pause during manual combat.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="block p-4 rounded-md space-y-3 spoils-panel">
+                        <h2 class="text-lg font-bold">War Spoils</h2>
+                        <div class="text-sm mb-1">Gold: <span id="war-spoils-gold" class="font-mono spoils-gold">${Math.floor(auto.buffers?.gold||0).toLocaleString()}</span></div>
+                        <div id="war-spoils-items" class="flex flex-wrap gap-2">${itemsHtml}</div>
+                        <div class="flex items-center gap-2">
+                            <button id="claim-war-spoils" class="chimera-button juicy-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Claim All</button>
+                            <button id="clear-war-spoils" class="chimera-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Clear</button>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
     }
 
