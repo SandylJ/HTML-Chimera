@@ -195,19 +195,19 @@ document.addEventListener('DOMContentLoaded', () => {
         ],
         COMBAT: {
             ENEMIES: [
-                { id: 'goblin', name: 'Goblin', level: 2, hp: 30, maxHp: 30, attack: 4, defense: 1, gold: [5, 10], drops: [ {id:'copper_ore', qty:[1,2], chance:50}, {id:'tin_ore', qty:[1,2], chance:50}, {id:'logs', qty:[1,2], chance:35}, {id:'rune_essence', qty:[1,2], chance:20} ], attackSpeedMs: 2000 },
-                { id: 'wolf', name: 'Wolf', level: 5, hp: 60, maxHp: 60, attack: 7, defense: 2, gold: [12, 25], drops: [ {id:'raw_shrimp', qty:[1,1], chance:30}, {id:'oak_logs', qty:[1,2], chance:30}, {id:'willow_logs', qty:[1,1], chance:15}, {id:'iron_ore', qty:[1,1], chance:10} ], attackSpeedMs: 1800 },
-                { id: 'skeleton', name: 'Skeleton', level: 10, hp: 120, maxHp: 120, attack: 12, defense: 4, gold: [30, 60], drops: [ {id:'bronze_bar', qty:[1,2], chance:35}, {id:'iron_ore', qty:[1,2], chance:30}, {id:'coal', qty:[1,2], chance:30}, {id:'silver_ore', qty:[1,1], chance:20}, {id:'rune_essence', qty:[2,4], chance:25} ], attackSpeedMs: 1700 },
-                { id: 'troll', name: 'Troll', level: 20, hp: 300, maxHp: 300, attack: 20, defense: 8, gold: [80, 150], drops: [ {id:'item_ancient_key', qty:[1,1], chance:10}, {id:'mithril_ore', qty:[1,2], chance:30}, {id:'adamant_ore', qty:[1,1], chance:20}, {id:'gold_ore', qty:[1,2], chance:25}, {id:'rune_ore', qty:[1,1], chance:8}, {id:'coal', qty:[2,4], chance:40} ], attackSpeedMs: 1600 },
+                { id: 'goblin', name: 'Goblin', level: 2, hp: 30, maxHp: 30, attack: 4, defense: 1, gold: [5, 10], drops: [ {id:'copper_ore', qty:[1,2], chance:50}, {id:'tin_ore', qty:[1,2], chance:50}, {id:'logs', qty:[1,2], chance:35}, {id:'rune_essence', qty:[1,2], chance:20} ], attackSpeedMs: 2000, traits: { weaknesses: ['magic'], resistances: [] } },
+                { id: 'wolf', name: 'Wolf', level: 5, hp: 60, maxHp: 60, attack: 7, defense: 2, gold: [12, 25], drops: [ {id:'raw_shrimp', qty:[1,1], chance:30}, {id:'oak_logs', qty:[1,2], chance:30}, {id:'willow_logs', qty:[1,1], chance:15}, {id:'iron_ore', qty:[1,1], chance:10} ], attackSpeedMs: 1800, traits: { weaknesses: ['piercing','fire'], resistances: ['nature'] } },
+                { id: 'skeleton', name: 'Skeleton', level: 10, hp: 120, maxHp: 120, attack: 12, defense: 4, gold: [30, 60], drops: [ {id:'bronze_bar', qty:[1,2], chance:35}, {id:'iron_ore', qty:[1,2], chance:30}, {id:'coal', qty:[1,2], chance:30}, {id:'silver_ore', qty:[1,1], chance:20}, {id:'rune_essence', qty:[2,4], chance:25} ], attackSpeedMs: 1700, traits: { weaknesses: ['holy'], resistances: ['shadow'] } },
+                { id: 'troll', name: 'Troll', level: 20, hp: 300, maxHp: 300, attack: 20, defense: 8, gold: [80, 150], drops: [ {id:'item_ancient_key', qty:[1,1], chance:10}, {id:'mithril_ore', qty:[1,2], chance:30}, {id:'adamant_ore', qty:[1,1], chance:20}, {id:'gold_ore', qty:[1,2], chance:25}, {id:'rune_ore', qty:[1,1], chance:8}, {id:'coal', qty:[2,4], chance:40} ], attackSpeedMs: 1600, traits: { weaknesses: ['magic','piercing'], resistances: ['physical'] } }
             ]
         },
         ARMY_CLASSES: {
-            knight: { id: 'knight', name: 'Knight', emoji: '🛡️', role: 'Defender', description: 'Armored vanguard that holds the line.', baseCost: 150, costGrowth: 1.22, dps: 3, hps: 0.0, foodPerMin: 0.6 },
-            wizard: { id: 'wizard', name: 'Wizard', emoji: '🪄', role: 'Caster', description: 'Arcane glass cannon raining destruction.', baseCost: 220, costGrowth: 1.24, dps: 5, hps: 0.0, foodPerMin: 0.5 },
-            warlock: { id: 'warlock', name: 'Warlock', emoji: '☯️', role: 'Hexer', description: 'Curses enemies and siphons life.', baseCost: 260, costGrowth: 1.26, dps: 3.5, hps: 0.5, foodPerMin: 0.6 },
-            cleric: { id: 'cleric', name: 'Cleric', emoji: '⛪', role: 'Healer', description: 'Faithful healer mending wounds.', baseCost: 200, costGrowth: 1.22, dps: 1, hps: 2.5, foodPerMin: 0.7 },
-            druid: { id: 'druid', name: 'Druid', emoji: '🌿', role: 'Support', description: "Nature's embrace with heals and thorns.", baseCost: 240, costGrowth: 1.25, dps: 2, hps: 1.5, foodPerMin: 0.6 },
-            goblin_merc: { id: 'goblin_merc', name: 'Goblin Merc', emoji: '🗡️', role: 'Rogue', description: 'Cheap hire, rowdy appetite.', baseCost: 100, costGrowth: 1.30, dps: 2, hps: 0, foodPerMin: 0.8 }
+            knight: { id: 'knight', name: 'Knight', emoji: '🛡️', role: 'Defender', damageType: 'physical', description: 'Armored vanguard that holds the line.', baseCost: 150, costGrowth: 1.22, dps: 3, hps: 0.0, foodPerMin: 0.6 },
+            wizard: { id: 'wizard', name: 'Wizard', emoji: '🪄', role: 'Caster', damageType: 'magic', description: 'Arcane glass cannon raining destruction.', baseCost: 220, costGrowth: 1.24, dps: 5, hps: 0.0, foodPerMin: 0.5 },
+            warlock: { id: 'warlock', name: 'Warlock', emoji: '☯️', role: 'Hexer', damageType: 'shadow', description: 'Curses enemies and siphons life.', baseCost: 260, costGrowth: 1.26, dps: 3.5, hps: 0.5, foodPerMin: 0.6 },
+            cleric: { id: 'cleric', name: 'Cleric', emoji: '⛪', role: 'Healer', damageType: 'holy', description: 'Faithful healer mending wounds.', baseCost: 200, costGrowth: 1.22, dps: 1, hps: 2.5, foodPerMin: 0.7 },
+            druid: { id: 'druid', name: 'Druid', emoji: '🌿', role: 'Support', damageType: 'nature', description: "Nature's embrace with heals and thorns.", baseCost: 240, costGrowth: 1.25, dps: 2, hps: 1.5, foodPerMin: 0.6 },
+            goblin_merc: { id: 'goblin_merc', name: 'Goblin Merc', emoji: '🗡️', role: 'Rogue', damageType: 'piercing', description: 'Cheap hire, rowdy appetite.', baseCost: 100, costGrowth: 1.30, dps: 2, hps: 0, foodPerMin: 0.8 }
         },
         MERCHANTS: {
             bazaar: {
@@ -356,7 +356,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.player.mastery[id] = {};
             });
             Object.values(META_SKILLS).forEach(name => { this.player.meta_skills[name] = new Skill(name, name); });
-
             // Worker systems: Mining Overseer, Fishing Harbor, Farming Estate
             this.workers = {
                 woodcutting: {
@@ -490,11 +489,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (armyDeltaSec > 0.1) {
                     this.state.army.lastTick = now;
                     const upkeep = this.consumeArmyUpkeep(armyDeltaSec);
-                    const base = this.calculateArmyOutputPerSecond();
+                    const baseEff = this.calculateEffectiveDpsForTarget(this.state.combat.enemy, null);
                     const hungryPenalty = upkeep.hungry ? 0.5 : 1.0;
                     const rallyMult = this.hasBuff('armyRally') ? 2 : 1;
-                    const dps = base.dps * hungryPenalty * rallyMult;
-                    const hps = base.hps * hungryPenalty * rallyMult;
+                    const dps = baseEff.dps * hungryPenalty * rallyMult;
+                    const hps = baseEff.hps * hungryPenalty * rallyMult;
                     this.state.army.production = { dps, hps, hungry: upkeep.hungry };
                     // Apply damage to enemy and heals to player
                     const dmg = dps * armyDeltaSec;
@@ -539,7 +538,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const gps = this.state.clicker.autoClickers * this.state.clicker.goldPerClick;
                 if (gps > 0) this.addGold(gps);
             }
-
             // Empire production
             const empireDeltaSec = (now - this.state.empire.lastTick) / 1000;
             if (empireDeltaSec > 0.1) {
@@ -740,7 +738,6 @@ document.addEventListener('DOMContentLoaded', () => {
             delete this.state.activeActions[skillId];
             this.uiManager.render();
         }
-
         craftItem(skillId, recipeId, quantity) {
             const recipe = GAME_DATA.RECIPES[skillId].find(r => r.id === recipeId); if (!recipe) return;
             const canCraft = recipe.input.every(inp => (this.state.bank[inp.itemId] || 0) >= inp.quantity * quantity); if (!canCraft) return;
@@ -940,7 +937,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.uiManager.showFloatingText('All workers already deployed', 'text-secondary');
             }
         }
-
         // Rune helpers
         getRuneItemIds() { return Object.keys(GAME_DATA.ITEMS).filter(id => id.endsWith('_rune')); }
         getTotalRuneItemCount() { return this.getRuneItemIds().reduce((sum, id) => sum + (this.state.bank[id] || 0), 0); }
@@ -1131,6 +1127,76 @@ document.addEventListener('DOMContentLoaded', () => {
             if (stance === 'defensive') { dps *= 0.8; hps *= 1.25; }
             return { dps, hps, foodPerMin };
         }
+        // Damage effectiveness vs enemy traits
+        getDamageEffectiveness(damageType, enemy) {
+            if (!enemy) return 1.0;
+            const traits = enemy.traits || { weaknesses: [], resistances: [] };
+            const w = Array.isArray(traits.weaknesses) ? traits.weaknesses : [];
+            const r = Array.isArray(traits.resistances) ? traits.resistances : [];
+            if (damageType && w.includes(damageType)) return 1.25; // 25% bonus
+            if (damageType && r.includes(damageType)) return 0.75; // 25% penalty
+            return 1.0;
+        }
+        // Effective DPS against a specific target; if composition is null, use whole army
+        calculateEffectiveDpsForTarget(target, composition) {
+            const comp = composition || null;
+            let rawDps = 0, hps = 0, foodPerMin = 0;
+            if (comp && Object.keys(comp).length > 0) {
+                for (const [unitId, qtyRaw] of Object.entries(comp)) {
+                    const qty = Math.max(0, qtyRaw | 0);
+                    if (qty <= 0) continue;
+                    const def = GAME_DATA.ARMY_CLASSES[unitId];
+                    if (!def) continue;
+                    rawDps += (def.dps || 0) * qty * this.getDamageEffectiveness(def.damageType, target);
+                    hps += (def.hps || 0) * qty;
+                    foodPerMin += (def.foodPerMin || 0) * qty;
+                }
+            } else {
+                for (const unitId of Object.keys(GAME_DATA.ARMY_CLASSES)) {
+                    const def = GAME_DATA.ARMY_CLASSES[unitId];
+                    const qty = this.state.army.units[unitId] || 0;
+                    if (qty <= 0) continue;
+                    rawDps += (def.dps || 0) * qty * this.getDamageEffectiveness(def.damageType, target);
+                    hps += (def.hps || 0) * qty;
+                    foodPerMin += (def.foodPerMin || 0) * qty;
+                }
+            }
+            const up = this.state.army.upgrades || {};
+            rawDps *= (1 + 0.08 * (up.offenseLevel || 0));
+            hps *= (1 + 0.08 * (up.supportLevel || 0));
+            foodPerMin *= Math.pow(0.94, (up.logisticsLevel || 0));
+            const stance = this.state.army.stance || 'balanced';
+            if (stance === 'aggressive') { rawDps *= 1.25; hps *= 0.8; }
+            if (stance === 'defensive') { rawDps *= 0.8; hps *= 1.25; }
+            return { dps: rawDps, hps, foodPerMin };
+        }
+        // Greedy recommendation: allocate all free units prioritizing counters to target weaknesses
+        recommendSquadForTarget(targetId) {
+            const enemy = (GAME_DATA.COMBAT.ENEMIES || []).find(e => e.id === targetId);
+            const weaknesses = enemy?.traits?.weaknesses || [];
+            const reserved = {};
+            for (const m of (this.state.army.deployments?.active || [])) {
+                for (const [uid, qty] of Object.entries(m.composition || {})) reserved[uid] = (reserved[uid] || 0) + qty;
+            }
+            const freeUnits = {};
+            for (const id of Object.keys(GAME_DATA.ARMY_CLASSES)) {
+                const owned = this.state.army.units?.[id] || 0;
+                freeUnits[id] = Math.max(0, owned - (reserved[id] || 0));
+            }
+            const comp = {};
+            const priorityIds = Object.keys(GAME_DATA.ARMY_CLASSES).sort((a,b) => {
+                const da = GAME_DATA.ARMY_CLASSES[a].damageType;
+                const db = GAME_DATA.ARMY_CLASSES[b].damageType;
+                const pa = weaknesses.includes(da) ? 0 : 1;
+                const pb = weaknesses.includes(db) ? 0 : 1;
+                return pa - pb;
+            });
+            for (const id of priorityIds) {
+                const take = freeUnits[id] || 0;
+                if (take > 0) comp[id] = take;
+            }
+            return comp;
+        }
         consumeArmyUpkeep(deltaSec) {
             // Use cooked foods first; each food heals value ~ treat 1 HP heal as 1 food unit
             const foodIds = Object.keys(this.state.bank).filter(id => GAME_DATA.ITEMS[id]?.heals).sort((a,b) => (GAME_DATA.ITEMS[a].heals||0)-(GAME_DATA.ITEMS[b].heals||0));
@@ -1281,7 +1347,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return total;
         }
-
         // Passive auto-combat processor (army raids)
         processAutoCombat() {
             const auto = this.state.combat?.auto; if (!auto || !auto.enabled) return;
@@ -1297,6 +1362,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const comp = auto.raid?.composition || {};
             const useComp = comp && Object.keys(comp).length > 0;
 
+            // Choose target early for effectiveness calc
+            const target = (GAME_DATA.COMBAT.ENEMIES || []).find(e => e.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
+            if (!target) return;
+
             let dps = 0;
             if (useComp) {
                 // Grace window before upkeep applies
@@ -1308,18 +1377,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     const upkeep = this.consumeUpkeepForComposition(comp, deltaSec);
                     hungryPenalty = upkeep.hungry ? 0.5 : 1.0;
                 }
-                const out = this.calculateCompositionOutput(comp);
+                const out = this.calculateEffectiveDpsForTarget(target, comp);
                 dps = (out.dps || 0) * hungryPenalty * rallyMult;
             } else {
-                // Legacy behavior: whole army raids and consumes upkeep
+                // Whole army raids and consumes upkeep
                 const upkeep = this.consumeArmyUpkeep(deltaSec);
-                const base = this.calculateArmyOutputPerSecond();
+                const base = this.calculateEffectiveDpsForTarget(target, null);
                 const hungryPenalty = upkeep.hungry ? 0.5 : 1.0;
                 dps = (base.dps || 0) * hungryPenalty * rallyMult;
             }
 
-            // Choose target
-            const target = (GAME_DATA.COMBAT.ENEMIES || []).find(e => e.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
             if (!target || !target.maxHp || dps <= 0) return;
             const killsPerSec = dps / target.maxHp;
             auto.killsFrac = (auto.killsFrac || 0) + killsPerSec * deltaSec;
@@ -1327,34 +1394,34 @@ document.addEventListener('DOMContentLoaded', () => {
             if (wholeKills > 0) {
                 auto.killsFrac -= wholeKills;
                 // Roll rewards per kill
-                                 for (let i = 0; i < wholeKills; i++) {
-                     // Gold roll within enemy range, add raw to buffer
-                     const minG = Array.isArray(target.gold) ? (target.gold[0] || 0) : 0;
-                     const maxG = Array.isArray(target.gold) ? (target.gold[1] || 0) : 0;
-                     const g = Math.floor(Math.random() * (maxG - minG + 1)) + minG;
-                     auto.buffers.gold = (auto.buffers.gold || 0) + g;
-                     // Drops
-                     (target.drops || []).forEach(drop => {
-                         const chance = drop.chance || 0; // percent
-                         if (Math.random() * 100 < chance) {
-                             const [qmin, qmax] = Array.isArray(drop.qty) ? drop.qty : [drop.qty || 1, drop.qty || 1];
-                             const qty = Math.floor(Math.random() * (qmax - qmin + 1)) + qmin;
-                             if (!auto.buffers.items) auto.buffers.items = {};
-                             auto.buffers.items[drop.id] = (auto.buffers.items[drop.id] || 0) + qty;
-                         }
-                     });
-                     // Global loot rolls (epic system)
-                     const extraRolls = (GAME_DATA.LOOT?.perKillRolls) || 0;
-                     for (let r = 0; r < extraRolls; r++) {
-                         const ex = this.rollGlobalLoot();
-                         if (ex.gold) auto.buffers.gold = (auto.buffers.gold||0) + ex.gold;
-                         if (ex.runes) auto.buffers.runes = (auto.buffers.runes||0) + ex.runes;
-                         Object.entries(ex.items || {}).forEach(([id, q]) => {
-                             if (!auto.buffers.items) auto.buffers.items = {};
-                             auto.buffers.items[id] = (auto.buffers.items[id] || 0) + q;
-                         });
-                     }
-                 }
+                for (let i = 0; i < wholeKills; i++) {
+                    // Gold roll within enemy range, add raw to buffer
+                    const minG = Array.isArray(target.gold) ? (target.gold[0] || 0) : 0;
+                    const maxG = Array.isArray(target.gold) ? (target.gold[1] || 0) : 0;
+                    const g = Math.floor(Math.random() * (maxG - minG + 1)) + minG;
+                    auto.buffers.gold = (auto.buffers.gold || 0) + g;
+                    // Drops
+                    (target.drops || []).forEach(drop => {
+                        const chance = drop.chance || 0; // percent
+                        if (Math.random() * 100 < chance) {
+                            const [qmin, qmax] = Array.isArray(drop.qty) ? drop.qty : [drop.qty || 1, drop.qty || 1];
+                            const qty = Math.floor(Math.random() * (qmax - qmin + 1)) + qmin;
+                            if (!auto.buffers.items) auto.buffers.items = {};
+                            auto.buffers.items[drop.id] = (auto.buffers.items[drop.id] || 0) + qty;
+                        }
+                    });
+                    // Global loot rolls (epic system)
+                    const extraRolls = (GAME_DATA.LOOT?.perKillRolls) || 0;
+                    for (let r = 0; r < extraRolls; r++) {
+                        const ex = this.rollGlobalLoot();
+                        if (ex.gold) auto.buffers.gold = (auto.buffers.gold||0) + ex.gold;
+                        if (ex.runes) auto.buffers.runes = (auto.buffers.runes||0) + ex.runes;
+                        Object.entries(ex.items || {}).forEach(([id, q]) => {
+                            if (!auto.buffers.items) auto.buffers.items = {};
+                            auto.buffers.items[id] = (auto.buffers.items[id] || 0) + q;
+                        });
+                    }
+                }
             }
 
             // Auto-claim spoils if enabled
@@ -1480,7 +1547,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // If in combat, update view footer elements
             if (this.currentView === 'combat') this.renderCombatFooter();
         }
-
         updateMasteryBar() {
             const container = document.getElementById('mastery-progress-bar'); const activeMap = this.game.state.activeActions || {}; const activeList = Object.values(activeMap); const inCombat = this.game.state.combat.inCombat; if ((activeList.length === 0) && !inCombat) { container.innerHTML = ''; container.classList.add('hidden'); return; }
             container.classList.remove('hidden');
@@ -1639,7 +1705,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="text-xs text-secondary mt-1">${a.desc}</div>
                 </div>`).join('');
-
             return `
                 <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
                     <div class="xl:col-span-3 block p-5 medieval-glow gradient-empire">
@@ -2031,7 +2096,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }).join('');
             return `<h1 class="text-2xl font-semibold text-white mb-4">Meta Skills</h1><p class="text-secondary mb-4">These skills are leveled up by completing real-life tasks. They provide passive bonuses to your in-game actions.</p><div class="grid grid-cols-1 md:grid-cols-2 gap-4">${skillsHtml}</div>`;
         }
-
         renderCombatView() {
             const buffs = this.game.state.player.activeBuffs || {};
             const rallyActive = buffs['armyRally'] && Date.now() < buffs['armyRally'];
@@ -2049,6 +2113,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span><i class="fas fa-sword"></i> ${e.attack} ATK</span>
                             <span><i class="fas fa-shield"></i> ${e.defense} DEF</span>
                         </div>
+                        ${(function(){ const t=e.traits||{}; const w=(t.weaknesses||[]).join(', '); const r=(t.resistances||[]).join(', '); return `<div class=\"text-[11px] text-secondary mt-1\">Weak: <span class=\"text-white\">${w||'-'}</span> • Res: <span class=\"text-white\">${r||'-'}</span></div>`; })()}
                     </div>
                     <button class="start-combat-btn juicy-button chimera-button mt-3 px-3 py-2 rounded-md" data-enemy-id="${e.id}">
                         Engage
@@ -2095,10 +2160,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const target = (GAME_DATA.COMBAT.ENEMIES || []).find(x => x.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
             const raidComp = this.game.state.combat.auto?.raid?.composition || {};
             const useComp = raidComp && Object.keys(raidComp).length > 0;
-            const base = useComp ? this.game.calculateCompositionOutput(raidComp) : this.game.calculateArmyOutputPerSecond();
+            const effBase = this.game.calculateEffectiveDpsForTarget(target, useComp ? raidComp : null);
             const hungryPenalty = useComp ? (this.game.state.combat.auto.raid.upkeep?.hungry ? 0.5 : 1.0) : (this.game.state.army.upkeep?.hungry ? 0.5 : 1.0);
             const rallyMult = this.game.hasBuff('armyRally') ? 2 : 1;
-            const estDps = (base.dps || 0) * hungryPenalty * rallyMult;
+            const estDps = (effBase.dps || 0) * hungryPenalty * rallyMult;
             const killsPerSec = (target && target.maxHp > 0) ? (estDps / target.maxHp) : 0;
             const avgGold = target && Array.isArray(target.gold) ? (target.gold[0] + target.gold[1]) / 2 : 0;
             const estGoldPerSec = killsPerSec * avgGold * this.game.goldMultiplier();
@@ -2107,6 +2172,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const itemsHtml = itemsEntries.length ? itemsEntries.map(([id,q]) => `<span class="badge">${GAME_DATA.ITEMS[id]?.icon||'❔'} ${GAME_DATA.ITEMS[id]?.name||id} x${q}</span>`).join(' ') : '<span class="text-secondary text-xs">No items yet.</span>';
             const spoilsEmpty = (Math.floor(auto.buffers?.gold||0) <= 0) && itemsEntries.length === 0;
             const killProgress = Math.max(0, Math.min(1, (auto.killsFrac || 0) % 1));
+
+            // Target intel and squad planner
+            const intel = (function(){ const t=target?.traits||{}; const w=(t.weaknesses||[]).join(', '), r=(t.resistances||[]).join(', '); return `<div class=\"text-xs text-secondary\">Weak: <span class=\"text-white\">${w||'-'}</span> • Res: <span class=\"text-white\">${r||'-'}</span></div>`; })();
+            const freeUnits = (() => {
+                const reserved = {};
+                for (const m of (this.game.state.army.deployments?.active || [])) {
+                    for (const [uid, qty] of Object.entries(m.composition || {})) reserved[uid] = (reserved[uid] || 0) + qty;
+                }
+                const out = {};
+                for (const id of Object.keys(GAME_DATA.ARMY_CLASSES)) {
+                    const owned = this.game.state.army.units?.[id] || 0;
+                    out[id] = Math.max(0, owned - (reserved[id] || 0));
+                }
+                return out;
+            }).call(this);
+            const compRows = Object.keys(GAME_DATA.ARMY_CLASSES).map(uid => {
+                const d = GAME_DATA.ARMY_CLASSES[uid];
+                const free = freeUnits[uid] || 0;
+                const current = raidComp[uid] || 0;
+                const mark = target ? (this.game.getDamageEffectiveness(d.damageType, target) > 1 ? 'text-green-300' : (this.game.getDamageEffectiveness(d.damageType, target) < 1 ? 'text-red-300' : 'text-secondary')) : 'text-secondary';
+                return `<div class=\"flex items-center justify-between\">\n                        <span class=\"text-xs ${mark}\">${d.emoji} ${d.name}</span>\n                        <div class=\"flex items-center gap-1\">\n                            <button class=\"chimera-button px-2 py-1 rounded-md raid-assign-unit\" data-unit-id=\"${uid}\" data-dir=\"-1\">-</button>\n                            <input type=\"number\" min=\"0\" max=\"${free}\" value=\"${current}\" class=\"w-16 p-1 bg-primary border border-border-color rounded-md text-center raid-comp-input\" data-unit-id=\"${uid}\" />\n                            <button class=\"chimera-button px-2 py-1 rounded-md raid-assign-unit\" data-unit-id=\"${uid}\" data-dir=\"+1\">+</button>\n                        </div>\n                    </div>`;
+            }).join('');
 
             return `
                 <div class="block combat-hero p-5 rounded-md mb-4">
@@ -2167,6 +2254,21 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </div>
                         <div class="block p-3 rounded-md">
+                            <h3 class="text-md font-bold mb-2">Target Intel</h3>
+                            ${intel}
+                            <div class="mt-2">
+                                <div class="text-xs text-secondary mb-1">Squad Planner</div>
+                                <div class="space-y-2" id="combat-comp-panel">
+                                    ${compRows}
+                                </div>
+                                <div class="mt-2 flex items-center gap-2">
+                                    <button id="btn-recommend-squad" class="chimera-button px-3 py-2 rounded-md"><i class="fas fa-wand-magic-sparkles"></i> Recommend</button>
+                                    <button id="btn-clear-squad" class="chimera-button px-3 py-2 rounded-md"><i class="fas fa-broom"></i> Clear</button>
+                                </div>
+                                <div class="text-[11px] text-secondary mt-1">Green: effective vs target • Red: resisted</div>
+                            </div>
+                        </div>
+                        <div class="block p-3 rounded-md">
                             <h3 class="text-md font-bold mb-2">War Spoils</h3>
                             <div class="text-sm mb-1">Gold: <span id="war-spoils-gold" class="font-mono text-yellow-300">${Math.floor(auto.buffers?.gold||0).toLocaleString()}</span></div>
                             <div class="text-sm mb-1">Runes: <span id="war-spoils-runes" class="font-mono text-purple-300">${Math.floor(auto.buffers?.runes||0).toLocaleString()}</span></div>
@@ -2210,11 +2312,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (progText) progText.textContent = `${Math.floor(prog * 100)}%`;
                 const comp = this.game.state.combat.auto?.raid?.composition || {};
                 const useComp = comp && Object.keys(comp).length > 0;
-                const base = useComp ? this.game.calculateCompositionOutput(comp) : this.game.calculateArmyOutputPerSecond();
+                const target = (GAME_DATA.COMBAT.ENEMIES || []).find(x => x.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
+                const base = this.game.calculateEffectiveDpsForTarget(target, useComp ? comp : null);
                 const hungryPenalty = useComp ? (this.game.state.combat.auto.raid.upkeep?.hungry ? 0.5 : 1.0) : (this.game.state.army.upkeep?.hungry ? 0.5 : 1.0);
                 const rallyMult = this.game.hasBuff('armyRally') ? 2 : 1;
                 const estDps = (base.dps || 0) * hungryPenalty * rallyMult;
-                const target = (GAME_DATA.COMBAT.ENEMIES || []).find(x => x.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
                 const kps = (target && target.maxHp > 0) ? (estDps / target.maxHp) : 0;
                 const gps = kps * (target && Array.isArray(target.gold) ? (target.gold[0] + target.gold[1]) / 2 : 0) * this.game.goldMultiplier();
                 const kpsEl = document.getElementById('auto-kps');
@@ -2229,7 +2331,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (claimBtn) claimBtn.disabled = spoilsEmpty;
             if (clearBtn) clearBtn.disabled = spoilsEmpty;
         }
-
         renderClickerView() {
             const units = GAME_DATA.UNITS;
             const owned = this.game.state.empire.units;
@@ -2410,7 +2511,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Emperor decree: assignments happen automatically via All Systems Go
             return `${hero}<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-4">${cards}</div>`;
         }
-
         renderMerchantView() {
             const bazaar = this.game.getMerchant();
             const selected = this.game.state.merchant?.selectedStallId || (bazaar.stalls?.[0]?.id);
@@ -2533,7 +2633,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.equip-weapon-btn').forEach(btn => { btn.addEventListener('click', () => this.game.equipWeapon(btn.dataset.itemId)); });
             // Auto-battle controls (shared by Combat and Raids)
             const abToggle = document.getElementById('auto-battle-toggle'); if (abToggle) abToggle.addEventListener('change', (e) => { this.game.state.combat.auto.enabled = !!e.target.checked; this.game.state.combat.auto.lastTick = Date.now(); });
-            const abTarget = document.getElementById('auto-target-select'); if (abTarget) abTarget.addEventListener('change', (e) => { this.game.state.combat.auto.targetId = e.target.value; });
+            const abTarget = document.getElementById('auto-target-select'); if (abTarget) abTarget.addEventListener('change', (e) => { this.game.state.combat.auto.targetId = e.target.value; this.renderView(); });
             // Raid composition controls
             const raidInputs = Array.from(document.querySelectorAll('.raid-comp-input'));
             const raidAssigners = Array.from(document.querySelectorAll('.raid-assign-unit'));
@@ -2578,6 +2678,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const abAutoClaim = document.getElementById('auto-claim-toggle');
             if (abAutoClaim) abAutoClaim.addEventListener('click', () => { const auto = this.game.state.combat.auto; auto.autoClaim = !auto.autoClaim; this.renderView(); });
             document.querySelectorAll('.select-raid-target').forEach(btn => { btn.addEventListener('click', () => { this.game.state.combat.auto.targetId = btn.dataset.enemyId; this.renderView(); }); });
+            const btnRec = document.getElementById('btn-recommend-squad');
+            if (btnRec) btnRec.addEventListener('click', () => { const auto = this.game.state.combat.auto; if (!auto.raid) auto.raid = { composition: {}, startedAt: 0, graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } }; auto.raid.composition = this.game.recommendSquadForTarget(auto.targetId); this.renderView(); });
+            const btnClr = document.getElementById('btn-clear-squad');
+            if (btnClr) btnClr.addEventListener('click', () => { const auto = this.game.state.combat.auto; if (!auto.raid) auto.raid = { composition: {}, startedAt: 0, graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } }; auto.raid.composition = {}; this.renderView(); });
 
             // Empire hiring events
             document.querySelectorAll('.hire-unit-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.hireEmpireUnit(btn.dataset.unitId); this.pulseAt(btn); this.game.uiManager.playSound('hire'); }); });
@@ -2596,7 +2700,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.assign-worker-btn').forEach(btn => { btn.addEventListener('click', () => {
                 const id = btn.dataset.actionId; const dir = btn.dataset.dir; const skill = btn.dataset.skillId; const ws = this.game.state.workers[skill]; const sumAssigned = Object.values(ws.assigned).reduce((a,b)=>a+b,0); if (dir === '+1') { if (sumAssigned < ws.total) ws.assigned[id] = (ws.assigned[id]||0)+1; } else { ws.assigned[id] = Math.max(0,(ws.assigned[id]||0)-1); } this.render();
             }); });
-
             // Farming estate
             const hireFarm = document.getElementById('hire-farmhand'); if (hireFarm) hireFarm.addEventListener('click', () => this.game.hireWorker('farming'));
             const upFI = document.getElementById('upgrade-farming-irrigation'); if (upFI) upFI.addEventListener('click', () => this.game.upgradeWorkers('farming', 'irrigation'));
@@ -2758,7 +2861,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => { c.style.opacity = '0'; }, 620); setTimeout(() => c.remove(), 900);
             }
         }
-
         renderWorkerPanel(skillId) {
             const ws = this.game.state.workers[skillId]; const hireCost = this.game.getHireCost(skillId); const speedCost = this.game.getUpgradeCost(skillId, 'speed'); const yieldCost = this.game.getUpgradeCost(skillId, 'yield'); const speedLvl = ws.upgrades.speedLevel; const yieldLvl = ws.upgrades.yieldLevel; const theme = GAME_DATA.SKILLS[skillId].theme;
             if (skillId === 'woodcutting') {
@@ -3037,10 +3139,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const raidComp = this.game.state.combat.auto?.raid?.composition || {};
             const useComp = raidComp && Object.keys(raidComp).length > 0;
-            const base = useComp ? this.game.calculateCompositionOutput(raidComp) : this.game.calculateArmyOutputPerSecond();
+            const effBase = this.game.calculateEffectiveDpsForTarget(target, useComp ? raidComp : null);
             const hungryPenalty = useComp ? (this.game.state.combat.auto.raid.upkeep?.hungry ? 0.5 : 1.0) : (this.game.state.army.upkeep?.hungry ? 0.5 : 1.0);
             const rallyMult = this.game.hasBuff('armyRally') ? 2 : 1;
-            const estDps = (base.dps || 0) * hungryPenalty * rallyMult;
+            const estDps = (effBase.dps || 0) * hungryPenalty * rallyMult;
             const killsPerSec = (target && target.maxHp > 0) ? (estDps / target.maxHp) : 0;
             const avgGold = target && Array.isArray(target.gold) ? (target.gold[0] + target.gold[1]) / 2 : 0;
             const estGoldPerSec = killsPerSec * avgGold * this.game.goldMultiplier();
