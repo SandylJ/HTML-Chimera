@@ -1055,6 +1055,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!this.state.combat.auto) this.state.combat.auto = { enabled: false, targetId: (GAME_DATA.COMBAT.ENEMIES?.[0]?.id) || null, lastTick: Date.now(), killsFrac: 0, buffers: { gold: 0, runes: 0, items: {} }, raid: { composition: {}, startedAt: 0, graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } } };
                     if (typeof this.state.combat.auto.autoClaim !== 'boolean') this.state.combat.auto.autoClaim = true;
                     if (!this.state.combat.auto.lastClaimMs) this.state.combat.auto.lastClaimMs = Date.now();
+                    if (!this.state.combat.auto.stats) this.state.combat.auto.stats = { gold: 0, runes: 0, items: {} };
                  } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
              }
          }
@@ -1314,19 +1315,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
                  claimWarSpoils() {
-             const auto = this.state.combat?.auto; if (!auto) return;
-             const goldAmt = Math.floor(auto.buffers?.gold || 0);
-             const runeAmt = Math.floor(auto.buffers?.runes || 0);
-             const items = auto.buffers?.items || {};
-             if (goldAmt > 0) this.addGold(goldAmt);
-             if (runeAmt > 0) { this.state.player.runes += runeAmt; this.uiManager.notifyResource('runes', runeAmt); }
-             Object.entries(items).forEach(([id, qty]) => { if (qty > 0) this.addToBank(id, qty); });
-             // Reset buffers
-             auto.buffers = { gold: 0, runes: 0, items: {} };
-             this.uiManager.showFloatingText('War spoils claimed!', 'text-yellow-300');
-             this.uiManager.playSound('upgrade');
-             this.uiManager.renderView();
-         }
+                           const auto = this.state.combat?.auto; if (!auto) return;
+              const goldAmt = Math.floor(auto.buffers?.gold || 0);
+              const runeAmt = Math.floor(auto.buffers?.runes || 0);
+              const items = auto.buffers?.items || {};
+              const stats = auto.stats || (auto.stats = { gold: 0, runes: 0, items: {} });
+              if (goldAmt > 0) stats.gold += goldAmt;
+              if (runeAmt > 0) stats.runes += runeAmt;
+              Object.entries(items).forEach(([id, qty]) => { if (qty > 0) { stats.items[id] = (stats.items[id] || 0) + qty; } });
+              if (goldAmt > 0) this.addGold(goldAmt);
+              if (runeAmt > 0) { this.state.player.runes += runeAmt; this.uiManager.notifyResource('runes', runeAmt); }
+              Object.entries(items).forEach(([id, qty]) => { if (qty > 0) this.addToBank(id, qty); });
+              // Reset buffers
+              auto.buffers = { gold: 0, runes: 0, items: {} };
+              this.uiManager.showFloatingText('War spoils claimed!', 'text-yellow-300');
+              this.uiManager.playSound('upgrade');
+              this.uiManager.renderView();
+          }
         clearWarSpoils() { const auto = this.state.combat?.auto; if (!auto) return; auto.buffers = { gold: 0, runes: 0, items: {} }; this.uiManager.renderView(); }
 
         // War spoils helpers (unify manual and auto combat rewards)
@@ -1346,17 +1351,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         autoClaimWarSpoils() {
-            const auto = this.state.combat?.auto; if (!auto) return;
-            if (auto.autoClaim) {
+                          const auto = this.state.combat?.auto; if (!auto) return;
+              if (auto.autoClaim) {
+                const stats = auto.stats || (auto.stats = { gold: 0, runes: 0, items: {} });
                 const goldWhole = Math.floor(auto.buffers?.gold || 0);
                 if (goldWhole > 0) {
                     this.addGold(goldWhole);
+                    stats.gold += goldWhole;
                     auto.buffers.gold -= goldWhole;
                 }
                 const runeWhole = Math.floor(auto.buffers?.runes || 0);
                 if (runeWhole > 0) {
                     this.state.player.runes += runeWhole;
                     this.uiManager.notifyResource('runes', runeWhole);
+                    stats.runes += runeWhole;
                     auto.buffers.runes -= runeWhole;
                 }
                 const itemsBuf = auto.buffers.items || {};
@@ -1364,14 +1372,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     const qty = Math.floor(itemsBuf[id] || 0);
                     if (qty > 0) {
                         this.addToBank(id, qty);
+                        stats.items[id] = (stats.items[id] || 0) + qty;
                         itemsBuf[id] -= qty;
                         if (itemsBuf[id] <= 0) delete itemsBuf[id];
                     }
                 });
-            }
-            // Refresh combat footer if visible
-            this.uiManager.renderCombatFooter();
-        }
+              }
+              // Refresh combat footer if visible
+              this.uiManager.renderCombatFooter();
+         }
     }
 
     class UIManager {
@@ -2152,8 +2161,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const prog = Math.max(0, Math.min(1, (auto.killsFrac || 0) % 1));
                 if (ring) ring.style.setProperty('--ring-pct', prog);
                 if (progText) progText.textContent = `${Math.floor(prog * 100)}%`;
-                const base = this.game.calculateArmyOutputPerSecond();
-                const hungryPenalty = this.game.state.army.upkeep?.hungry ? 0.5 : 1.0;
+                const comp = this.game.state.combat.auto?.raid?.composition || {};
+                const useComp = comp && Object.keys(comp).length > 0;
+                const base = useComp ? this.game.calculateCompositionOutput(comp) : this.game.calculateArmyOutputPerSecond();
+                const hungryPenalty = useComp ? (this.game.state.combat.auto.raid.upkeep?.hungry ? 0.5 : 1.0) : (this.game.state.army.upkeep?.hungry ? 0.5 : 1.0);
                 const rallyMult = this.game.hasBuff('armyRally') ? 2 : 1;
                 const estDps = (base.dps || 0) * hungryPenalty * rallyMult;
                 const target = (GAME_DATA.COMBAT.ENEMIES || []).find(x => x.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
@@ -3080,15 +3091,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                     <div class="flex flex-col gap-4">
-                        <div class="block p-4 rounded-md space-y-3 spoils-panel">
+                                                <div class="block p-4 rounded-md space-y-3 spoils-panel">
                             <h2 class="text-lg font-bold">War Spoils</h2>
-                                                         <div class="text-sm mb-1">Gold: <span id="war-spoils-gold" class="font-mono spoils-gold">${Math.floor(auto.buffers?.gold||0).toLocaleString()}</span></div>
-                             <div class="text-sm mb-1">Runes: <span id="war-spoils-runes" class="font-mono text-purple-300">${Math.floor(auto.buffers?.runes||0).toLocaleString()}</span></div>
-                             <div id="war-spoils-items" class="flex flex-wrap gap-2">${itemsHtml}</div>
-                             <div class="flex items-center gap-2">
-                                 <button id="claim-war-spoils" class="chimera-button juicy-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Claim All</button>
-                                 <button id="clear-war-spoils" class="chimera-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Clear</button>
-                             </div>
+                            <div class="text-sm mb-1">Gold (buffer): <span id="war-spoils-gold" class="font-mono spoils-gold">${Math.floor(auto.buffers?.gold||0).toLocaleString()}</span></div>
+                            <div class="text-sm mb-1">Runes (buffer): <span id="war-spoils-runes" class="font-mono text-purple-300">${Math.floor(auto.buffers?.runes||0).toLocaleString()}</span></div>
+                            <div id="war-spoils-items" class="flex flex-wrap gap-2">${itemsHtml}</div>
+                            <div class="flex items-center gap-2">
+                                <button id="claim-war-spoils" class="chimera-button juicy-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Claim All</button>
+                                <button id="clear-war-spoils" class="chimera-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Clear</button>
+                            </div>
+                            ${(function(){ const s=this.game.state.combat.auto?.stats||{gold:0,runes:0,items:{}}; const itemCount=Object.values(s.items||{}).reduce((a,b)=>a+(b||0),0); return `<div class=\"text-[11px] text-secondary\">Claimed (session): <span class=\"font-mono text-yellow-300\">${(s.gold||0).toLocaleString()}</span> GP • <span class=\"font-mono text-purple-300\">${(s.runes||0).toLocaleString()}</span> runes • <span class=\"font-mono text-white\">${itemCount}</span> items</div>`; }).call(this)}
                         </div>
                         <div class="block p-4 rounded-md">
                             <h2 class="text-lg font-bold mb-2">Raid Composition</h2>
