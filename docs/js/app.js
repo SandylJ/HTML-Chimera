@@ -65,6 +65,17 @@ document.addEventListener('DOMContentLoaded', () => {
             pale_energy: { name: 'Pale Energy', icon: '✨' },
             flickering_energy: { name: 'Flickering Energy', icon: '🔮' },
             feather: { name: 'Feather', icon: '🪶' },
+            
+            // Undead remains & curios
+            zombie_brain: { name: 'Zombie Brain', icon: '🧠' },
+            rotten_flesh: { name: 'Rotten Flesh', icon: '🥩' },
+            bone_shard: { name: 'Bone Shard', icon: '🦴' },
+            tattered_cloth: { name: 'Tattered Cloth', icon: '🧵' },
+            grave_dust: { name: 'Grave Dust', icon: '🪦' },
+            ectoplasm: { name: 'Ectoplasm', icon: '🧪' },
+            zombie_tooth: { name: 'Zombie Tooth', icon: '🦷' },
+            skeletal_hand: { name: 'Skeletal Hand', icon: '✋' },
+            cursed_coin: { name: 'Cursed Coin', icon: '🪙' },
 
             // Herblore herbs and reagents
             herb_flaxseed: { name: 'Flaxseed', icon: '🌿' },
@@ -254,6 +265,13 @@ document.addEventListener('DOMContentLoaded', () => {
         ],
         COMBAT: {
             ENEMIES: [
+<<<<<<< HEAD
+                { id: 'goblin', name: 'Goblin', level: 2, hp: 30, maxHp: 30, attack: 4, defense: 1, gold: [5, 10], drops: [ {id:'copper_ore', qty:[1,2], chance:50}, {id:'tin_ore', qty:[1,2], chance:50}, {id:'logs', qty:[1,2], chance:35}, {id:'rune_essence', qty:[1,2], chance:20} ], attackSpeedMs: 2000 },
+                { id: 'wolf', name: 'Wolf', level: 5, hp: 60, maxHp: 60, attack: 7, defense: 2, gold: [12, 25], drops: [ {id:'raw_shrimp', qty:[1,1], chance:30}, {id:'oak_logs', qty:[1,2], chance:30}, {id:'willow_logs', qty:[1,1], chance:15}, {id:'iron_ore', qty:[1,1], chance:10} ], attackSpeedMs: 1800 },
+                { id: 'zombie', name: 'Zombie', level: 8, hp: 100, maxHp: 100, attack: 10, defense: 3, gold: [20, 45], drops: [ {id:'rotten_flesh', qty:[1,3], chance:65}, {id:'zombie_brain', qty:[1,1], chance:15}, {id:'zombie_tooth', qty:[1,2], chance:18}, {id:'tattered_cloth', qty:[1,2], chance:28} ], sharedDropTable: 'undead_common', attackSpeedMs: 1850 },
+                { id: 'skeleton', name: 'Skeleton', level: 10, hp: 120, maxHp: 120, attack: 12, defense: 4, gold: [30, 60], drops: [ {id:'bone_shard', qty:[1,3], chance:60}, {id:'skeletal_hand', qty:[1,1], chance:12}, {id:'tattered_cloth', qty:[1,2], chance:30}, {id:'grave_dust', qty:[1,2], chance:22}, {id:'rune_essence', qty:[2,4], chance:20} ], sharedDropTable: 'undead_common', attackSpeedMs: 1700 },
+                { id: 'troll', name: 'Troll', level: 20, hp: 300, maxHp: 300, attack: 20, defense: 8, gold: [80, 150], drops: [ {id:'item_ancient_key', qty:[1,1], chance:10}, {id:'mithril_ore', qty:[1,2], chance:30}, {id:'adamant_ore', qty:[1,1], chance:20}, {id:'gold_ore', qty:[1,2], chance:25}, {id:'rune_ore', qty:[1,1], chance:8}, {id:'coal', qty:[2,4], chance:40} ], attackSpeedMs: 1600 },
+=======
                 // Arena foes (Combat tab)
                 { id: 'goblin', name: 'Goblin', level: 2, hp: 30, maxHp: 30, attack: 4, defense: 1, gold: [5, 10], drops: [ {id:'copper_ore', qty:[1,2], chance:50}, {id:'tin_ore', qty:[1,2], chance:50}, {id:'logs', qty:[1,2], chance:35}, {id:'rune_essence', qty:[1,2], chance:20}, {id:'arena_medal', qty:[1,1], chance:5} ], attackSpeedMs: 2000, arena:true },
                 { id: 'wolf', name: 'Wolf', level: 5, hp: 60, maxHp: 60, attack: 7, defense: 2, gold: [12, 25], drops: [ {id:'raw_shrimp', qty:[1,1], chance:30}, {id:'oak_logs', qty:[1,2], chance:30}, {id:'willow_logs', qty:[1,1], chance:15}, {id:'iron_ore', qty:[1,1], chance:10}, {id:'gladiator_emblem', qty:[1,1], chance:3} ], attackSpeedMs: 1800, arena:true },
@@ -267,6 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 { id: 'titan', name: 'Frost Titan', level: 46, hp: 1600, maxHp: 1600, attack: 48, defense: 18, gold: [320, 620], drops: [ {id:'titan_core', qty:[1,1], chance:10}, {id:'mithril_bar', qty:[1,2], chance:28}, {id:'adamant_bar', qty:[1,1], chance:20} ], attackSpeedMs: 1400, raid:true },
                 { id: 'astral_drake', name: 'Astral Drake', level: 58, hp: 2600, maxHp: 2600, attack: 62, defense: 22, gold: [520, 980], drops: [ {id:'celestial_ore', qty:[1,2], chance:18}, {id:'mythic_relic', qty:[1,1], chance:6} ], attackSpeedMs: 1350, raid:true },
                 { id: 'void_emperor', name: 'The Void Emperor', level: 72, hp: 4200, maxHp: 4200, attack: 82, defense: 28, gold: [900, 1600], drops: [ {id:'ascendant_sigil', qty:[1,1], chance:5}, {id:'raid_insignia', qty:[1,2], chance:22}, {id:'rune_ore', qty:[1,1], chance:14} ], attackSpeedMs: 1300, raid:true },
+>>>>>>> origin/main
             ]
         },
         ARMY_CLASSES: {
@@ -300,7 +319,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     ] },
                     { id: 'general', name: 'General Wares', emoji: '📦', desc: 'Odds, ends, and adventuring essentials.', theme: 'farming', stock: [
                         { itemId: 'feather', buy: 5, sell: 1 },
-                        { itemId: 'bronze_bar', buy: 40, sell: 10 }
+                        { itemId: 'bronze_bar', buy: 40, sell: 10 },
+                        { itemId: 'material_essence', buy: 80, sell: 20 }
                     ] },
                     { id: 'runes', name: 'Regent of Runes', emoji: '🔮', desc: 'Arcane currencies and sigils.', theme: 'divination', stock: [
                         { itemId: 'air_rune', buy: 8, sell: 2 },
@@ -308,6 +328,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         { itemId: 'water_rune', buy: 12, sell: 3 },
                         { itemId: 'earth_rune', buy: 12, sell: 3 },
                         { itemId: 'fire_rune', buy: 14, sell: 4 }
+                    ] },
+                    { id: 'undead', name: 'Undead Curios', emoji: '🧟', desc: 'Morbid mementos and remains.', theme: 'combat', stock: [
+                        { itemId: 'rotten_flesh', buy: 10, sell: 2 },
+                        { itemId: 'bone_shard', buy: 12, sell: 3 },
+                        { itemId: 'tattered_cloth', buy: 8, sell: 2 },
+                        { itemId: 'grave_dust', buy: 15, sell: 3 },
+                        { itemId: 'zombie_brain', buy: 120, sell: 30 },
+                        { itemId: 'ectoplasm', buy: 200, sell: 50 },
+                        { itemId: 'zombie_tooth', buy: 18, sell: 4 },
+                        { itemId: 'skeletal_hand', buy: 250, sell: 60 },
+                        { itemId: 'cursed_coin', buy: 300, sell: 75 }
                     ] }
                 ]
             },
@@ -322,6 +353,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     { rarity: 'epic',     entries: [ {type:'item', id:'item_scroll_fortune', min:1, max:1, weight:1} ] }
                 ],
                 perKillRolls: 1, // number of extra global loot rolls per kill
+<<<<<<< HEAD
+                // Shared themed tables
+                sharedTables: {
+                    undead_common: [
+                        { id: 'rotten_flesh', qty: [1,2], weight: 4, chance: 60 },
+                        { id: 'bone_shard', qty: [1,3], weight: 3, chance: 50 },
+                        { id: 'tattered_cloth', qty: [1,2], weight: 2, chance: 30 },
+                        { id: 'grave_dust', qty: [1,1], weight: 1, chance: 15 }
+                    ],
+                    undead_rare: [
+                        { id: 'zombie_brain', qty: [1,1], weight: 1, chance: 10 },
+                        { id: 'zombie_tooth', qty: [1,2], weight: 1, chance: 12 },
+                        { id: 'skeletal_hand', qty: [1,1], weight: 1, chance: 6 },
+                        { id: 'ectoplasm', qty: [1,1], weight: 1, chance: 8 },
+                        { id: 'cursed_coin', qty: [1,2], weight: 1, chance: 5 }
+                    ]
+                }
+=======
                 // Unique loot pools per mode
                 arenaTables: [
                     { rarity: 'uncommon', entries: [ {type:'item', id:'arena_medal', min:1, max:1, weight:3}, {type:'item', id:'gladiator_emblem', min:1, max:1, weight:1} ] },
@@ -332,6 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     { rarity: 'rare',     entries: [ {type:'item', id:'phoenix_feather', min:1, max:1, weight:1}, {type:'item', id:'titan_core', min:1, max:1, weight:1} ] },
                     { rarity: 'epic',     entries: [ {type:'item', id:'mythic_relic', min:1, max:1, weight:1}, {type:'item', id:'ascendant_sigil', min:1, max:1, weight:1} ] }
                 ]
+>>>>>>> origin/main
             }
         }
     };
@@ -1120,7 +1170,6 @@ document.addEventListener('DOMContentLoaded', () => {
             this.uiManager.showFloatingText(`${spell.name} activated!`, 'text-purple-300');
             this.uiManager.renderView();
         }
-
         // Chests
         buyChest(chestId) {
             const chest = GAME_DATA.CHESTS.find(c => c.id === chestId); if (!chest) return;
@@ -1177,6 +1226,17 @@ document.addEventListener('DOMContentLoaded', () => {
                          const gid = this.maybeGoldenizeItem(id);
                          itemsMap[gid] = (itemsMap[gid] || 0) + q;
                      });
+                 }
+             }
+             // Roll shared drop table (e.g., undead_common)
+             if (enemy.sharedDropTable) {
+                 const sharedRoll = this.rollSharedTable(enemy.sharedDropTable);
+                 if (sharedRoll) itemsMap[sharedRoll.id] = (itemsMap[sharedRoll.id] || 0) + sharedRoll.qty;
+                 // Optional rare table companion rule: if an undead table exists, also try a rare roll at low odds
+                 const rareKey = enemy.sharedDropTable.replace('_common','_rare');
+                 if ((Math.random() * 100) < 25 && (GAME_DATA.LOOT?.sharedTables?.[rareKey])) {
+                     const rareRoll = this.rollSharedTable(rareKey);
+                     if (rareRoll) itemsMap[rareRoll.id] = (itemsMap[rareRoll.id] || 0) + rareRoll.qty;
                  }
              }
              // Route through War Spoils to unify behavior with auto-combat
@@ -1439,6 +1499,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return total;
         }
+<<<<<<< HEAD
+=======
         // Determine current auto-battle mode from UI view
         getAutoBattleMode() {
             const v = this.uiManager?.currentView;
@@ -1447,6 +1509,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Default to raid if composition is set, else arena
             return (this.state.combat?.auto?.raid && Object.keys(this.state.combat.auto.raid.composition||{}).length>0) ? 'raid' : 'arena';
         }
+>>>>>>> origin/main
         // Passive auto-combat processor (army raids)
         processAutoCombat() {
             const auto = this.state.combat?.auto; if (!auto || !auto.enabled) return;
@@ -1511,6 +1574,22 @@ document.addEventListener('DOMContentLoaded', () => {
                              auto.buffers.items[id] = (auto.buffers.items[id] || 0) + qty;
                          }
                      });
+                     // Shared themed drop table
+                     if (target.sharedDropTable) {
+                         const sharedRoll = this.rollSharedTable(target.sharedDropTable);
+                         if (sharedRoll) {
+                             if (!auto.buffers.items) auto.buffers.items = {};
+                             auto.buffers.items[sharedRoll.id] = (auto.buffers.items[sharedRoll.id] || 0) + sharedRoll.qty;
+                         }
+                         const rareKey = target.sharedDropTable.replace('_common','_rare');
+                         if ((Math.random() * 100) < 25 && (GAME_DATA.LOOT?.sharedTables?.[rareKey])) {
+                             const rr = this.rollSharedTable(rareKey);
+                             if (rr) {
+                                 if (!auto.buffers.items) auto.buffers.items = {};
+                                 auto.buffers.items[rr.id] = (auto.buffers.items[rr.id] || 0) + rr.qty;
+                             }
+                         }
+                     }
                      // Global loot rolls (epic system)
                      const extraRolls = (GAME_DATA.LOOT?.perKillRolls) || 0;
                      for (let r = 0; r < extraRolls; r++) {
@@ -2152,6 +2231,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
             }).join('');
+<<<<<<< HEAD
+=======
             return `
                 <div class="block p-4 mb-4 border border-hunter medieval-glow">
                     <div class="flex items-center justify-between mb-3">
@@ -2286,6 +2367,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const itemsHtml = itemsEntries.length ? itemsEntries.map(([id,q]) => `<span class="badge">${GAME_DATA.ITEMS[id]?.icon||'❔'} ${GAME_DATA.ITEMS[id]?.name||id} x${q}</span>`).join(' ') : '<span class="text-secondary text-xs">No items yet.</span>';
             const spoilsEmpty = (Math.floor(auto.buffers?.gold||0) <= 0) && itemsEntries.length === 0;
             const killProgress = Math.max(0, Math.min(1, (auto.killsFrac || 0) % 1));
+>>>>>>> origin/main
             return `
                 <div class="block combat-hero p-5 rounded-md mb-4">
                     <div class="flex items-center justify-between">
@@ -2294,7 +2376,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class="text-secondary text-sm">Face fearsome foes. Rally your army and unleash powerful spells.</p>
                         </div>
                         <div class="flex items-center gap-2">
+<<<<<<< HEAD
+                            <span class="badge"><i class="fas fa-users"></i> Allies: DPS ${Math.max(0, allies.dps || 0).toFixed(1)} • HPS ${Math.max(0, allies.hps || 0).toFixed(1)}${this.state.army.upkeep?.hungry ? ' <span class="text-red-400 ml-1">Hungry</span>' : ''}</span>
+                            ${rallyCta}
+=======
                             <span class="badge"><i class="fas fa-users"></i> Allies: DPS ${Math.max(0, allies.dps || 0).toFixed(1)} • HPS ${Math.max(0, allies.hps || 0).toFixed(1)}${this.game.state.army.upkeep?.hungry ? ' <span class="text-red-400 ml-1">Hungry</span>' : ''}</span>
+>>>>>>> origin/main
                         </div>
                     </div>
                 </div>
@@ -2502,6 +2589,8 @@ document.addEventListener('DOMContentLoaded', () => {
             `).join('');
             return `<h1 class="text-2xl font-semibold text-white mb-4">Shop</h1><div class="grid grid-cols-1 md:grid-cols-3 gap-4">${chestCards}</div>`;
         }
+<<<<<<< HEAD
+=======
 
         renderWorkforceView() {
             this.game.ensureWorkerState();
@@ -2974,6 +3063,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const ar = document.getElementById('army-rally'); if (ar) ar.addEventListener('click', (e) => { const r = this.game.state.player.activeBuffs?.['armyRally']; if (!r || Date.now() >= r) { const rect = e.currentTarget.getBoundingClientRect(); this.juiceBurst('upgrade', rect.left + rect.width/2, rect.top + rect.height/2); } this.game.rallyArmy(); });
             document.querySelectorAll('.army-upgrade-btn').forEach(btn => { btn.addEventListener('click', () => this.game.upgradeArmy(btn.dataset.type)); });
             document.querySelectorAll('input[name="army-stance"]').forEach(r => { r.addEventListener('change', () => this.game.setArmyStance(r.value)); });
+>>>>>>> origin/main
             // Merchant
             document.querySelectorAll('.merchant-tab').forEach(btn => { btn.addEventListener('click', () => { this.game.state.merchant.selectedStallId = btn.dataset.stallId; this.renderView(); }); });
             document.querySelectorAll('.merchant-buy-btn').forEach(btn => { btn.addEventListener('click', (e) => {
@@ -3302,9 +3392,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
                         <div class="glass-card rounded-md p-3 text-center shine"><div class="text-[11px] text-secondary uppercase tracking-wider">DPS</div><div class="text-2xl font-mono text-white">${prod.dps.toFixed(1)}</div></div>
-                        <div class="glass-card rounded-md p-3 text-center"><div class="text-[11px] text-secondary uppercase tracking-wider">HPS</div><div class="text-2xl font-mono text-white">${prod.hps.toFixed(1)}</div></div>
-                        <div class="glass-card rounded-md p-3 text-center"><div class="text-[11px] text-secondary uppercase tracking-wider">Upkeep</div><div class="text-xl font-mono text-white">${foodPerMin.toFixed(1)}/m ${hungry ? '<span class="text-red-400 text-xs ml-1">Hungry</span>' : ''}</div></div>
-                        <div class="glass-card rounded-md p-3 text-center"><div class="text-[11px] text-secondary uppercase tracking-wider">Rations</div><div class="text-xl font-mono text-white">${edible} items • ${minutesLeft}m</div></div>
+                        <div class="glass-card rounded-md p-3 text-center shine"><div class="text-[11px] text-secondary uppercase tracking-wider">HPS</div><div class="text-2xl font-mono text-white">${prod.hps.toFixed(1)}</div></div>
+                        <div class="glass-card rounded-md p-3 text-center shine"><div class="text-[11px] text-secondary uppercase tracking-wider">Upkeep</div><div class="text-xl font-mono text-white">${foodPerMin.toFixed(1)}/m ${hungry ? '<span class="text-red-400 text-xs ml-1">Hungry</span>' : ''}</div></div>
+                        <div class="glass-card rounded-md p-3 text-center shine"><div class="text-[11px] text-secondary uppercase tracking-wider">Rations</div><div class="text-xl font-mono text-white">${edible} items • ${minutesLeft}m</div></div>
                     </div>
                 </div>`;
             const upgrades = `

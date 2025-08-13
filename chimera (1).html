@@ -217,11 +217,20 @@
                 death_rune: { name: 'Death Rune', icon: '💀' },
                 blood_rune: { name: 'Blood Rune', icon: '🩸' },
 
-                // Epic combat loot
-                goblin_ear: { name: 'Goblin Ear', icon: '👂' },
-                zombie_brain: { name: 'Zombie Brain', icon: '🧠🧟' },
-                giant_toe: { name: 'Giant Toe', icon: '🦶' },
-                dragon_scale: { name: 'Dragon Scale', icon: '🐉' },
+                                 // Epic combat loot
+                 goblin_ear: { name: 'Goblin Ear', icon: '👂' },
+                 zombie_brain: { name: 'Zombie Brain', icon: '🧠🧟' },
+                 giant_toe: { name: 'Giant Toe', icon: '🦶' },
+                 dragon_scale: { name: 'Dragon Scale', icon: '🐉' },
+                 // Undead remains & curios
+                 rotten_flesh: { name: 'Rotten Flesh', icon: '🥩' },
+                 bone_shard: { name: 'Bone Shard', icon: '🦴' },
+                 tattered_cloth: { name: 'Tattered Cloth', icon: '🧵' },
+                 grave_dust: { name: 'Grave Dust', icon: '🪦' },
+                 ectoplasm: { name: 'Ectoplasm', icon: '🧪' },
+                 zombie_tooth: { name: 'Zombie Tooth', icon: '🦷' },
+                 skeletal_hand: { name: 'Skeletal Hand', icon: '✋' },
+                 cursed_coin: { name: 'Cursed Coin', icon: '🪙' },
                 phoenix_feather: { name: 'Phoenix Feather', icon: '🪶🔥' },
                 raid_trophy: { name: 'Raid Trophy', icon: '🏆' },
             },
@@ -299,12 +308,13 @@
                 { id: 'chest_ancient', name: 'Ancient Chest', description: 'A locked chest from a forgotten era.', cost: 0, keyItemID: 'item_ancient_key', rarity: 'epic', icon: 'treasurechest', lootTable: [ {type:'currency', amount:2000}, {type:'item', id:'seed_inspiration', qty:1}, {type:'item', id:'tree_ironwood', qty:1}, {type:'runes', amount:5} ], rewardCount: [3,4] },
             ],
             COMBAT: {
-                ENEMIES: [
-                    { id: 'goblin', name: 'Goblin', level: 2, hp: 30, maxHp: 30, attack: 4, defense: 1, gold: [5, 10], drops: [ {id:'copper_ore', qty:[1,2], chance:50}, {id:'tin_ore', qty:[1,2], chance:50} ], attackSpeedMs: 2000 },
-                    { id: 'wolf', name: 'Wolf', level: 5, hp: 60, maxHp: 60, attack: 7, defense: 2, gold: [12, 25], drops: [ {id:'raw_shrimp', qty:[1,1], chance:30} ], attackSpeedMs: 1800 },
-                    { id: 'skeleton', name: 'Skeleton', level: 10, hp: 120, maxHp: 120, attack: 12, defense: 4, gold: [30, 60], drops: [ {id:'bronze_bar', qty:[1,2], chance:35} ], attackSpeedMs: 1700 },
-                    { id: 'troll', name: 'Troll', level: 20, hp: 300, maxHp: 300, attack: 20, defense: 8, gold: [80, 150], drops: [ {id:'item_ancient_key', qty:[1,1], chance:10} ], attackSpeedMs: 1600 },
-                ],
+                                 ENEMIES: [
+                     { id: 'goblin', name: 'Goblin', level: 2, hp: 30, maxHp: 30, attack: 4, defense: 1, gold: [5, 10], drops: [ {id:'copper_ore', qty:[1,2], chance:50}, {id:'tin_ore', qty:[1,2], chance:50} ], attackSpeedMs: 2000 },
+                     { id: 'wolf', name: 'Wolf', level: 5, hp: 60, maxHp: 60, attack: 7, defense: 2, gold: [12, 25], drops: [ {id:'raw_shrimp', qty:[1,1], chance:30} ], attackSpeedMs: 1800 },
+                     { id: 'zombie', name: 'Zombie', level: 8, hp: 100, maxHp: 100, attack: 10, defense: 3, gold: [20, 45], drops: [ {id:'rotten_flesh', qty:[1,3], chance:65}, {id:'zombie_brain', qty:[1,1], chance:15}, {id:'zombie_tooth', qty:[1,2], chance:18}, {id:'tattered_cloth', qty:[1,2], chance:28} ], attackSpeedMs: 1850 },
+                     { id: 'skeleton', name: 'Skeleton', level: 10, hp: 120, maxHp: 120, attack: 12, defense: 4, gold: [30, 60], drops: [ {id:'bone_shard', qty:[1,3], chance:60}, {id:'skeletal_hand', qty:[1,1], chance:12}, {id:'tattered_cloth', qty:[1,2], chance:30}, {id:'grave_dust', qty:[1,2], chance:22}, {id:'rune_essence', qty:[2,4], chance:20} ], attackSpeedMs: 1700 },
+                     { id: 'troll', name: 'Troll', level: 20, hp: 300, maxHp: 300, attack: 20, defense: 8, gold: [80, 150], drops: [ {id:'item_ancient_key', qty:[1,1], chance:10} ], attackSpeedMs: 1600 },
+                 ],
                 BOUNTIES: [
                     { id: 'bounty_goblins', name: 'Cull the Goblin Clans', type: 'farm', icon: '🗡️', durationMs: 15 * 60 * 1000, recommendedLP: 500, enemyPool: ['goblin'], rewardGold: [150, 300], rewardItems: [ {id:'goblin_ear', qty:[3,7], chance: 100} ], rewardRunes: [0, 1] },
                     { id: 'bounty_undead', name: 'Purge the Undead', type: 'farm', icon: '🕯️', durationMs: 25 * 60 * 1000, recommendedLP: 1200, enemyPool: ['skeleton'], rewardGold: [300, 600], rewardItems: [ {id:'zombie_brain', qty:[2,5], chance: 100} ], rewardRunes: [1, 2] },
@@ -768,16 +778,31 @@
                 if (!this.state.combat.inCombat) return; if (!victory) { this.uiManager.showModal('Defeated', '<p>You were defeated. Rest to recover HP.</p>'); }
                 this.state.combat.inCombat = false; this.state.combat.enemy = null; this.uiManager.renderView();
             }
-            handleEnemyDefeat(enemy) {
-                // Gold
-                const g = Math.floor(Math.random() * (enemy.gold[1] - enemy.gold[0] + 1)) + enemy.gold[0]; this.addGold(g);
-                // Drops
-                (enemy.drops || []).forEach(drop => { if (Math.random() * 100 < drop.chance) { const q = Math.floor(Math.random() * (drop.qty[1] - drop.qty[0] + 1)) + drop.qty[0]; this.addToBank(drop.id, q); } });
-                // XP to Strength
-                this.state.player.meta_skills[META_SKILLS.STRENGTH].addXP(15 + enemy.level * 2, this);
-                this.uiManager.showFloatingText(`${enemy.name} defeated!`, 'text-green-400');
-                this.endCombat(true);
-            }
+                         handleEnemyDefeat(enemy) {
+                 // Gold
+                 const g = Math.floor(Math.random() * (enemy.gold[1] - enemy.gold[0] + 1)) + enemy.gold[0]; this.addGold(g);
+                 // Drops
+                 (enemy.drops || []).forEach(drop => { if (Math.random() * 100 < drop.chance) { const q = Math.floor(Math.random() * (drop.qty[1] - drop.qty[0] + 1)) + drop.qty[0]; this.addToBank(drop.id, q); } });
+                 // Shared themed drop table (simple version)
+                 if (enemy.id === 'zombie' || enemy.id === 'skeleton') {
+                     const undeadCommon = [
+                         { id: 'rotten_flesh', qty: [1,2], chance: 60 },
+                         { id: 'bone_shard', qty: [1,3], chance: 50 },
+                         { id: 'tattered_cloth', qty: [1,2], chance: 30 },
+                         { id: 'grave_dust', qty: [1,1], chance: 15 }
+                     ];
+                     const picks = undeadCommon.filter(e => Math.random() * 100 < e.chance);
+                     if (picks.length) {
+                         const pick = picks[Math.floor(Math.random() * picks.length)];
+                         const q = Math.floor(Math.random() * (pick.qty[1] - pick.qty[0] + 1)) + pick.qty[0];
+                         this.addToBank(pick.id, q);
+                     }
+                 }
+                 // XP to Strength
+                 this.state.player.meta_skills[META_SKILLS.STRENGTH].addXP(15 + enemy.level * 2, this);
+                 this.uiManager.showFloatingText(`${enemy.name} defeated!`, 'text-green-400');
+                 this.endCombat(true);
+             }
             calculatePlayerDamage(enemy) {
                 let base = 5; if (this.state.player.weapon && GAME_DATA.ITEMS[this.state.player.weapon]?.damage) base += GAME_DATA.ITEMS[this.state.player.weapon].damage;
                 const strBonus = 1 + (this.state.player.meta_skills[META_SKILLS.STRENGTH].level - 1) * 0.03; const dmg = Math.max(1, Math.floor((base * strBonus) - enemy.defense * 0.5));
