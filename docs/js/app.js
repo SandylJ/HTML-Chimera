@@ -1097,7 +1097,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.addToBank(itemId, qty);
             this.uiManager.showFloatingText(`+${qty} ${GAME_DATA.ITEMS[itemId]?.name || itemId}`, 'text-yellow-300');
             this.uiManager.playSound('upgrade');
-            this.uiManager.renderView();
+            this.uiManager.render();
             return true;
         }
         sellItem(itemId, qty = 1) {
@@ -1109,7 +1109,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.addGold(total);
             this.uiManager.showFloatingText(`+${total} GP`, 'text-yellow-300');
             this.uiManager.playSound('hire');
-            this.uiManager.renderView();
+            this.uiManager.render();
             return true;
         }
         calculateArmyLifePoints() {
@@ -1220,7 +1220,7 @@ document.addEventListener('DOMContentLoaded', () => {
         attachSidebarEventListeners() { document.querySelectorAll('.sidebar-link').forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); this.currentView = link.dataset.view; this.render(); }); }); }
 
         updateHeaderBars() {
-            const goldDisplay = document.getElementById('gold-display'); if (goldDisplay) goldDisplay.textContent = Math.floor(this.game.state.player.gold).toLocaleString() + ' GP';
+            const goldDisplay = document.getElementById('gold-display'); if (goldDisplay) goldDisplay.textContent = Math.floor(this.game.state.player.gold).toLocaleString() + ' GP'; const dashGp = document.getElementById('dash-gp'); if (dashGp) dashGp.textContent = Math.floor(this.game.state.player.gold).toLocaleString();
             const runesDisplay = document.getElementById('runes-display'); if (runesDisplay) runesDisplay.textContent = Math.floor(this.game.state.player.runes).toLocaleString();
             const staminaFill = document.getElementById('stamina-bar-fill'); const staminaValue = document.getElementById('stamina-value'); if (staminaFill && staminaValue) { const s = this.game.state.player; staminaFill.style.width = `${(s.stamina / s.staminaMax) * 100}%`; staminaValue.textContent = `${Math.floor(s.stamina)}/${s.staminaMax}`; }
             const armyLpEl = document.getElementById('army-lp-display'); if (armyLpEl && this.game.calculateArmyLifePoints) { const lp = this.game.calculateArmyLifePoints(); armyLpEl.textContent = `${lp.toLocaleString()} LP`; }
@@ -1238,7 +1238,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSidebarActive() { document.querySelectorAll('.sidebar-link').forEach(link => { link.classList.toggle('active', link.dataset.view === this.currentView); }); }
 
         updateDynamicElements() {
-            document.getElementById('gold-display').textContent = Math.floor(this.game.state.player.gold).toLocaleString() + ' GP';
+            document.getElementById('gold-display').textContent = Math.floor(this.game.state.player.gold).toLocaleString() + ' GP'; const dashGp2 = document.getElementById('dash-gp'); if (dashGp2) dashGp2.textContent = Math.floor(this.game.state.player.gold).toLocaleString();
             const gps = this.game.state.empire?.production?.goldPerSec || 0;
             const gpsEl = document.getElementById('gps-display'); if (gpsEl) gpsEl.textContent = `(+${gps.toFixed(1)} GP/s)`;
             const runesEl = document.getElementById('runes-display'); if (runesEl) { const totalRunes = (this.game.state.player.runes || 0) + this.game.getTotalRuneItemCount(); runesEl.textContent = totalRunes.toLocaleString(); }
@@ -1422,7 +1422,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                             <div class="flex items-center gap-2 flex-wrap text-sm">
                                 <div class="unit-chip"><i class="fas fa-users text-blue-300"></i><span>Inhabitants</span><span class="font-mono text-white">${inhabitantsTotal.toLocaleString()}</span></div>
-                                <div class="unit-chip"><i class="fas fa-coins text-yellow-300"></i><span>GP</span><span class="font-mono text-white">${gold}</span></div>
+                                <div class="unit-chip"><i class="fas fa-coins text-yellow-300"></i><span>GP</span><span id="dash-gp" class="font-mono text-white">${gold}</span></div>
                                 <div class="unit-chip"><i class="fas fa-gem text-purple-300"></i><span>Runes</span><span class="font-mono text-white">${totalRunes.toLocaleString()}</span></div>
                                 <div class="unit-chip"><i class="fas fa-bolt text-green-400"></i><span>Stamina</span><span class="font-mono text-white">${stamina}/${staminaMax}</span></div>
                             </div>
