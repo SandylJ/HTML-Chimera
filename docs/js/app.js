@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
             hunter: { name: 'Hunter', type: 'gathering', icon: 'fa-paw', theme: 'hunter' },
             archaeology: { name: 'Archaeology', type: 'gathering', icon: 'fa-brush', theme: 'archaeology' },
             divination: { name: 'Divination', type: 'gathering', icon: 'fa-sparkles', theme: 'divination' },
+            herblore: { name: 'Herblore', type: 'gathering', icon: 'fa-leaf', theme: 'herblore' },
             firemaking: { name: 'Firemaking', type: 'artisan', icon: 'fa-fire', theme: 'firemaking' },
             smithing: { name: 'Smithing', type: 'artisan', icon: 'fa-hammer', theme: 'smithing' },
             cooking: { name: 'Cooking', type: 'artisan', icon: 'fa-utensils', theme: 'cooking' },
@@ -76,6 +77,33 @@ document.addEventListener('DOMContentLoaded', () => {
             skeletal_hand: { name: 'Skeletal Hand', icon: '✋' },
             cursed_coin: { name: 'Cursed Coin', icon: '🪙' },
 
+            // Herblore herbs and reagents
+            herb_flaxseed: { name: 'Flaxseed', icon: '🌿' },
+            herb_sageleaf: { name: 'Sageleaf', icon: '🍃' },
+            herb_marshroot: { name: 'Marshroot', icon: '🪴' },
+            herb_frostmint: { name: 'Frostmint', icon: '❄️' },
+            herb_sunbloom: { name: 'Sunbloom', icon: '🌼' },
+            herb_nightshade: { name: 'Nightshade', icon: '🌑' },
+            herb_moonbloom: { name: 'Moonbloom', icon: '🌙' },
+            herb_whisper_reed: { name: 'Whisper Reed', icon: '🎋' },
+            herb_bitterglass: { name: 'Bitterglass', icon: '🧊' },
+            herb_ash_thistle: { name: 'Ash Thistle', icon: '🌵' },
+            herb_kingsfoil: { name: 'Kingsfoil', icon: '👑' },
+            herb_gloamcap: { name: 'Gloamcap', icon: '🍄' },
+            binding_resin: { name: 'Binding Resin', icon: '🪵' },
+            spirit_dust: { name: 'Spirit Dust', icon: '✨' },
+            fish_oil: { name: 'Fish Oil', icon: '🫙' },
+            aether_salt: { name: 'Aether Salt', icon: '🧂' },
+            cork: { name: 'Cork', icon: '🧰' },
+            water: { name: 'Water', icon: '💧' },
+            crystal_vial: { name: 'Crystal Vial', icon: '🔮' },
+
+            // Potions (Herblore)
+            health_tonic: { name: 'Health Tonic', icon: '🧪', heals: 80 },
+            foragers_tea: { name: "Forager's Tea", icon: '🍵' },
+            workforce_brew: { name: 'Workforce Brew', icon: '🍺' },
+            antidote: { name: 'Antidote', icon: '🧴' },
+
             // Hunter mission rewards
             beast_bone: { name: 'Beast Bone', icon: '🦴' },
             pristine_hide: { name: 'Pristine Hide', icon: '🦬' },
@@ -107,6 +135,18 @@ document.addEventListener('DOMContentLoaded', () => {
             mithril_bar: { name: 'Mithril Bar', icon: '🟦' },
             adamant_bar: { name: 'Adamant Bar', icon: '🟩' },
             rune_bar: { name: 'Rune Bar', icon: '🟪' },
+            arena_medal: { name: 'Arena Medal', icon: '🥇' },
+            gladiator_emblem: { name: 'Gladiator Emblem', icon: '⚔️' },
+            hydra_fang: { name: 'Hydra Fang', icon: '🦷' },
+            minotaur_horn: { name: 'Minotaur Horn', icon: '🐮' },
+            raid_insignia: { name: 'Raid Insignia', icon: '🎖️' },
+            void_crystal: { name: 'Void Crystal', icon: '🔮' },
+            phoenix_feather: { name: 'Phoenix Feather', icon: '🪶' },
+            titan_core: { name: 'Titan Core', icon: '🧊' },
+            celestial_ore: { name: 'Celestial Ore', icon: '🌟' },
+            voidstone: { name: 'Voidstone', icon: '🪨' },
+            mythic_relic: { name: 'Mythic Relic', icon: '🗿' },
+            ascendant_sigil: { name: 'Ascendant Sigil', icon: '🔰' },
         },
         ACTIONS: {
             woodcutting: [
@@ -150,6 +190,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 { id: 'shrimp_spot', name: 'Shrimp Spot', level: 1, xp: 8, output: { itemId: 'raw_shrimp', quantity: 1 }, baseTime: 4000 },
                 { id: 'sardine_spot', name: 'Sardine Spot', level: 5, xp: 15, output: { itemId: 'raw_sardine', quantity: 1 }, baseTime: 4500 },
             ],
+            herblore: [
+                { id: 'meadow_flaxseed', name: 'Meadow: Flaxseed', level: 1, xp: 7, output: { itemId: 'herb_flaxseed', quantity: 1 }, baseTime: 4500, rareDrop: { itemId: 'spirit_dust', chance: 2 } },
+                { id: 'forest_sageleaf', name: 'Forest: Sageleaf', level: 5, xp: 10, output: { itemId: 'herb_sageleaf', quantity: 1 }, baseTime: 5000, rareDrop: { itemId: 'binding_resin', chance: 2 } },
+                { id: 'swamp_marshroot', name: 'Swamp: Marshroot', level: 10, xp: 14, output: { itemId: 'herb_marshroot', quantity: 1 }, baseTime: 5200, rareDrop: { itemId: 'spirit_dust', chance: 3 } },
+                { id: 'tundra_frostmint', name: 'Tundra: Frostmint', level: 12, xp: 16, output: { itemId: 'herb_frostmint', quantity: 1 }, baseTime: 5400 },
+                { id: 'desert_sunbloom', name: 'Desert: Sunbloom', level: 15, xp: 18, output: { itemId: 'herb_sunbloom', quantity: 1 }, baseTime: 5600 },
+                { id: 'forest_nightshade', name: 'Forest: Nightshade', level: 18, xp: 22, output: { itemId: 'herb_nightshade', quantity: 1 }, baseTime: 6000 },
+                { id: 'highlands_bitterglass', name: 'Highlands: Bitterglass', level: 20, xp: 24, output: { itemId: 'herb_bitterglass', quantity: 1 }, baseTime: 6200 },
+                { id: 'swamp_whisper_reed', name: 'Swamp: Whisper Reed', level: 16, xp: 20, output: { itemId: 'herb_whisper_reed', quantity: 1 }, baseTime: 5800 },
+                { id: 'desert_ash_thistle', name: 'Desert: Ash Thistle', level: 22, xp: 26, output: { itemId: 'herb_ash_thistle', quantity: 1 }, baseTime: 6400 },
+                { id: 'highlands_kingsfoil', name: 'Highlands: Kingsfoil', level: 28, xp: 30, output: { itemId: 'herb_kingsfoil', quantity: 1 }, baseTime: 7000 },
+                { id: 'cave_gloamcap', name: 'Caves: Gloamcap', level: 30, xp: 35, output: { itemId: 'herb_gloamcap', quantity: 1 }, baseTime: 7400 },
+            ],
         },
         RECIPES: {
             smithing: [
@@ -189,6 +242,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 { id: 'death_rune', name: 'Death Altar (Death Rune)', level: 65, xp: 12, input: [{ itemId: 'rune_essence', quantity: 1 }], output: { itemId: 'death_rune', quantity: 1 }, baseTime: 4000 },
                 { id: 'blood_rune', name: 'Blood Altar (Blood Rune)', level: 77, xp: 13, input: [{ itemId: 'rune_essence', quantity: 1 }], output: { itemId: 'blood_rune', quantity: 1 }, baseTime: 4200 },
             ],
+            herblore: [
+                { id: 'brew_health_tonic', isBrew: true, name: 'Brew: Health Tonic', level: 5, xp: 20, input: [{ itemId: 'herb_marshroot', quantity: 2 }, { itemId: 'binding_resin', quantity: 1 }, { itemId: 'water', quantity: 1 }], output: { itemId: 'health_tonic', quantity: 1 }, baseTime: 90000 },
+                { id: 'brew_foragers_tea', isBrew: true, name: "Brew: Forager's Tea", level: 20, xp: 40, input: [{ itemId: 'herb_sunbloom', quantity: 2 }, { itemId: 'herb_sageleaf', quantity: 1 }, { itemId: 'fish_oil', quantity: 1 }], output: { itemId: 'foragers_tea', quantity: 1 }, baseTime: 120000 },
+                { id: 'brew_workforce_brew', isBrew: true, name: 'Brew: Workforce Brew', level: 18, xp: 35, input: [{ itemId: 'herb_flaxseed', quantity: 2 }, { itemId: 'herb_moonbloom', quantity: 1 }, { itemId: 'aether_salt', quantity: 1 }], output: { itemId: 'workforce_brew', quantity: 1 }, baseTime: 120000 },
+                { id: 'brew_antidote', isBrew: true, name: 'Brew: Antidote', level: 14, xp: 25, input: [{ itemId: 'herb_sageleaf', quantity: 2 }, { itemId: 'herb_moonbloom', quantity: 1 }, { itemId: 'water', quantity: 1 }], output: { itemId: 'antidote', quantity: 1 }, baseTime: 90000 },
+            ],
             alchemy: [ // from native dataset
                 { id: 'elixir_strength', name: 'Elixir of Strength', level: 1, xp: 25, input: [{ itemId: 'material_sunstone_shard', quantity: 1 }, { itemId: 'material_joyful_ember', quantity: 2 }], output: { itemId: 'item_elixir_strength', quantity: 1 }, baseTime: 5000 },
                 { id: 'scroll_fortune', name: 'Scroll of Fortune', level: 1, xp: 30, input: [{ itemId: 'material_joyful_ember', quantity: 5 }, { itemId: 'material_essence', quantity: 2 }], output: { itemId: 'item_scroll_fortune', quantity: 1 }, baseTime: 6000 },
@@ -206,11 +265,27 @@ document.addEventListener('DOMContentLoaded', () => {
         ],
         COMBAT: {
             ENEMIES: [
+<<<<<<< HEAD
                 { id: 'goblin', name: 'Goblin', level: 2, hp: 30, maxHp: 30, attack: 4, defense: 1, gold: [5, 10], drops: [ {id:'copper_ore', qty:[1,2], chance:50}, {id:'tin_ore', qty:[1,2], chance:50}, {id:'logs', qty:[1,2], chance:35}, {id:'rune_essence', qty:[1,2], chance:20} ], attackSpeedMs: 2000 },
                 { id: 'wolf', name: 'Wolf', level: 5, hp: 60, maxHp: 60, attack: 7, defense: 2, gold: [12, 25], drops: [ {id:'raw_shrimp', qty:[1,1], chance:30}, {id:'oak_logs', qty:[1,2], chance:30}, {id:'willow_logs', qty:[1,1], chance:15}, {id:'iron_ore', qty:[1,1], chance:10} ], attackSpeedMs: 1800 },
                 { id: 'zombie', name: 'Zombie', level: 8, hp: 100, maxHp: 100, attack: 10, defense: 3, gold: [20, 45], drops: [ {id:'rotten_flesh', qty:[1,3], chance:65}, {id:'zombie_brain', qty:[1,1], chance:15}, {id:'zombie_tooth', qty:[1,2], chance:18}, {id:'tattered_cloth', qty:[1,2], chance:28} ], sharedDropTable: 'undead_common', attackSpeedMs: 1850 },
                 { id: 'skeleton', name: 'Skeleton', level: 10, hp: 120, maxHp: 120, attack: 12, defense: 4, gold: [30, 60], drops: [ {id:'bone_shard', qty:[1,3], chance:60}, {id:'skeletal_hand', qty:[1,1], chance:12}, {id:'tattered_cloth', qty:[1,2], chance:30}, {id:'grave_dust', qty:[1,2], chance:22}, {id:'rune_essence', qty:[2,4], chance:20} ], sharedDropTable: 'undead_common', attackSpeedMs: 1700 },
                 { id: 'troll', name: 'Troll', level: 20, hp: 300, maxHp: 300, attack: 20, defense: 8, gold: [80, 150], drops: [ {id:'item_ancient_key', qty:[1,1], chance:10}, {id:'mithril_ore', qty:[1,2], chance:30}, {id:'adamant_ore', qty:[1,1], chance:20}, {id:'gold_ore', qty:[1,2], chance:25}, {id:'rune_ore', qty:[1,1], chance:8}, {id:'coal', qty:[2,4], chance:40} ], attackSpeedMs: 1600 },
+=======
+                // Arena foes (Combat tab)
+                { id: 'goblin', name: 'Goblin', level: 2, hp: 30, maxHp: 30, attack: 4, defense: 1, gold: [5, 10], drops: [ {id:'copper_ore', qty:[1,2], chance:50}, {id:'tin_ore', qty:[1,2], chance:50}, {id:'logs', qty:[1,2], chance:35}, {id:'rune_essence', qty:[1,2], chance:20}, {id:'arena_medal', qty:[1,1], chance:5} ], attackSpeedMs: 2000, arena:true },
+                { id: 'wolf', name: 'Wolf', level: 5, hp: 60, maxHp: 60, attack: 7, defense: 2, gold: [12, 25], drops: [ {id:'raw_shrimp', qty:[1,1], chance:30}, {id:'oak_logs', qty:[1,2], chance:30}, {id:'willow_logs', qty:[1,1], chance:15}, {id:'iron_ore', qty:[1,1], chance:10}, {id:'gladiator_emblem', qty:[1,1], chance:3} ], attackSpeedMs: 1800, arena:true },
+                { id: 'skeleton', name: 'Skeleton', level: 10, hp: 120, maxHp: 120, attack: 12, defense: 4, gold: [30, 60], drops: [ {id:'bronze_bar', qty:[1,2], chance:35}, {id:'iron_ore', qty:[1,2], chance:30}, {id:'coal', qty:[1,2], chance:30}, {id:'silver_ore', qty:[1,1], chance:20}, {id:'rune_essence', qty:[2,4], chance:25}, {id:'gladiator_emblem', qty:[1,1], chance:5} ], attackSpeedMs: 1700, arena:true },
+                { id: 'minotaur', name: 'Minotaur', level: 18, hp: 240, maxHp: 240, attack: 18, defense: 6, gold: [70, 130], drops: [ {id:'minotaur_horn', qty:[1,1], chance:12}, {id:'bronze_bar', qty:[1,3], chance:40}, {id:'iron_bar', qty:[1,2], chance:25} ], attackSpeedMs: 1650, arena:true },
+                { id: 'hydra', name: 'Lernaean Hydra', level: 28, hp: 520, maxHp: 520, attack: 28, defense: 10, gold: [120, 220], drops: [ {id:'hydra_fang', qty:[1,2], chance:14}, {id:'silver_bar', qty:[1,2], chance:30}, {id:'gold_bar', qty:[1,1], chance:20} ], attackSpeedMs: 1500, arena:true },
+
+                // Raid-only foes (Raids tab)
+                { id: 'voidling', name: 'Voidling', level: 22, hp: 380, maxHp: 380, attack: 22, defense: 9, gold: [90, 160], drops: [ {id:'void_crystal', qty:[1,2], chance:16}, {id:'voidstone', qty:[1,2], chance:25} ], attackSpeedMs: 1600, raid:true },
+                { id: 'phoenix', name: 'Ashen Phoenix', level: 34, hp: 800, maxHp: 800, attack: 34, defense: 12, gold: [180, 320], drops: [ {id:'phoenix_feather', qty:[1,2], chance:12}, {id:'gold_bar', qty:[1,2], chance:35} ], attackSpeedMs: 1450, raid:true },
+                { id: 'titan', name: 'Frost Titan', level: 46, hp: 1600, maxHp: 1600, attack: 48, defense: 18, gold: [320, 620], drops: [ {id:'titan_core', qty:[1,1], chance:10}, {id:'mithril_bar', qty:[1,2], chance:28}, {id:'adamant_bar', qty:[1,1], chance:20} ], attackSpeedMs: 1400, raid:true },
+                { id: 'astral_drake', name: 'Astral Drake', level: 58, hp: 2600, maxHp: 2600, attack: 62, defense: 22, gold: [520, 980], drops: [ {id:'celestial_ore', qty:[1,2], chance:18}, {id:'mythic_relic', qty:[1,1], chance:6} ], attackSpeedMs: 1350, raid:true },
+                { id: 'void_emperor', name: 'The Void Emperor', level: 72, hp: 4200, maxHp: 4200, attack: 82, defense: 28, gold: [900, 1600], drops: [ {id:'ascendant_sigil', qty:[1,1], chance:5}, {id:'raid_insignia', qty:[1,2], chance:22}, {id:'rune_ore', qty:[1,1], chance:14} ], attackSpeedMs: 1300, raid:true },
+>>>>>>> origin/main
             ]
         },
         ARMY_CLASSES: {
@@ -231,10 +306,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     { id: 'armour', name: 'Shield & Mail', emoji: '🛡️', desc: 'Keep your hide intact with sturdy armour.', theme: 'smithing', stock: [
                         { itemId: 'dragon_scale', buy: 1200, sell: 250 }
                     ] },
-                    { id: 'potions', name: "Alchemist's Nook", emoji: '🧪', desc: 'Brews, elixirs, and curious tonics.', theme: 'cooking', stock: [
-                        { itemId: 'item_elixir_strength', buy: 220, sell: 60 },
-                        { itemId: 'item_scroll_fortune', buy: 300, sell: 85 }
-                    ] },
+                                         { id: 'potions', name: "Alchemist's Nook", emoji: '🧪', desc: 'Brews, elixirs, and curious tonics.', theme: 'herblore', stock: [
+                         { itemId: 'item_elixir_strength', buy: 220, sell: 60 },
+                         { itemId: 'item_scroll_fortune', buy: 300, sell: 85 },
+                         { itemId: 'water', buy: 6, sell: 1 },
+                         { itemId: 'crystal_vial', buy: 18, sell: 5 },
+                         { itemId: 'fish_oil', buy: 24, sell: 6 }
+                     ] },
                     { id: 'food', name: 'Cookfire Cantina', emoji: '🍖', desc: 'Freshly cooked bites to restore vigor.', theme: 'cooking', stock: [
                         { itemId: 'shrimp', buy: 15, sell: 4 },
                         { itemId: 'sardine', buy: 22, sell: 6 }
@@ -275,6 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     { rarity: 'epic',     entries: [ {type:'item', id:'item_scroll_fortune', min:1, max:1, weight:1} ] }
                 ],
                 perKillRolls: 1, // number of extra global loot rolls per kill
+<<<<<<< HEAD
                 // Shared themed tables
                 sharedTables: {
                     undead_common: [
@@ -291,6 +370,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         { id: 'cursed_coin', qty: [1,2], weight: 1, chance: 5 }
                     ]
                 }
+=======
+                // Unique loot pools per mode
+                arenaTables: [
+                    { rarity: 'uncommon', entries: [ {type:'item', id:'arena_medal', min:1, max:1, weight:3}, {type:'item', id:'gladiator_emblem', min:1, max:1, weight:1} ] },
+                    { rarity: 'rare',     entries: [ {type:'item', id:'minotaur_horn', min:1, max:1, weight:1}, {type:'item', id:'hydra_fang', min:1, max:1, weight:1} ] }
+                ],
+                raidTables: [
+                    { rarity: 'uncommon', entries: [ {type:'item', id:'void_crystal', min:1, max:2, weight:3}, {type:'item', id:'voidstone', min:1, max:2, weight:2} ] },
+                    { rarity: 'rare',     entries: [ {type:'item', id:'phoenix_feather', min:1, max:1, weight:1}, {type:'item', id:'titan_core', min:1, max:1, weight:1} ] },
+                    { rarity: 'epic',     entries: [ {type:'item', id:'mythic_relic', min:1, max:1, weight:1}, {type:'item', id:'ascendant_sigil', min:1, max:1, weight:1} ] }
+                ]
+>>>>>>> origin/main
             }
         }
     };
@@ -361,7 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Combat state
             this.combat = { inCombat: false, enemy: null, lastPlayerAttack: 0, lastEnemyAttack: 0, playerAttackSpeedMs: 1600,
-                auto: { enabled: false, targetId: (GAME_DATA.COMBAT.ENEMIES?.[0]?.id) || null, lastTick: Date.now(), killsFrac: 0,
+                auto: { enabled: false, targetId: ((GAME_DATA.COMBAT.ENEMIES||[]).find(e=>e.arena)?.id) || null, lastTick: Date.now(), killsFrac: 0,
                     autoClaim: true, lastClaimMs: Date.now(),
                     buffers: { gold: 0, runes: 0, items: {} } }
             };
@@ -395,7 +486,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.player.mastery[id] = {};
             });
             Object.values(META_SKILLS).forEach(name => { this.player.meta_skills[name] = new Skill(name, name); });
-
             // Worker systems: Mining Overseer, Fishing Harbor, Farming Estate
             this.workers = {
                 woodcutting: {
@@ -440,6 +530,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     upgrades: { speedLevel: 0, yieldLevel: 0 },
                     assigned: {},
                     progress: {}
+                },
+                herblore: {
+                    total: 0,
+                    upgrades: { speedLevel: 0, yieldLevel: 0 },
+                    assigned: {},
+                    progress: {}
                 }
             };
             // Seed worker action keys
@@ -450,6 +546,8 @@ document.addEventListener('DOMContentLoaded', () => {
             (GAME_DATA.ACTIONS.hunter || []).forEach(a => { this.workers.hunter.assigned[a.id] = 0; this.workers.hunter.progress[a.id] = 0; });
             (GAME_DATA.ACTIONS.archaeology || []).forEach(a => { this.workers.archaeology.assigned[a.id] = 0; this.workers.archaeology.progress[a.id] = 0; });
             (GAME_DATA.ACTIONS.divination || []).forEach(a => { this.workers.divination.assigned[a.id] = 0; this.workers.divination.progress[a.id] = 0; });
+            (GAME_DATA.ACTIONS.herblore || []).forEach(a => { this.workers.herblore.assigned[a.id] = 0; this.workers.herblore.progress[a.id] = 0; });
+            (GAME_DATA.RECIPES.herblore || []).forEach(r => { this.workers.herblore.assigned[r.id] = 0; this.workers.herblore.progress[r.id] = 0; });
 
             // Hunter missions subsystem
             this.hunter = { roster: [], missions: [], nextHunterId: 1 };
@@ -490,8 +588,34 @@ document.addEventListener('DOMContentLoaded', () => {
              else if (pick.type === 'item' && pick.id) out.items[pick.id] = (out.items[pick.id]||0) + qty;
              return out;
          }
-
         goldMultiplier() { let mult = 1; if (this.hasBuff('doubleGold')) mult *= 2; const gh = GAME_DATA.SPELLS.find(s => s.effect === 'goldBoost'); if (this.hasBuff('goldBoost')) mult *= (1 + (gh?.magnitude || 0)); const artistry = 1 + (this.state.player.meta_skills[META_SKILLS.ARTISTRY].level - 1) * 0.02; return mult * artistry; }
+
+        // Golden item helpers
+        goldenConfig() {
+            // Merge optional dataset config with sensible defaults
+            const cfg = (GAME_DATA.LOOT && GAME_DATA.LOOT.golden) || {};
+            return {
+                chancePercent: typeof cfg.chancePercent === 'number' ? cfg.chancePercent : 3,
+                namePrefix: cfg.namePrefix || 'Golden',
+                icon: cfg.icon || '🌟'
+            };
+        }
+        rollGolden() { const cfg = this.goldenConfig(); return Math.random() * 100 < cfg.chancePercent; }
+        toGoldenId(baseId) { return `golden_${baseId}`; }
+        ensureGoldenItemDef(baseId) {
+            const gid = this.toGoldenId(baseId);
+            if (!GAME_DATA.ITEMS[gid]) {
+                const base = GAME_DATA.ITEMS[baseId] || { name: baseId, icon: '❔' };
+                const cfg = this.goldenConfig();
+                GAME_DATA.ITEMS[gid] = { name: `${cfg.namePrefix} ${base.name}`.trim(), icon: cfg.icon };
+            }
+            return gid;
+        }
+        maybeGoldenizeItem(itemId) {
+            if (!itemId || typeof itemId !== 'string') return itemId;
+            if (itemId.startsWith('golden_')) return itemId;
+            return this.rollGolden() ? this.ensureGoldenItemDef(itemId) : itemId;
+        }
 
         update() {
             const now = Date.now(); const delta = (now - this.state.lastUpdate); this.state.lastUpdate = now;
@@ -568,7 +692,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (this.state.player.hp <= 0) { this.endCombat(false); }
                 }
             }
-
             // Passive auto-combat (army raids) when not in manual combat
             this.processAutoCombat();
 
@@ -578,7 +701,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const gps = this.state.clicker.autoClickers * this.state.clicker.goldPerClick;
                 if (gps > 0) this.addGold(gps);
             }
-
             // Empire production
             const empireDeltaSec = (now - this.state.empire.lastTick) / 1000;
             if (empireDeltaSec > 0.1) {
@@ -633,33 +755,57 @@ document.addEventListener('DOMContentLoaded', () => {
             const workerSkills = Object.keys(this.state.workers || {});
             for (const skillId of workerSkills) {
                 const ws = this.state.workers[skillId];
-                const actions = GAME_DATA.ACTIONS[skillId] || [];
+                let actions = GAME_DATA.ACTIONS[skillId] || [];
+                // Include Herblore brewing recipes as worker tasks
+                if (skillId === 'herblore') {
+                    const brew = (GAME_DATA.RECIPES.herblore || []).map(r => ({ ...r, isRecipe: true }));
+                    actions = [...actions, ...brew];
+                }
                 for (const action of actions) {
                     const assigned = ws.assigned[action.id] || 0; if (assigned <= 0) continue;
                     const perCycleTime = this.calculateActionTime({ ...action, skillId }) * this.getWorkerSpeedMultiplier(skillId, action);
                     ws.progress[action.id] += deltaMs * assigned;
-                    const cycles = Math.floor(ws.progress[action.id] / perCycleTime);
+                    let cycles = Math.floor(ws.progress[action.id] / perCycleTime);
                     if (cycles > 0) {
                         ws.progress[action.id] %= perCycleTime;
-                        const totalQty = (action.output?.quantity || 0) * cycles * this.getWorkerYieldMultiplier(skillId, action);
-                        if (action.output?.itemId && totalQty > 0) {
-                            this.addToBank(action.output.itemId, Math.floor(totalQty));
-                            // Worker XP to player skill, reduced rate (50%)
-                            const xpGain = (action.xp || 0) * cycles * 0.5;
-                            this.state.player.skills[skillId].addXP(xpGain, this);
-                        }
-                        // Rare drops (each cycle independently, reduced chance)
-                        if (action.rareDrop) {
-                            const chance = action.rareDrop.chance || 0; // as percent
-                            for (let i = 0; i < cycles; i++) {
-                                if (Math.random() * 100 < chance * 0.5) { this.addToBank(action.rareDrop.itemId, 1); }
+                        if (action.isRecipe) {
+                            // Determine craftable cycles based on inputs
+                            const input = action.input || [];
+                            let craftable = cycles;
+                            for (const inp of input) {
+                                const have = this.state.bank[inp.itemId] || 0;
+                                const per = inp.quantity || 1;
+                                craftable = Math.min(craftable, Math.floor(have / per));
+                            }
+                            if (craftable > 0 && action.output?.itemId) {
+                                // consume inputs
+                                input.forEach(inp => this.removeFromBank(inp.itemId, inp.quantity * craftable));
+                                const yieldMult = this.getWorkerYieldMultiplier(skillId, action);
+                                const totalQty = Math.floor((action.output.quantity || 1) * craftable * yieldMult);
+                                if (totalQty > 0) this.addToBank(action.output.itemId, totalQty);
+                                const xpGain = (action.xp || 0) * craftable * 0.5; // worker XP at 50% rate
+                                this.state.player.skills[skillId].addXP(xpGain, this);
+                            }
+                        } else {
+                            const totalQty = (action.output?.quantity || 0) * cycles * this.getWorkerYieldMultiplier(skillId, action);
+                            if (action.output?.itemId && totalQty > 0) {
+                                this.addToBank(action.output.itemId, Math.floor(totalQty));
+                                // Worker XP to player skill, reduced rate (50%)
+                                const xpGain = (action.xp || 0) * cycles * 0.5;
+                                this.state.player.skills[skillId].addXP(xpGain, this);
+                            }
+                            // Rare drops (each cycle independently, reduced chance)
+                            if (action.rareDrop) {
+                                const chance = action.rareDrop.chance || 0; // as percent
+                                for (let i = 0; i < cycles; i++) {
+                                    if (Math.random() * 100 < chance * 0.5) { this.addToBank(action.rareDrop.itemId, 1); }
+                                }
                             }
                         }
                     }
                 }
             }
         }
-
         // Hunter Missions Processing
         processHunterMissions(deltaMs) {
             if (!this.state.hunter) return;
@@ -779,7 +925,6 @@ document.addEventListener('DOMContentLoaded', () => {
             delete this.state.activeActions[skillId];
             this.uiManager.render();
         }
-
         craftItem(skillId, recipeId, quantity) {
             const recipe = GAME_DATA.RECIPES[skillId].find(r => r.id === recipeId); if (!recipe) return;
             const canCraft = recipe.input.every(inp => (this.state.bank[inp.itemId] || 0) >= inp.quantity * quantity); if (!canCraft) return;
@@ -919,6 +1064,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     hunter: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} },
                     archaeology: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} },
                     divination: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} },
+                    herblore: { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} },
                 };
             }
             if (!this.state.workers.woodcutting) this.state.workers.woodcutting = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} };
@@ -928,6 +1074,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!this.state.workers.hunter) this.state.workers.hunter = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} };
             if (!this.state.workers.archaeology) this.state.workers.archaeology = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} };
             if (!this.state.workers.divination) this.state.workers.divination = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} };
+            if (!this.state.workers.herblore) this.state.workers.herblore = { total: 0, upgrades: { speedLevel: 0, yieldLevel: 0 }, assigned: {}, progress: {} };
             (GAME_DATA.ACTIONS.mining || []).forEach(a => {
                 if (typeof this.state.workers.mining.assigned[a.id] !== 'number') this.state.workers.mining.assigned[a.id] = 0;
                 if (typeof this.state.workers.mining.progress[a.id] !== 'number') this.state.workers.mining.progress[a.id] = 0;
@@ -952,8 +1099,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (typeof this.state.workers.divination.assigned[a.id] !== 'number') this.state.workers.divination.assigned[a.id] = 0;
                 if (typeof this.state.workers.divination.progress[a.id] !== 'number') this.state.workers.divination.progress[a.id] = 0;
             });
+            (GAME_DATA.ACTIONS.herblore || []).forEach(a => {
+                if (typeof this.state.workers.herblore.assigned[a.id] !== 'number') this.state.workers.herblore.assigned[a.id] = 0;
+                if (typeof this.state.workers.herblore.progress[a.id] !== 'number') this.state.workers.herblore.progress[a.id] = 0;
+            });
+            (GAME_DATA.RECIPES.herblore || []).forEach(r => {
+                if (typeof this.state.workers.herblore.assigned[r.id] !== 'number') this.state.workers.herblore.assigned[r.id] = 0;
+                if (typeof this.state.workers.herblore.progress[r.id] !== 'number') this.state.workers.herblore.progress[r.id] = 0;
+            });
         }
-
         activateAllWorkers() {
             this.ensureWorkerState();
             const gatheringSkillIds = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'gathering');
@@ -979,7 +1133,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.uiManager.showFloatingText('All workers already deployed', 'text-secondary');
             }
         }
-
         // Rune helpers
         getRuneItemIds() { return Object.keys(GAME_DATA.ITEMS).filter(id => id.endsWith('_rune')); }
         getTotalRuneItemCount() { return this.getRuneItemIds().reduce((sum, id) => sum + (this.state.bank[id] || 0), 0); }
@@ -1037,7 +1190,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Combat
         startCombat(enemyId) {
-            if (this.state.combat.inCombat) return; const e = JSON.parse(JSON.stringify(GAME_DATA.COMBAT.ENEMIES.find(x => x.id === enemyId))); if (!e) return;
+            if (this.state.combat.inCombat) return;
+            const e = JSON.parse(JSON.stringify((GAME_DATA.COMBAT.ENEMIES||[]).filter(x=>x.arena).find(x => x.id === enemyId)));
+            if (!e) return;
             this.state.combat.inCombat = true; this.state.combat.enemy = e; this.state.player.hp = Math.min(this.state.player.hp, this.state.player.hpMax);
             this.state.combat.lastPlayerAttack = 0; this.state.combat.lastEnemyAttack = 0; this.uiManager.renderView();
         }
@@ -1054,16 +1209,24 @@ document.addEventListener('DOMContentLoaded', () => {
                  if (Math.random() * 100 < chance) {
                      const [qmin, qmax] = Array.isArray(drop.qty) ? drop.qty : [drop.qty || 1, drop.qty || 1];
                      const q = Math.floor(Math.random() * (qmax - qmin + 1)) + qmin;
-                     itemsMap[drop.id] = (itemsMap[drop.id] || 0) + q;
+                     const id = this.maybeGoldenizeItem(drop.id);
+                     itemsMap[id] = (itemsMap[id] || 0) + q;
                  }
              });
-             // Global loot rolls (epic system)
+             // Global + arena loot rolls (epic system)
              const rolls = (GAME_DATA.LOOT?.perKillRolls) || 0;
              for (let i = 0; i < rolls; i++) {
-                 const extra = this.rollGlobalLoot();
-                 if (extra.gold) this.enqueueWarSpoils(extra.gold, {});
-                 if (extra.runes) this.state.combat.auto.buffers.runes = (this.state.combat.auto.buffers.runes||0) + extra.runes;
-                 Object.entries(extra.items || {}).forEach(([id, q]) => { itemsMap[id] = (itemsMap[id] || 0) + q; });
+                 const global = this.rollGlobalLoot();
+                 const arenaExtra = this.rollContextLoot('arena');
+                 const combo = [global, arenaExtra];
+                 for (const extra of combo) {
+                     if (extra.gold) this.enqueueWarSpoils(extra.gold, {});
+                     if (extra.runes) this.state.combat.auto.buffers.runes = (this.state.combat.auto.buffers.runes||0) + extra.runes;
+                     Object.entries(extra.items || {}).forEach(([id, q]) => {
+                         const gid = this.maybeGoldenizeItem(id);
+                         itemsMap[gid] = (itemsMap[gid] || 0) + q;
+                     });
+                 }
              }
              // Roll shared drop table (e.g., undead_common)
              if (enemy.sharedDropTable) {
@@ -1091,6 +1254,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         eatFood(itemId) { const item = GAME_DATA.ITEMS[itemId]; if (!item || !item.heals) return; if ((this.state.bank[itemId] || 0) <= 0) return; this.removeFromBank(itemId, 1); this.state.player.hp = Math.min(this.state.player.hpMax, this.state.player.hp + item.heals); this.uiManager.showFloatingText(`+${item.heals} HP`, 'text-green-300'); this.uiManager.renderView(); }
         equipWeapon(itemId) { if (!GAME_DATA.ITEMS[itemId]) return; if ((this.state.bank[itemId] || 0) <= 0) return; this.state.player.weapon = itemId; this.uiManager.renderView(); }
+        drinkPotion(itemId) { const item = GAME_DATA.ITEMS[itemId]; if (!item) return; if ((this.state.bank[itemId] || 0) <= 0) return; this.removeFromBank(itemId, 1); if (item.heals) { this.state.player.hp = Math.min(this.state.player.hpMax, this.state.player.hp + item.heals); this.uiManager.showFloatingText(`+${item.heals} HP`, 'text-green-300'); } this.uiManager.renderView(); }
 
         saveGame() { try { localStorage.setItem('chimeraSaveData_web_v1', JSON.stringify(this.state)); } catch (e) { console.error('Failed to save game:', e); } }
         loadGame() {
@@ -1136,6 +1300,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                 if (typeof this.state.workers[skillId].assigned[a.id] !== 'number') this.state.workers[skillId].assigned[a.id] = 0;
                                 if (typeof this.state.workers[skillId].progress[a.id] !== 'number') this.state.workers[skillId].progress[a.id] = 0;
                             });
+                            if (skillId === 'herblore') {
+                                (GAME_DATA.RECIPES.herblore || []).forEach(r => {
+                                    if (typeof this.state.workers.herblore.assigned[r.id] !== 'number') this.state.workers.herblore.assigned[r.id] = 0;
+                                    if (typeof this.state.workers.herblore.progress[r.id] !== 'number') this.state.workers.herblore.progress[r.id] = 0;
+                                });
+                            }
                         });
                     // Backfill empire system defaults if missing
                     if (!this.state.empire) { this.state.empire = { units: {}, lastTick: Date.now(), production: { goldPerSec: 0, runesPerSec: 0, essencePerSec: 0 }, buffers: { gold: 0, runes: 0, essence: 0 }, auto: { enabled: false, mode: 'cheapest', reserveGold: 0, lastAutoMs: Date.now(), intervalMs: 1000 } }; }
@@ -1148,14 +1318,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     Object.keys(GAME_DATA.ARMY_CLASSES).forEach(id => { if (typeof this.state.army.units[id] !== 'number') this.state.army.units[id] = 0; });
                     // Backfill combat auto-battle defaults if missing
                     if (!this.state.combat) this.state.combat = { inCombat: false, enemy: null, lastPlayerAttack: 0, lastEnemyAttack: 0, playerAttackSpeedMs: 1600 };
-                    if (!this.state.combat.auto) this.state.combat.auto = { enabled: false, targetId: (GAME_DATA.COMBAT.ENEMIES?.[0]?.id) || null, lastTick: Date.now(), killsFrac: 0, buffers: { gold: 0, runes: 0, items: {} }, raid: { composition: {}, startedAt: 0, graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } } };
+                    if (!this.state.combat.auto) this.state.combat.auto = { enabled: false, targetId: ((GAME_DATA.COMBAT.ENEMIES||[]).find(e=>e.arena)?.id) || null, lastTick: Date.now(), killsFrac: 0, buffers: { gold: 0, runes: 0, items: {} }, raid: { composition: {}, startedAt: 0, graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } } };
                     if (typeof this.state.combat.auto.autoClaim !== 'boolean') this.state.combat.auto.autoClaim = true;
                     if (!this.state.combat.auto.lastClaimMs) this.state.combat.auto.lastClaimMs = Date.now();
                     if (!this.state.combat.auto.stats) this.state.combat.auto.stats = { gold: 0, runes: 0, items: {} };
                  } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
              }
          }
-
         // Army helpers
         getArmyUnitCost(id) { const data = GAME_DATA.ARMY_CLASSES[id]; const owned = this.state.army.units[id] || 0; return Math.floor(data.baseCost * Math.pow(data.costGrowth, owned)); }
         hireArmyUnit(id) { const cost = this.getArmyUnitCost(id); if (!this.spendGold(cost)) { this.uiManager.showModal('Insufficient GP', `<p>You need ${cost} GP to hire a ${GAME_DATA.ARMY_CLASSES[id].name}.</p>`); return; } this.state.army.units[id] = (this.state.army.units[id] || 0) + 1; this.uiManager.showFloatingText(`+1 ${GAME_DATA.ARMY_CLASSES[id].name}`, 'text-green-300'); this.uiManager.renderView(); }
@@ -1330,6 +1499,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return total;
         }
+<<<<<<< HEAD
+=======
+        // Determine current auto-battle mode from UI view
+        getAutoBattleMode() {
+            const v = this.uiManager?.currentView;
+            if (v === 'raids') return 'raid';
+            if (v === 'combat') return 'arena';
+            // Default to raid if composition is set, else arena
+            return (this.state.combat?.auto?.raid && Object.keys(this.state.combat.auto.raid.composition||{}).length>0) ? 'raid' : 'arena';
+        }
+>>>>>>> origin/main
         // Passive auto-combat processor (army raids)
         processAutoCombat() {
             const auto = this.state.combat?.auto; if (!auto || !auto.enabled) return;
@@ -1366,8 +1546,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 dps = (base.dps || 0) * hungryPenalty * rallyMult;
             }
 
-            // Choose target
-            const target = (GAME_DATA.COMBAT.ENEMIES || []).find(e => e.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
+            // Choose target filtered by mode
+            const mode = this.getAutoBattleMode();
+            const pool = (GAME_DATA.COMBAT.ENEMIES || []).filter(e => mode === 'raid' ? e.raid : e.arena);
+            const target = pool.find(e => e.id === auto.targetId) || pool[0];
             if (!target || !target.maxHp || dps <= 0) return;
             const killsPerSec = dps / target.maxHp;
             auto.killsFrac = (auto.killsFrac || 0) + killsPerSec * deltaSec;
@@ -1387,8 +1569,9 @@ document.addEventListener('DOMContentLoaded', () => {
                          if (Math.random() * 100 < chance) {
                              const [qmin, qmax] = Array.isArray(drop.qty) ? drop.qty : [drop.qty || 1, drop.qty || 1];
                              const qty = Math.floor(Math.random() * (qmax - qmin + 1)) + qmin;
+                             const id = this.maybeGoldenizeItem(drop.id);
                              if (!auto.buffers.items) auto.buffers.items = {};
-                             auto.buffers.items[drop.id] = (auto.buffers.items[drop.id] || 0) + qty;
+                             auto.buffers.items[id] = (auto.buffers.items[id] || 0) + qty;
                          }
                      });
                      // Shared themed drop table
@@ -1410,13 +1593,19 @@ document.addEventListener('DOMContentLoaded', () => {
                      // Global loot rolls (epic system)
                      const extraRolls = (GAME_DATA.LOOT?.perKillRolls) || 0;
                      for (let r = 0; r < extraRolls; r++) {
-                         const ex = this.rollGlobalLoot();
-                         if (ex.gold) auto.buffers.gold = (auto.buffers.gold||0) + ex.gold;
-                         if (ex.runes) auto.buffers.runes = (auto.buffers.runes||0) + ex.runes;
-                         Object.entries(ex.items || {}).forEach(([id, q]) => {
-                             if (!auto.buffers.items) auto.buffers.items = {};
-                             auto.buffers.items[id] = (auto.buffers.items[id] || 0) + q;
-                         });
+                         // Mode-agnostic and mode-specific rolls
+                         const global = this.rollGlobalLoot();
+                         const context = this.rollContextLoot(mode);
+                         const combo = [global, context];
+                         for (const ex of combo) {
+                             if (ex.gold) auto.buffers.gold = (auto.buffers.gold||0) + ex.gold;
+                             if (ex.runes) auto.buffers.runes = (auto.buffers.runes||0) + ex.runes;
+                             Object.entries(ex.items || {}).forEach(([id, q]) => {
+                                 const gid = this.maybeGoldenizeItem(id);
+                                 if (!auto.buffers.items) auto.buffers.items = {};
+                                 auto.buffers.items[gid] = (auto.buffers.items[gid] || 0) + q;
+                             });
+                         }
                      }
                  }
             }
@@ -1424,7 +1613,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Auto-claim spoils if enabled
             this.autoClaimWarSpoils();
         }
-
                  claimWarSpoils() {
                            const auto = this.state.combat?.auto; if (!auto) return;
               const goldAmt = Math.floor(auto.buffers?.gold || 0);
@@ -1460,7 +1648,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 items[id] = (items[id] || 0) + Math.floor(qty);
             });
         }
-
         autoClaimWarSpoils() {
                           const auto = this.state.combat?.auto; if (!auto) return;
               if (auto.autoClaim) {
@@ -1493,7 +1680,6 @@ document.addEventListener('DOMContentLoaded', () => {
               this.uiManager.renderCombatFooter();
          }
     }
-
     class UIManager {
         constructor(game) {
             this.game = game; this.mainContent = document.getElementById('main-content'); this.modalBackdrop = document.getElementById('modal-backdrop'); this.modalContent = document.getElementById('modal-content'); this.floatingTextContainer = document.getElementById('floating-text-container'); this.currentView = 'dashboard';
@@ -1544,7 +1730,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // If in combat, update view footer elements
             if (this.currentView === 'combat') this.renderCombatFooter();
         }
-
         updateMasteryBar() {
             const container = document.getElementById('mastery-progress-bar'); const activeMap = this.game.state.activeActions || {}; const activeList = Object.values(activeMap); const inCombat = this.game.state.combat.inCombat; if ((activeList.length === 0) && !inCombat) { container.innerHTML = ''; container.classList.add('hidden'); return; }
             container.classList.remove('hidden');
@@ -1599,11 +1784,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'spellbook': html = this.renderSpellbookView(); break;
                     case 'shop': html = this.renderShopView(); break;
                     case 'merchant': html = this.renderMerchantView(); break;
+                    case 'herblore': html = this.renderHerbloreView(); break;
                 }
             }
             this.mainContent.innerHTML = html; this.attachViewEventListeners();
         }
-
         renderDashboardView() {
             // Empire metrics
             const gold = Math.floor(this.game.state.player.gold).toLocaleString();
@@ -1653,7 +1838,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>`;
             }).join('');
-
             // Army parade (emoji caps to avoid DOM bloat)
             const paradeCells = Object.keys(GAME_DATA.ARMY_CLASSES).map(id => {
                 const def = GAME_DATA.ARMY_CLASSES[id];
@@ -1703,7 +1887,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="text-xs text-secondary mt-1">${a.desc}</div>
                 </div>`).join('');
-
             return `
                 <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
                     <div class="xl:col-span-3 block p-5 medieval-glow gradient-empire">
@@ -1791,8 +1974,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const lodge = this.renderHunterLodge();
                 actionType = 'Start';
                 contentHtml = lodge + (GAME_DATA.ACTIONS[skillId]||[]).map(action => this.renderActionCard(skillId, action, actionType)).join('');
-            } else if (skillData.type === 'gathering') { actionType = 'Start'; contentHtml = (GAME_DATA.ACTIONS[skillId]||[]).map(action => this.renderActionCard(skillId, action, actionType)).join(''); }
-            else if (skillData.type === 'artisan') {
+            } else if (skillId === 'herblore') {
+                contentHtml = this.renderHerbloreView();
+            } else if (skillData.type === 'gathering') {
+                actionType = 'Start'; contentHtml = (GAME_DATA.ACTIONS[skillId]||[]).map(action => this.renderActionCard(skillId, action, actionType)).join('');
+            } else if (skillData.type === 'artisan') {
                 actionType = 'Craft'; if (skillId === 'firemaking') { contentHtml = this.renderFiremakingView(); }
                 else if (skillId === 'runecrafting') { contentHtml = this.renderRunecraftingView(); }
                 else { contentHtml = (GAME_DATA.RECIPES[skillId]||[]).map(recipe => this.renderActionCard(skillId, recipe, actionType)).join(''); }
@@ -1800,13 +1986,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const workerPanel = (skillData.type === 'gathering' && this.game.state.workers[skillId]) ? this.renderWorkerPanel(skillId) : '';
             return `<h1 class="text-2xl font-semibold text-white mb-4">${skillData.name} <span class="text-base text-secondary">(Level ${playerSkill.level})</span></h1>${workerPanel}<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">${contentHtml}</div>`;
         }
-
         renderActionCard(skillId, action, actionType) {
             const playerSkill = this.game.state.player.skills[skillId]; const hasLevel = playerSkill.level >= action.level; let canAfford = true;
             if (action.input) { canAfford = action.input.every(inp => (this.game.state.bank[inp.itemId] || 0) >= inp.quantity); }
             const mastery = this.game.getMastery(skillId, action.id);
             const actionDesc = action.output ? `${GAME_DATA.ITEMS[action.output.itemId]?.name || 'Product'} x${action.output.quantity}` : 'Special';
-            const isGathering = GAME_DATA.SKILLS[skillId].type === 'gathering';
+            const isGathering = (GAME_DATA.SKILLS[skillId].type === 'gathering') && !action.isBrew;
             let freeWorkers = 0;
             if (isGathering) {
                 const wsTmp = this.game.state.workers[skillId] || { total: 0, assigned: {} };
@@ -1837,7 +2022,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         }
-
         renderMiningPanel() {
             const wm = this.game.state.workers.mining; const hireCost = this.game.getHireCost('mining');
             const speedCost = this.game.getUpgradeCost('mining', 'speed'); const yieldCost = this.game.getUpgradeCost('mining', 'yield');
@@ -1862,7 +2046,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         }
-
         renderFarmingPanel() {
             const wf = this.game.state.workers.farming; const hireCost = this.game.getHireCost('farming');
             const irrCost = this.game.getUpgradeCost('farming', 'irrigation');
@@ -1975,6 +2158,20 @@ document.addEventListener('DOMContentLoaded', () => {
             return `<div class=\"grid grid-cols-1 md:grid-cols-3 gap-4\">${altar}${recipeList}</div>`;
         }
 
+        renderHerbloreView() {
+            const gatherCards = (GAME_DATA.ACTIONS.herblore || []).map(a => this.renderActionCard('herblore', a, 'Start')).join('');
+            const brewCards = (GAME_DATA.RECIPES.herblore || []).map(r => this.renderActionCard('herblore', { ...r, isBrew: true }, 'Craft')).join('');
+            return `
+                <div class="block p-4 col-span-1 md:col-span-2 xl:col-span-3">
+                    <h2 class="text-lg font-bold mb-2">Gather</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">${gatherCards}</div>
+                </div>
+                <div class="block p-4 col-span-1 md:col-span-2 xl:grid-cols-3">
+                    <h2 class="text-lg font-bold mb-2">Brew</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">${brewCards || '<span class="text-secondary text-xs">No recipes yet.</span>'}</div>
+                </div>
+            `;
+        }
         // Hunter Lodge (missions + roster)
         renderHunterLodge() {
             const roster = this.game.state.hunter?.roster || [];
@@ -2034,6 +2231,143 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
             }).join('');
+<<<<<<< HEAD
+=======
+            return `
+                <div class="block p-4 mb-4 border border-hunter medieval-glow">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="text-2xl">🪤</div>
+                            <div>
+                                <h2 class="text-xl font-extrabold tracking-wide">Hunter's Lodge</h2>
+                                <p class="text-secondary text-sm">Hire specialists and send them on daring hunts.</p>
+                            </div>
+                        </div>
+                        <div class="text-xs text-secondary">Roster: <span class="text-white font-mono">${roster.length}</span> • Available: <span class="text-green-300 font-mono">${roster.filter(h=>!h.busy).length}</span></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">${hireCards}</div>
+                    <h3 class="text-lg font-bold mb-2">Mission Board</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">${missionCards}</div>
+                </div>
+            `;
+        }
+        renderBankView() {
+            const order = Array.isArray(this.game.state.bankOrder) ? this.game.state.bankOrder : Object.keys(this.game.state.bank);
+            const itemsHtml = order.filter(id => (this.game.state.bank[id]||0) > 0).map((itemId, idx) => {
+                const quantity = this.game.state.bank[itemId] || 0;
+                const itemData = GAME_DATA.ITEMS[itemId]; if (!itemData) return '';
+                const descParts = [];
+                if (itemData.heals) descParts.push(`Restores ${itemData.heals} HP`);
+                if (itemData.damage) descParts.push(`Weapon • +${itemData.damage} ATK`);
+                if (['air_rune','mind_rune','water_rune','earth_rune','fire_rune','body_rune','cosmic_rune','chaos_rune','nature_rune','law_rune','death_rune','blood_rune'].includes(itemId)) descParts.push('Spell component');
+                const desc = descParts.join(' • ') || 'A curious item of unknown power.';
+                return `
+                    <div class="bank-slot block p-2 flex flex-col items-center justify-center text-center glass-card rounded-md"
+                         draggable="true" data-item-id="${itemId}" data-index="${idx}">
+                        <div class="epic-tooltip">
+                            <div class="icon text-3xl">${itemData.icon || '❔'}</div>
+                            <div class="panel">
+                                <div class="name">${itemData.name}</div>
+                                <div class="desc">${desc}</div>
+                                <div class="qty">Owned: <span class="font-mono">${quantity.toLocaleString()}</span></div>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+            const grid = itemsHtml || `<p class="text-secondary col-span-full text-center">Your bank is empty. Gather some resources!</p>`;
+            return `<h1 class="text-2xl font-semibold text-white mb-4">Bank</h1><div id="bank-grid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4">${grid}</div>`;
+        }
+
+        renderMetaSkillsView() {
+            const skillsHtml = Object.values(this.game.state.player.meta_skills).map(skill => {
+                let bonusText = '';
+                switch (skill.name) {
+                    case META_SKILLS.STRENGTH: bonusText = `Increases combat damage.`; break;
+                    case META_SKILLS.INTELLECT: bonusText = `Increases Artisan skill XP gain.`; break;
+                    case META_SKILLS.STEWARDSHIP: bonusText = `- ${(skill.level - 1).toFixed(1)}% Gathering action time.`; break;
+                    case META_SKILLS.RESILIENCE: bonusText = `+${((skill.level - 1) * 5).toFixed(1)}% Stamina regeneration.`; break;
+                    case META_SKILLS.ARTISTRY: bonusText = `Increases GP from all sources.`; break;
+                }
+                return `<div class="block p-4"><h3 class="text-lg font-bold text-white">${skill.name} - Level ${skill.level}</h3><div class="w-full xp-bar-bg rounded-full h-2 my-2"><div class="xp-bar-fill h-2 rounded-full" style="width:${(skill.currentXP / skill.xpToNextLevel) * 100}%"></div></div><p class="text-xs text-secondary text-right">${Math.floor(skill.currentXP)} / ${skill.xpToNextLevel} XP</p><p class="text-sm text-accent-blue mt-2">${bonusText}</p></div>`;
+            }).join('');
+            return `<h1 class="text-2xl font-semibold text-white mb-4">Meta Skills</h1><p class="text-secondary mb-4">These skills are leveled up by completing real-life tasks. They provide passive bonuses to your in-game actions.</p><div class="grid grid-cols-1 md:grid-cols-2 gap-4">${skillsHtml}</div>`;
+        }
+        renderCombatView() {
+            const buffs = this.game.state.player.activeBuffs || {};
+            const rallyActive = buffs['armyRally'] && Date.now() < buffs['armyRally'];
+            const rallyRemaining = rallyActive ? Math.ceil((buffs['armyRally'] - Date.now())/1000) : 0;
+
+            const enemiesGrid = (GAME_DATA.COMBAT.ENEMIES||[]).filter(e => e.arena).map(e => `
+                <div class="enemy-card glass-card p-4 rounded-md flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-white">${e.name}</h3>
+                            <span class="level-badge">Lv ${e.level}</span>
+                        </div>
+                        <div class="text-xs text-secondary mt-1 flex items-center gap-3">
+                            <span><i class="fas fa-heart"></i> ${e.maxHp} HP</span>
+                            <span><i class="fas fa-sword"></i> ${e.attack} ATK</span>
+                            <span><i class="fas fa-shield"></i> ${e.defense} DEF</span>
+                        </div>
+                    </div>
+                    <button class="start-combat-btn juicy-button chimera-button mt-3 px-3 py-2 rounded-md" data-enemy-id="${e.id}">
+                        Engage
+                    </button>
+                </div>
+            `).join('');
+
+            const equippedName = this.game.state.player.weapon ? GAME_DATA.ITEMS[this.game.state.player.weapon].name : 'None';
+            const weapons = Object.entries(this.game.state.bank)
+                .filter(([id]) => !!GAME_DATA.ITEMS[id]?.damage)
+                .map(([id]) => `<button class="equip-weapon-btn juicy-button chimera-button px-2 py-1 rounded-md" data-item-id="${id}">${GAME_DATA.ITEMS[id].name}</button>`)
+                .join(' ');
+            const foodButtons = Object.entries(this.game.state.bank)
+                .filter(([id]) => !!GAME_DATA.ITEMS[id]?.heals)
+                .map(([id, q]) => `<button class="eat-food-btn juicy-button chimera-button px-2 py-1 rounded-md" data-item-id="${id}">${GAME_DATA.ITEMS[id].name} x${q}</button>`)
+                .join(' ');
+            const spells = (GAME_DATA.SPELLS || [])
+                .map(s => `<button class="cast-spell-btn juicy-button chimera-button px-3 py-2 rounded-md" data-spell-id="${s.id}"><i class="fas fa-bolt"></i> ${s.name} <span class="hud-subtext ml-1">(${s.runeCost} runes)</span></button>`)
+                .join(' ');
+
+            const inCombat = this.game.state.combat.inCombat && this.game.state.combat.enemy;
+            const e = this.game.state.combat.enemy;
+            const combatStatus = inCombat
+                ? `<div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xl font-bold">${e.name}</h3>
+                            <span class="level-badge">Lv ${e.level}</span>
+                        </div>
+                        <div class="w-full xp-bar-bg rounded-full h-2.5"><div class="mastery-bar-fill h-2.5 rounded-full" style="width:${(e.hp / e.maxHp) * 100}%"></div></div>
+                        <div class="flex items-center justify-between text-xs text-secondary">
+                            <span>Enemy HP: <span class="font-mono text-white">${Math.max(0, Math.floor(e.hp))}/${e.maxHp}</span></span>
+                            <span>Your HP: <span class="font-mono text-white">${Math.max(0, Math.floor(this.game.state.player.hp))}/${this.game.state.player.hpMax}</span></span>
+                        </div>
+                   </div>`
+                : `<p class="text-secondary">Choose a foe from the left to begin combat.</p>`;
+
+            const allies = this.game.state.army.production || { dps: 0, hps: 0 };
+            const rallyCta = rallyActive
+                ? `<button id="army-rally" class="chimera-button imperial-button px-3 py-2 rounded-md opacity-80">Rallying… ${rallyRemaining}s</button>`
+                : `<button id="army-rally" class="chimera-button imperial-button juicy-button px-3 py-2 rounded-md">Rally Army — 2 Runes</button>`;
+            // Auto-battle metrics (no consumption here)
+            const auto = this.game.state.combat.auto || { enabled: false, targetId: ((GAME_DATA.COMBAT.ENEMIES||[]).find(e=>e.arena)?.id)||null, buffers: { gold:0, items:{} } };
+            const arenaEnemies = (GAME_DATA.COMBAT.ENEMIES || []).filter(e => e.arena);
+            const target = arenaEnemies.find(x => x.id === auto.targetId) || arenaEnemies[0];
+            const raidComp = this.game.state.combat.auto?.raid?.composition || {};
+            const useComp = raidComp && Object.keys(raidComp).length > 0;
+            const base = useComp ? this.game.calculateCompositionOutput(raidComp) : this.game.calculateArmyOutputPerSecond();
+            const hungryPenalty = useComp ? (this.game.state.combat.auto.raid.upkeep?.hungry ? 0.5 : 1.0) : (this.game.state.army.upkeep?.hungry ? 0.5 : 1.0);
+            const rallyMult = this.game.hasBuff('armyRally') ? 2 : 1;
+            const estDps = (base.dps || 0) * hungryPenalty * rallyMult;
+            const killsPerSec = (target && target.maxHp > 0) ? (estDps / target.maxHp) : 0;
+            const avgGold = target && Array.isArray(target.gold) ? (target.gold[0] + target.gold[1]) / 2 : 0;
+            const estGoldPerSec = killsPerSec * avgGold * this.game.goldMultiplier();
+            const targetOptions = arenaEnemies.map(x => `<option value="${x.id}" ${auto.targetId===x.id?'selected':''}>${x.name} (Lv ${x.level})</option>`).join('');
+            const itemsEntries = Object.entries(auto.buffers?.items || {});
+            const itemsHtml = itemsEntries.length ? itemsEntries.map(([id,q]) => `<span class="badge">${GAME_DATA.ITEMS[id]?.icon||'❔'} ${GAME_DATA.ITEMS[id]?.name||id} x${q}</span>`).join(' ') : '<span class="text-secondary text-xs">No items yet.</span>';
+            const spoilsEmpty = (Math.floor(auto.buffers?.gold||0) <= 0) && itemsEntries.length === 0;
+            const killProgress = Math.max(0, Math.min(1, (auto.killsFrac || 0) % 1));
+>>>>>>> origin/main
             return `
                 <div class="block combat-hero p-5 rounded-md mb-4">
                     <div class="flex items-center justify-between">
@@ -2042,8 +2376,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class="text-secondary text-sm">Face fearsome foes. Rally your army and unleash powerful spells.</p>
                         </div>
                         <div class="flex items-center gap-2">
+<<<<<<< HEAD
                             <span class="badge"><i class="fas fa-users"></i> Allies: DPS ${Math.max(0, allies.dps || 0).toFixed(1)} • HPS ${Math.max(0, allies.hps || 0).toFixed(1)}${this.state.army.upkeep?.hungry ? ' <span class="text-red-400 ml-1">Hungry</span>' : ''}</span>
                             ${rallyCta}
+=======
+                            <span class="badge"><i class="fas fa-users"></i> Allies: DPS ${Math.max(0, allies.dps || 0).toFixed(1)} • HPS ${Math.max(0, allies.hps || 0).toFixed(1)}${this.game.state.army.upkeep?.hungry ? ' <span class="text-red-400 ml-1">Hungry</span>' : ''}</span>
+>>>>>>> origin/main
                         </div>
                     </div>
                 </div>
@@ -2070,6 +2408,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p class="text-secondary">Weapon: <span class="text-white">${equippedName}</span></p>
                         <div class="flex flex-wrap gap-2">${weapons || '<span class="text-secondary">Craft a weapon in Smithing.</span>'}</div>
                         <div class="flex flex-wrap gap-2">${foodButtons || '<span class="text-secondary">Cook food to heal.</span>'}</div>
+                        <div class="flex flex-wrap gap-2 mt-2">${Object.entries(this.game.state.bank).filter(([id]) => ['health_tonic'].includes(id)).map(([id,q]) => `<button class="juicy-button chimera-button px-2 py-1 rounded-md drink-potion-btn" data-item-id="${id}">${GAME_DATA.ITEMS[id]?.name||id} x${q}</button>`).join(' ')}</div>
                         <div class="block p-3 rounded-md mt-3">
                             <h3 class="text-md font-bold mb-2">Auto Battler</h3>
                             <div class="flex items-center gap-3">
@@ -2140,7 +2479,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const hungryPenalty = useComp ? (this.game.state.combat.auto.raid.upkeep?.hungry ? 0.5 : 1.0) : (this.game.state.army.upkeep?.hungry ? 0.5 : 1.0);
                 const rallyMult = this.game.hasBuff('armyRally') ? 2 : 1;
                 const estDps = (base.dps || 0) * hungryPenalty * rallyMult;
-                const target = (GAME_DATA.COMBAT.ENEMIES || []).find(x => x.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
+                const mode = this.currentView === 'raids' ? 'raid' : 'arena';
+                const pool = (GAME_DATA.COMBAT.ENEMIES || []).filter(e => mode === 'raid' ? e.raid : e.arena);
+                const target = pool.find(x => x.id === auto.targetId) || pool[0];
                 const kps = (target && target.maxHp > 0) ? (estDps / target.maxHp) : 0;
                 const gps = kps * (target && Array.isArray(target.gold) ? (target.gold[0] + target.gold[1]) / 2 : 0) * this.game.goldMultiplier();
                 const kpsEl = document.getElementById('auto-kps');
@@ -2155,7 +2496,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (claimBtn) claimBtn.disabled = spoilsEmpty;
             if (clearBtn) clearBtn.disabled = spoilsEmpty;
         }
-
         renderClickerView() {
             const units = GAME_DATA.UNITS;
             const owned = this.game.state.empire.units;
@@ -2217,7 +2557,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         }
-
         renderSpellbookView() {
             const buffs = this.game.state.player.activeBuffs || {};
             const cards = GAME_DATA.SPELLS.map(s => {
@@ -2250,6 +2589,481 @@ document.addEventListener('DOMContentLoaded', () => {
             `).join('');
             return `<h1 class="text-2xl font-semibold text-white mb-4">Shop</h1><div class="grid grid-cols-1 md:grid-cols-3 gap-4">${chestCards}</div>`;
         }
+<<<<<<< HEAD
+=======
+
+        renderWorkforceView() {
+            this.game.ensureWorkerState();
+            const gatheringSkillIds = Object.keys(GAME_DATA.SKILLS).filter(id => GAME_DATA.SKILLS[id].type === 'gathering');
+            const hero = `
+                <div class="block p-5 mb-5 medieval-glow gradient-workforce">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="text-2xl">🏗️</div>
+                            <div>
+                                <h1 class="text-xl font-extrabold tracking-wide">Workforce Command</h1>
+                                <p class="text-secondary text-sm">Hire, upgrade, and deploy your labor across all camps.</p>
+                            </div>
+                        </div>
+                        <button id="all-systems-go" class="chimera-button juicy-button imperial-button px-4 py-3 rounded-md font-extrabold tracking-wide">
+                            <span class="mr-2">🛡️⚔️</span> ALL SYSTEMS GO
+                        </button>
+                    </div>
+                </div>`;
+            const cards = gatheringSkillIds.map(skillId => {
+                const skill = GAME_DATA.SKILLS[skillId];
+                const ws = this.game.state.workers[skillId];
+                const assigned = Object.values(ws.assigned || {}).reduce((a,b)=>a+b,0);
+                const free = Math.max(0, (ws.total||0) - assigned);
+                const hireCost = this.game.getHireCost(skillId);
+                const speedCost = this.game.getUpgradeCost(skillId, 'speed');
+                const yieldCost = this.game.getUpgradeCost(skillId, 'yield');
+                const speedLvl = ws.upgrades.speedLevel || 0;
+                const yieldLvl = ws.upgrades.yieldLevel || 0;
+                const icon = skill.icon;
+                const theme = skill.theme;
+                const metaMap = {
+                    woodcutting: { title: 'Timber Lodge', worker: 'Timberhand', emoji: '🪓' },
+                    mining: { title: 'Mining Camp', worker: 'Miner', emoji: '⛏️' },
+                    fishing: { title: 'Fishing Harbor', worker: 'Angler', emoji: '🎣' },
+                    farming: { title: 'Farming Estate', worker: 'Farmhand', emoji: '🚜' },
+                    hunter: { title: "Trapper's Outpost", worker: 'Trapper', emoji: '🪤' },
+                    archaeology: { title: 'Ancient Digsite', worker: 'Excavator', emoji: '🏺' },
+                    divination: { title: "Diviner's Grove", worker: 'Diviner', emoji: '🔮' },
+                    herblore: { title: "Herbalist's Sanctuary", worker: 'Herbalist', emoji: '🌿' },
+                };
+                const meta = metaMap[skillId] || { title: `${skill.name} Camp`, worker: 'Worker', emoji: '🏕️' };
+                const title = meta.title;
+                const workerName = meta.worker;
+                const headerEmoji = meta.emoji;
+
+                return `
+                    <div class="block p-0 border border-${theme} overflow-hidden medieval-glow ${skillId==='woodcutting'?'gradient-wood':'gradient-workforce'}">
+                        <div class="relative p-5 pb-4">
+                            <div class="absolute right-4 -top-3 text-4xl opacity-20 select-none">${headerEmoji}</div>
+                            <div class="flex items-center gap-3">
+                                <div class="text-2xl"><i class="fas ${icon}"></i></div>
+                                <div>
+                                    <h2 class="text-lg font-extrabold tracking-wide">${title}</h2>
+                                    <p class="text-secondary text-sm">Manage ${workerName}${workerName.endsWith('s')?'':'s'}. Assign, upgrade, and prosper.</p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3 mt-4">
+                                <div class="glass-card rounded-md p-3 text-center shine">
+                                    <div class="text-[11px] text-secondary uppercase tracking-wider">Workers</div>
+                                    <div class="text-2xl font-mono text-white">${ws.total}</div>
+                                </div>
+                                <div class="glass-card rounded-md p-3 text-center">
+                                    <div class="text-[11px] text-secondary uppercase tracking-wider">Assigned</div>
+                                    <div class="text-xl font-mono text-white">${assigned}</div>
+                                </div>
+                                <div class="glass-card rounded-md p-3 text-center">
+                                    <div class="text-[11px] text-secondary uppercase tracking-wider">Free</div>
+                                    <div class="text-xl font-mono text-green-300">${free}</div>
+                                </div>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-2 mt-4">
+                                <button class="hire-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}"><span class="mr-1">${skillId==='woodcutting'?'🪵':headerEmoji}</span> Hire ${workerName} — <span class="text-yellow-300 font-mono">${hireCost} GP</span></button>
+                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}" data-type="speed"><span class="mr-1">⚙️</span> Speed <span class="text-secondary ml-1">(L${speedLvl})</span> — <span class="text-yellow-300 font-mono">${speedCost} GP</span></button>
+                                <button class="upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold" data-skill-id="${skillId}" data-type="yield"><span class="mr-1">📦</span> Yield <span class="text-secondary ml-1">(L${yieldLvl})</span> — <span class="text-yellow-300 font-mono">${yieldCost} GP</span></button>
+                            </div>
+                            <p class="text-[11px] text-secondary mt-2">Current bonuses: <span class="text-green-300">+${(yieldLvl*10).toFixed(0)}% yield</span> • <span class="text-blue-300">${Math.round(100 - (Math.pow(0.92, speedLvl)*100))}% faster</span></p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Emperor decree: assignments happen automatically via All Systems Go
+            return `${hero}<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-4">${cards}</div>`;
+        }
+        renderMerchantView() {
+            const bazaar = this.game.getMerchant();
+            const selected = this.game.state.merchant?.selectedStallId || (bazaar.stalls?.[0]?.id);
+            const nav = (bazaar.stalls || []).map(s => `<button class="merchant-tab ${selected===s.id?'active':''}" data-stall-id="${s.id}">${s.emoji} ${s.name}</button>`).join('');
+            const stall = this.game.getStallById(selected);
+            const cards = (stall?.stock || []).map(entry => {
+                const item = GAME_DATA.ITEMS[entry.itemId];
+                const have = this.game.state.bank[entry.itemId] || 0;
+                return `
+                    <div class="merchant-card block p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-bold">${item?.icon || '❔'} ${item?.name || entry.itemId}</h3>
+                                <p class="text-secondary text-xs">Buy ${entry.buy} GP • Sell ${entry.sell} GP</p>
+                                <p class="text-secondary text-xs">Owned: <span class="text-white font-mono">${have}</span></p>
+                            </div>
+                            <span class="badge"><i class="fas fa-sack-dollar"></i> ${stall.name}</span>
+                        </div>
+                        <div class="mt-3 grid grid-cols-2 gap-2">
+                            <button class="merchant-buy-btn chimera-button juicy-button px-3 py-2 rounded-md" data-item-id="${entry.itemId}">Buy</button>
+                            <button class="merchant-sell-btn chimera-button px-3 py-2 rounded-md" data-item-id="${entry.itemId}" ${have<=0?'disabled':''}>Sell</button>
+                        </div>
+                    </div>`;
+            }).join('');
+            const hero = `
+                <div class="block p-5 mb-5 medieval-glow gradient-merchant">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="text-2xl">🏛️</div>
+                            <div>
+                                <h1 class="text-xl font-extrabold tracking-wide">${bazaar.name}</h1>
+                                <p class="text-secondary text-sm">Haggle, barter, and browse the finest wares.</p>
+                            </div>
+                        </div>
+                        <div class="merchant-nav flex flex-wrap gap-2">${nav}</div>
+                    </div>
+                </div>`;
+            return `<h1 class=\"text-2xl font-semibold text-white mb-4\">Merchant</h1>${hero}<div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4\">${cards}</div>`;
+        }
+
+        showModal(title, content) {
+            this.initNotify();
+            const html = `<h3 class=\"text-xl font-bold text-white\">${title}</h3><div class=\"text-secondary my-4\">${content}</div><div class=\"text-right mt-6\"><button class=\"close-btn chimera-button px-4 py-2 rounded-md\">Close</button></div>`;
+            this.modalContent.innerHTML = html; this.modalContent.querySelector('.close-btn').addEventListener('click', () => this.hideModal()); this.modalBackdrop.classList.remove('hidden');
+        }
+        hideModal() { this.modalBackdrop.classList.add('hidden'); }
+
+        showFloatingText(text, className, options = {}) {
+            if (!this._fly) { this._fly = { nextLane: 0, maxLanes: 12, laneHeight: 28 }; }
+            const detectType = (t, cls = '') => {
+                const lower = (t || '').toLowerCase(); const c = cls || '';
+                if (lower.includes('level up')) return 'fly-level';
+                if (lower.includes('activated')) return 'fly-buff';
+                if (lower.includes('stamina') || lower.includes('hp') || c.includes('green')) return 'fly-heal';
+                if (lower.startsWith('-') || c.includes('red')) return 'fly-damage';
+                if (lower.includes('crafted') || lower.includes('+1 ') || c.includes('yellow')) return 'fly-loot';
+                if (lower.includes('xp')) return 'fly-xp';
+                return '';
+            };
+            const typeClass = detectType(text, className);
+            const floatText = document.createElement('div');
+            floatText.className = `floating-text ${typeClass} ${className || ''}`.trim();
+            floatText.textContent = text;
+            const gameRect = this.floatingTextContainer.getBoundingClientRect();
+            const baseX = gameRect.width / 2; const baseY = gameRect.height / 3;
+            const lane = this._fly.nextLane; this._fly.nextLane = (this._fly.nextLane + 1) % this._fly.maxLanes;
+            const jitterX = (Math.random() - 0.5) * 80; const y = baseY - lane * this._fly.laneHeight;
+            floatText.style.left = `${baseX + jitterX}px`; floatText.style.top = `${y}px`;
+            this.floatingTextContainer.appendChild(floatText);
+            const duration = typeClass === 'fly-crit' || typeClass === 'fly-level' ? 1900 : (typeClass === 'fly-loot' ? 1800 : 1600);
+            setTimeout(() => floatText.remove(), duration);
+        }
+
+        pulseAt(el) { if (!el) return; el.classList.remove('pulse-pop'); void el.offsetWidth; el.classList.add('pulse-pop'); setTimeout(() => el && el.classList && el.classList.remove('pulse-pop'), 260); }
+        _ensureAudio() { if (!this._audioCtx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; this._audioCtx = new AC(); } return this._audioCtx; }
+        playSound(type) {
+            const ctx = this._ensureAudio(); if (!ctx) return; const now = ctx.currentTime; const osc = ctx.createOscillator(); const gain = ctx.createGain();
+            osc.type = 'triangle';
+            if (type === 'hire') { osc.frequency.setValueAtTime(740, now); osc.frequency.exponentialRampToValueAtTime(1180, now + 0.18); }
+            else if (type === 'upgrade') { osc.frequency.setValueAtTime(520, now); osc.frequency.exponentialRampToValueAtTime(1040, now + 0.22); }
+            else { osc.frequency.setValueAtTime(660, now); osc.frequency.exponentialRampToValueAtTime(770, now + 0.08); }
+            gain.gain.setValueAtTime(0.0001, now); gain.gain.exponentialRampToValueAtTime(0.12, now + 0.02); gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+            osc.connect(gain); gain.connect(ctx.destination); osc.start(now); osc.stop(now + 0.26);
+        }
+        juiceBurst(kind, clientX, clientY) {
+            const containerRect = this.floatingTextContainer.getBoundingClientRect();
+            const x = clientX - containerRect.left; const y = clientY - containerRect.top;
+            const colors = kind === 'upgrade' ? ['#ffd166','#fca311','#ffe08a','#fff3c4'] : (kind === 'wood' ? ['#b08968','#7f5539','#ddb892','#e6ccb2'] : ['#ffd166','#ffd700','#fff3b0','#f1fa8c']);
+            const count = kind === 'upgrade' ? 24 : 18;
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div'); p.className = 'confetti-piece'; p.style.left = `${x}px`; p.style.top = `${y}px`;
+                p.style.backgroundColor = colors[Math.floor(Math.random()*colors.length)];
+                const dx = (Math.random() - 0.5) * 180; const dy = - (Math.random() * 160 + 80); const rot = (Math.random() - 0.5) * 260;
+                p.style.opacity = '1'; p.style.transform = `translate3d(-50%, -50%, 0) rotate(${rot}deg)`; this.floatingTextContainer.appendChild(p);
+                requestAnimationFrame(() => { p.style.transition = 'transform 900ms cubic-bezier(.15,.55,.2,1), opacity 900ms ease'; p.style.transform = `translate3d(${dx}px, ${dy}px, 0) rotate(${rot+180}deg)`; p.style.opacity = '0'; });
+                setTimeout(() => p.remove(), 950);
+            }
+            for (let i = 0; i < 6; i++) {
+                const c = document.createElement('div'); c.className = 'coin-piece'; c.textContent = kind === 'wood' ? '🪵' : '💰'; c.style.left = `${x}px`; c.style.top = `${y}px`;
+                this.floatingTextContainer.appendChild(c);
+                const dx = (Math.random() - 0.5) * 120; const dy = - (Math.random() * 120 + 40);
+                requestAnimationFrame(() => { c.style.transition = 'transform 800ms cubic-bezier(.17,.67,.32,1.31), opacity 800ms ease'; c.style.opacity = '1'; c.style.transform = `translate(${dx}px, ${dy}px) scale(0.9)`; });
+                setTimeout(() => { c.style.opacity = '0'; }, 620); setTimeout(() => c.remove(), 900);
+            }
+        }
+
+        initNotify() { if (!this._notify) this._notify = { map: {}, timers: {} }; this._notify.stack = document.getElementById('top-notification-stack'); }
+        createOrUpdateNotification(key, options) {
+            this.initNotify(); const stack = this._notify.stack; if (!stack) return; const ttlMs = 2600; const existing = this._notify.map[key];
+            if (existing) {
+                existing.total += options.increment || 0; const countEl = existing.el.querySelector('.count'); if (countEl) countEl.textContent = `+${existing.total.toLocaleString()}`;
+                existing.el.classList.remove('notify-pulse'); void existing.el.offsetWidth; existing.el.classList.add('notify-pulse');
+                clearTimeout(this._notify.timers[key]); this._notify.timers[key] = setTimeout(() => this.removeNotification(key), ttlMs);
+                return existing.el;
+            }
+            const card = document.createElement('div'); card.className = `notify-card ${options.kind || ''}`.trim();
+            const icon = document.createElement('div'); icon.className = 'notify-icon'; icon.innerHTML = options.icon || '';
+            const count = document.createElement('div'); count.className = 'count'; count.textContent = `+${(options.increment||0).toLocaleString()}`;
+            const label = document.createElement('div'); label.className = 'label'; label.innerHTML = options.label || '';
+            card.appendChild(icon); card.appendChild(count); card.appendChild(label);
+            stack.prepend(card);
+            this._notify.map[key] = { el: card, total: options.increment || 0 };
+            this._notify.timers[key] = setTimeout(() => this.removeNotification(key), ttlMs);
+            return card;
+        }
+        removeNotification(key) { if (!this._notify || !this._notify.map[key]) return; const el = this._notify.map[key].el; el.classList.add('notify-out'); setTimeout(() => { el.remove(); }, 220); clearTimeout(this._notify.timers[key]); delete this._notify.timers[key]; delete this._notify.map[key]; }
+        notifyResource(type, amount) { if (!amount || amount <= 0) return; const icons = { gold: '<i class=\"fas fa-coins text-yellow-300\"></i>', runes: '<i class=\"fas fa-gem text-purple-300\"></i>', stamina: '<i class=\"fas fa-bolt text-green-400\"></i>' }; const labels = { gold: 'GP', runes: 'Runes', stamina: 'Stamina' }; const key = `res:${type}`; this.createOrUpdateNotification(key, { increment: amount, icon: icons[type] || '', label: labels[type] || type, kind: type }); }
+        notifyItem(itemId, qty) { if (!qty || qty <= 0) return; const item = GAME_DATA.ITEMS[itemId]; const name = item?.name || itemId; const icon = item?.icon || '❔'; const key = `item:${itemId}`; this.createOrUpdateNotification(key, { increment: qty, icon: icon, label: name, kind: 'item' }); }
+
+        renderWorkerPanel(skillId) {
+            const ws = this.game.state.workers[skillId]; const hireCost = this.game.getHireCost(skillId); const speedCost = this.game.getUpgradeCost(skillId, 'speed'); const yieldCost = this.game.getUpgradeCost(skillId, 'yield');
+            const speedLvl = ws.upgrades.speedLevel || 0; const yieldLvl = ws.upgrades.yieldLevel || 0; const theme = GAME_DATA.SKILLS[skillId].theme; const skill = GAME_DATA.SKILLS[skillId];
+            const assigned = Object.values(ws.assigned || {}).reduce((a,b)=>a+b,0); const free = Math.max(0, (ws.total||0) - assigned); const icon = skill.icon;
+            const headerMeta = {
+                woodcutting: { title: 'Timber Lodge', emoji: '🪓', worker: 'Timberhand' },
+                mining: { title: 'Mining Camp', emoji: '⛏️', worker: 'Miner' },
+                fishing: { title: 'Fishing Harbor', emoji: '🎣', worker: 'Angler' },
+                farming: { title: 'Farming Estate', emoji: '🚜', worker: 'Farmhand' },
+                hunter: { title: 'Trapper\'s Outpost', emoji: '🪤', worker: 'Trapper' },
+                archaeology: { title: 'Ancient Digsite', emoji: '🏺', worker: 'Excavator' },
+                divination: { title: 'Diviner\'s Grove', emoji: '🔮', worker: 'Diviner' },
+                herblore: { title: 'Herbalist\'s Sanctuary', emoji: '🌿', worker: 'Herbalist' },
+            };
+            const meta = headerMeta[skillId] || { title: `${skill.name} Camp`, emoji: '🏕️', worker: 'Worker' };
+            return `
+                <div class=\"block p-0 mb-5 border border-${theme} overflow-hidden medieval-glow ${skillId==='woodcutting'?'gradient-wood':'gradient-workforce'}\">
+                    <div class=\"relative p-5 pb-4\">
+                        <div class=\"absolute right-4 -top-3 text-4xl opacity-20 select-none\">${meta.emoji}</div>
+                        <div class=\"flex items-center gap-3\">
+                            <div class=\"text-2xl\"><i class=\"fas ${icon}\"></i></div>
+                            <div>
+                                <h2 class=\"text-xl font-extrabold tracking-wide\">${meta.title}</h2>
+                                <p class=\"text-secondary text-sm\">Command your ${meta.worker.toLowerCase()}s. Assign, upgrade, and prosper.</p>
+                            </div>
+                        </div>
+                        <div class=\"grid grid-cols-3 gap-3 mt-4\">
+                            <div class=\"glass-card rounded-md p-3 text-center shine\"><div class=\"text-[11px] text-secondary uppercase tracking-wider\">Workers</div><div class=\"text-2xl font-mono text-white\">${ws.total}</div></div>
+                            <div class=\"glass-card rounded-md p-3 text-center\"><div class=\"text-[11px] text-secondary uppercase tracking-wider\">Assigned</div><div class=\"text-xl font-mono text-white\">${assigned}</div></div>
+                            <div class=\"glass-card rounded-md p-3 text-center\"><div class=\"text-[11px] text-secondary uppercase tracking-wider\">Free</div><div class=\"text-xl font-mono text-green-300\">${free}</div></div>
+                        </div>
+                        <div class=\"flex flex-col sm:flex-row gap-2 mt-4\">
+                            <button class=\"hire-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold\" data-skill-id=\"${skillId}\"><span class=\"mr-1\">👷</span> Hire ${meta.worker} — <span class=\"text-yellow-300 font-mono\">${hireCost} GP</span></button>
+                            <button class=\"upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold\" data-skill-id=\"${skillId}\" data-type=\"speed\"><span class=\"mr-1\">⚙️</span> Speed <span class=\"text-secondary ml-1\">(L${speedLvl})</span> — <span class=\"text-yellow-300 font-mono\">${speedCost} GP</span></button>
+                            <button class=\"upgrade-worker-btn chimera-button juicy-button px-3 py-3 rounded-md font-semibold\" data-skill-id=\"${skillId}\" data-type=\"yield\"><span class=\"mr-1\">📦</span> Yield <span class=\"text-secondary ml-1\">(L${yieldLvl})</span> — <span class=\"text-yellow-300 font-mono\">${yieldCost} GP</span></button>
+                        </div>
+                        <p class=\"text-[11px] text-secondary mt-2\">Current bonuses: <span class=\"text-green-300\">+${(yieldLvl*10).toFixed(0)}% yield</span> • <span class=\"text-blue-300\">${Math.round(100 - (Math.pow(0.92, speedLvl)*100))}% faster</span></p>
+                    </div>
+                </div>
+            `;
+        }
+
+        attachViewEventListeners() {
+            const addTaskBtn = document.getElementById('add-task-btn'); if (addTaskBtn) { addTaskBtn.addEventListener('click', () => { const category = document.getElementById('task-category-select').value; const difficulty = document.getElementById('task-difficulty-select').value; this.game.completeRealLifeTask(category, difficulty); const n = document.getElementById('task-name-input'); if (n) n.value = ''; }); }
+            const ge = document.getElementById('goto-empire'); if (ge) ge.addEventListener('click', () => { this.currentView = 'clicker'; this.render(); });
+            // Bank drag-and-drop swap handlers
+            const bankGrid = document.getElementById('bank-grid');
+            if (bankGrid) {
+                let dragIndex = null;
+                bankGrid.querySelectorAll('.bank-slot').forEach(slot => {
+                    slot.addEventListener('dragstart', (e) => {
+                        dragIndex = parseInt(slot.getAttribute('data-index') || '-1', 10);
+                        e.dataTransfer.effectAllowed = 'move';
+                        e.dataTransfer.setData('text/plain', String(dragIndex));
+                        slot.classList.add('dragging');
+                    });
+                    slot.addEventListener('dragend', () => slot.classList.remove('dragging'));
+                    slot.addEventListener('dragover', (e) => { e.preventDefault(); slot.classList.add('drag-over'); });
+                    slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+                    slot.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        slot.classList.remove('drag-over');
+                        const fromStr = e.dataTransfer.getData('text/plain');
+                        const fromIdx = parseInt(fromStr || '-1', 10);
+                        const toIdx = parseInt(slot.getAttribute('data-index') || '-1', 10);
+                        if (isNaN(fromIdx) || isNaN(toIdx) || fromIdx === toIdx) return;
+                        const order = Array.isArray(this.game.state.bankOrder) ? [...this.game.state.bankOrder] : Object.keys(this.game.state.bank);
+                        if (!order[fromIdx] || !order[toIdx]) return;
+                        // Swap positions
+                        const tmp = order[fromIdx];
+                        order[fromIdx] = order[toIdx];
+                        order[toIdx] = tmp;
+                        this.game.state.bankOrder = order;
+                        this.renderView();
+                    });
+                });
+            }
+            const gw = document.getElementById('goto-woodcutting'); if (gw) gw.addEventListener('click', () => { this.currentView = 'woodcutting'; this.render(); });
+            const gr = document.getElementById('goto-runecrafting'); if (gr) gr.addEventListener('click', () => { this.currentView = 'runecrafting'; this.render(); });
+            const gc = document.getElementById('goto-combat'); if (gc) gc.addEventListener('click', () => { this.currentView = 'combat'; this.render(); });
+            const gs = document.getElementById('goto-shop'); if (gs) gs.addEventListener('click', () => { this.currentView = 'shop'; this.render(); });
+            const gwf = document.getElementById('goto-workforce'); if (gwf) gwf.addEventListener('click', () => { this.currentView = 'workforce'; this.render(); });
+            const gar = document.getElementById('goto-army'); if (gar) gar.addEventListener('click', () => { this.currentView = 'army'; this.render(); });
+            const asg = document.getElementById('all-systems-go'); if (asg) asg.addEventListener('click', (e) => { const rect = e.currentTarget.getBoundingClientRect(); this.juiceBurst('upgrade', rect.left + rect.width/2, rect.top + rect.height/2); this.pulseAt(e.currentTarget); this.game.activateAllWorkers(); });
+            document.querySelectorAll('.start-action-btn').forEach(btn => { btn.addEventListener('click', () => {
+                const skillId = btn.dataset.skillId; const actionId = btn.dataset.actionId; const mode = btn.dataset.mode;
+                if (mode === 'worker') {
+                    const ws = this.game.state.workers[skillId]; if (!ws) return;
+                    const sumAssigned = Object.values(ws.assigned || {}).reduce((a,b)=>a+(b||0),0);
+                    const free = Math.max(0, (ws.total || 0) - sumAssigned);
+                    if (free <= 0) { this.game.uiManager.showFloatingText('No free workers', 'text-yellow-300'); return; }
+                    ws.assigned[actionId] = (ws.assigned[actionId] || 0) + 1;
+                    if (typeof ws.progress[actionId] !== 'number') ws.progress[actionId] = 0;
+                    this.game.uiManager.showFloatingText('+1 Worker Assigned', 'text-green-300');
+                    this.render();
+                    return;
+                }
+                const sel = this.mainContent.querySelector(`.action-duration-select[data-skill-id="${skillId}"][data-action-id="${actionId}"]`);
+                const duration = sel ? parseInt(sel.value, 10) : 15; if (isNaN(duration) || duration <= 0) return; this.game.startAction(skillId, actionId, duration);
+                        }); });
+            // Crafting (artisan & herblore brew)
+            document.querySelectorAll('.craft-action-btn, .light-action-btn').forEach(btn => { btn.addEventListener('click', () => {
+                const s = btn.dataset.skillId; const a = btn.dataset.actionId;
+                if (s === 'runecrafting') {
+                    const recipe = (GAME_DATA.RECIPES[s] || []).find(r => r.id === a);
+                    const essenceId = (recipe && recipe.input && recipe.input[0]) ? recipe.input[0].itemId : 'rune_essence';
+                    const essencePer = (recipe && recipe.input && recipe.input[0]) ? recipe.input[0].quantity : 1;
+                    const haveEss = this.game.state.bank[essenceId] || 0;
+                    const maxQty = Math.floor(haveEss / essencePer);
+                    if (maxQty <= 0) return;
+                    const qty = parseInt(prompt(`How many essences to craft? (Max ${maxQty})`, `${Math.min(25, maxQty)}`), 10);
+                    if (isNaN(qty) || qty <= 0) return;
+                    this.game.craftItem(s, a, Math.min(qty, maxQty));
+                } else {
+                    this.game.craftItem(s, a, 1);
+                }
+            }); });
+<<<<<<< HEAD
+ 
+             // Combat
+=======
+            // Combat
+>>>>>>> origin/main
+            document.querySelectorAll('.start-combat-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.startCombat(btn.dataset.enemyId); this.currentView = 'combat'; this.render(); }); });
+            const endBtn = document.getElementById('end-combat-btn'); if (endBtn) endBtn.addEventListener('click', () => this.game.endCombat(false));
+            document.querySelectorAll('.eat-food-btn').forEach(btn => { btn.addEventListener('click', () => this.game.eatFood(btn.dataset.itemId)); });
+            document.querySelectorAll('.equip-weapon-btn').forEach(btn => { btn.addEventListener('click', () => this.game.equipWeapon(btn.dataset.itemId)); });
+            document.querySelectorAll('.drink-potion-btn').forEach(btn => { btn.addEventListener('click', () => this.game.drinkPotion(btn.dataset.itemId)); });
+            // Auto-battle controls (shared by Combat and Raids)
+            const abToggle = document.getElementById('auto-battle-toggle'); if (abToggle) abToggle.addEventListener('change', (e) => { this.game.state.combat.auto.enabled = !!e.target.checked; this.game.state.combat.auto.lastTick = Date.now(); });
+            const abTarget = document.getElementById('auto-target-select'); if (abTarget) abTarget.addEventListener('change', (e) => { this.game.state.combat.auto.targetId = e.target.value; });
+            // Raid composition controls
+            const raidInputs = Array.from(document.querySelectorAll('.raid-comp-input'));
+            const raidAssigners = Array.from(document.querySelectorAll('.raid-assign-unit'));
+            const clampAssignment = (uid, val) => {
+                const free = (function(){
+                    const reserved = {};
+                    for (const m of (this.game.state.army.deployments?.active || [])) {
+                        for (const [rid, qty] of Object.entries(m.composition || {})) reserved[rid] = (reserved[rid] || 0) + qty;
+                    }
+                    const owned = this.game.state.army.units?.[uid] || 0;
+                    return Math.max(0, owned - (reserved[uid] || 0));
+                }).call(this);
+                return Math.max(0, Math.min(free, val));
+            };
+            raidAssigners.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const uid = btn.getAttribute('data-unit-id'); const dir = btn.getAttribute('data-dir');
+                    const input = document.querySelector(`.raid-comp-input[data-unit-id="${uid}"]`);
+                    if (!input) return;
+                    let v = parseInt(input.value || '0', 10) || 0;
+                    v = dir === '+1' ? v + 1 : v - 1;
+                    v = clampAssignment(uid, v);
+                    input.value = String(v);
+                    const auto = this.game.state.combat.auto; if (!auto.raid) auto.raid = { composition: {}, startedAt: 0, graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } };
+                    auto.raid.composition[uid] = v;
+                });
+            });
+            raidInputs.forEach(inp => {
+                inp.addEventListener('change', () => {
+                    const uid = inp.getAttribute('data-unit-id');
+                    let v = parseInt(inp.value || '0', 10) || 0;
+                    v = clampAssignment(uid, v);
+                    inp.value = String(v);
+                    const auto = this.game.state.combat.auto; if (!auto.raid) auto.raid = { composition: {}, startedAt: 0, graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } };
+                    auto.raid.composition[uid] = v;
+                });
+            });
+            const claimBtn = document.getElementById('claim-war-spoils'); if (claimBtn) claimBtn.addEventListener('click', () => this.game.claimWarSpoils());
+            const clearBtn = document.getElementById('clear-war-spoils'); if (clearBtn) clearBtn.addEventListener('click', () => this.game.clearWarSpoils());
+            const abPlayPause = document.getElementById('auto-battle-playpause');
+            if (abPlayPause) abPlayPause.addEventListener('click', () => { const auto = this.game.state.combat.auto; auto.enabled = !auto.enabled; auto.lastTick = Date.now(); if (!auto.raid) auto.raid = { composition: {}, startedAt: 0, graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } }; if (auto.enabled) { auto.raid.startedAt = Date.now(); auto.killsFrac = 0; } this.renderView(); });
+            const abAutoClaim = document.getElementById('auto-claim-toggle');
+            if (abAutoClaim) abAutoClaim.addEventListener('click', () => { const auto = this.game.state.combat.auto; auto.autoClaim = !auto.autoClaim; this.renderView(); });
+            document.querySelectorAll('.select-raid-target').forEach(btn => { btn.addEventListener('click', () => { this.game.state.combat.auto.targetId = btn.dataset.enemyId; this.renderView(); }); });
+
+            // Empire hiring events
+            document.querySelectorAll('.hire-unit-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.hireEmpireUnit(btn.dataset.unitId); this.pulseAt(btn); this.game.uiManager.playSound('hire'); }); });
+            const autoToggle = document.getElementById('auto-hire-toggle'); if (autoToggle) autoToggle.addEventListener('change', (e) => { this.game.state.empire.auto.enabled = !!e.target.checked; });
+            const autoMode = document.getElementById('auto-hire-mode'); if (autoMode) autoMode.addEventListener('change', (e) => { const val = e.target.value; this.game.state.empire.auto.mode = (val==='roi'||val==='miner_only')?val:'cheapest'; });
+            const autoReserve = document.getElementById('auto-hire-reserve'); if (autoReserve) autoReserve.addEventListener('change', (e) => { const v = parseInt(e.target.value||'0',10); this.game.state.empire.auto.reserveGold = Math.max(0, isNaN(v)?0:v); });
+
+            // Spells
+            document.querySelectorAll('.cast-spell-btn').forEach(btn => { btn.addEventListener('click', () => this.game.castSpell(btn.dataset.spellId)); });
+            // Shop
+            document.querySelectorAll('.buy-chest-btn').forEach(btn => { btn.addEventListener('click', () => this.game.buyChest(btn.dataset.chestId)); });
+
+            // Workers - generic
+            document.querySelectorAll('.hire-worker-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.hireWorker(btn.dataset.skillId); this.pulseAt(btn); this.game.uiManager.playSound('hire'); }); });
+            document.querySelectorAll('.upgrade-worker-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.upgradeWorkers(btn.dataset.skillId, btn.dataset.type); this.pulseAt(btn); this.game.uiManager.playSound('upgrade'); }); });
+            document.querySelectorAll('.assign-worker-btn').forEach(btn => { btn.addEventListener('click', () => {
+                const id = btn.dataset.actionId; const dir = btn.dataset.dir; const skill = btn.dataset.skillId; const ws = this.game.state.workers[skill]; const sumAssigned = Object.values(ws.assigned).reduce((a,b)=>a+b,0); if (dir === '+1') { if (sumAssigned < ws.total) ws.assigned[id] = (ws.assigned[id]||0)+1; } else { ws.assigned[id] = Math.max(0,(ws.assigned[id]||0)-1); } this.render();
+            }); });
+            // Farming estate
+            const hireFarm = document.getElementById('hire-farmhand'); if (hireFarm) hireFarm.addEventListener('click', () => this.game.hireWorker('farming'));
+            const upFI = document.getElementById('upgrade-farming-irrigation'); if (upFI) upFI.addEventListener('click', () => this.game.upgradeWorkers('farming', 'irrigation'));
+            const upFT = document.getElementById('upgrade-farming-tools'); if (upFT) upFT.addEventListener('click', () => this.game.upgradeWorkers('farming', 'tools'));
+            const upFC = document.getElementById('upgrade-farming-compost'); if (upFC) upFC.addEventListener('click', () => this.game.upgradeWorkers('farming', 'compost'));
+            const upFR = document.getElementById('upgrade-farming-tractor'); if (upFR) upFR.addEventListener('click', () => this.game.upgradeWorkers('farming', 'tractor'));
+            document.querySelectorAll('.assign-farming-worker-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.dataset.actionId; const dir = btn.dataset.dir === '+1' ? 1 : -1; const wfarm = this.game.state.workers.farming;
+                    const sumAssigned = Object.values(wfarm.assigned).reduce((a,b)=>a+b,0);
+                    const free = Math.max(0, wfarm.total - sumAssigned);
+                    if (dir === 1 && free <= 0) return;
+                    if (dir === -1 && (wfarm.assigned[id] || 0) <= 0) return;
+                    wfarm.assigned[id] = Math.max(0, (wfarm.assigned[id] || 0) + dir);
+                    this.renderView();
+                });
+            });
+
+            // Runecrafting interactive altar handlers
+            const altar = document.getElementById('altar-dropzone');
+            const essenceToken = document.getElementById('essence-token');
+            const qtyInput = document.getElementById('rc-qty');
+            const btnMinus = document.getElementById('rc-minus');
+            const btnPlus = document.getElementById('rc-plus');
+            const craftBtn = document.getElementById('rc-craft-btn');
+            const haveEss = (this.game.state.bank['rune_essence'] || 0);
+            const selectRecipe = (id) => { document.querySelectorAll('.rc-altar-card').forEach(c => c.classList.toggle('rc-selected', c.dataset.rcRecipeId === id)); if (craftBtn) { craftBtn.dataset.recipeId = id || ''; craftBtn.disabled = !id; } };
+            document.querySelectorAll('.rc-altar-card').forEach(card => { card.addEventListener('click', () => selectRecipe(card.dataset.rcRecipeId)); });
+            document.querySelectorAll('.quick-craft-btn').forEach(btn => { btn.addEventListener('click', (e) => { e.stopPropagation(); const id = btn.dataset.recipeId; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const maxQty = Math.floor((this.game.state.bank['rune_essence'] || 0) / per); if (maxQty <= 0) return; this.game.craftItem('runecrafting', id, Math.min(1, maxQty)); this.render(); }); });
+            if (btnMinus) btnMinus.addEventListener('click', () => { const v = Math.max(1, (parseInt(qtyInput.value || '1', 10) - 10)); qtyInput.value = v; });
+            if (btnPlus) btnPlus.addEventListener('click', () => { const v = Math.min(haveEss, (parseInt(qtyInput.value || '1', 10) + 10)); qtyInput.value = v; });
+            if (qtyInput) qtyInput.addEventListener('change', () => { let v = parseInt(qtyInput.value || '1', 10); if (isNaN(v) || v <= 0) v = 1; v = Math.min(v, haveEss); qtyInput.value = v; });
+            if (craftBtn) craftBtn.addEventListener('click', () => { const id = craftBtn.dataset.recipeId; if (!id) return; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const maxQty = Math.floor((this.game.state.bank['rune_essence'] || 0) / per); const want = Math.min(maxQty, Math.max(1, parseInt(qtyInput.value || '1', 10))); if (want <= 0) return; this.game.craftItem('runecrafting', id, want); if (altar) { for (let i = 0; i < Math.min(10, want); i++) { const spark = document.createElement('div'); spark.className = 'rune-spark'; spark.style.setProperty('--sx', `${(Math.random() - 0.5) * 120}px`); spark.style.setProperty('--sy', `${(Math.random() - 0.2) * 40}px`); spark.style.setProperty('--tx', `${(Math.random() - 0.5) * 40}px`); spark.style.setProperty('--ty', `${-140 - Math.random() * 40}px`); altar.appendChild(spark); setTimeout(() => spark.remove(), 950); } } this.render(); });
+            if (altar) { altar.addEventListener('dragover', (e) => { e.preventDefault(); altar.style.borderColor = 'rgba(88,166,255,0.6)'; }); altar.addEventListener('dragleave', () => { altar.style.borderColor = 'var(--border-color)'; }); altar.addEventListener('drop', (e) => { e.preventDefault(); altar.style.borderColor = 'var(--border-color)'; const sel = document.querySelector('.rc-altar-card.rc-selected'); if (!sel) { this.game.uiManager.showFloatingText('Select an altar first', 'text-yellow-300'); return; } const id = sel.dataset.rcRecipeId; const r = (GAME_DATA.RECIPES.runecrafting || []).find(x => x.id === id); if (!r) return; const per = (r.input?.[0]?.quantity || 1); const have = (this.game.state.bank['rune_essence'] || 0); const maxQty = Math.floor(have / per); const want = Math.min(maxQty, Math.max(1, parseInt(qtyInput?.value || '1', 10))); if (want <= 0) return; this.game.craftItem('runecrafting', id, want); for (let i = 0; i < Math.min(10, want); i++) { const spark = document.createElement('div'); spark.className = 'rune-spark'; spark.style.setProperty('--sx', `${(Math.random() - 0.5) * 120}px`); spark.style.setProperty('--sy', `${(Math.random() - 0.2) * 40}px`); spark.style.setProperty('--tx', `${(Math.random() - 0.5) * 40}px`); spark.style.setProperty('--ty', `${-140 - Math.random() * 40}px`); altar.appendChild(spark); setTimeout(() => spark.remove(), 950); } this.render(); }); }
+            if (essenceToken) { essenceToken.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', 'essence'); }); }
+
+            // Hunter lodge events
+            document.querySelectorAll('.hire-hunter-class-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.hireSpecialHunter(btn.dataset.classId); }); });
+            document.querySelectorAll('.start-hunter-mission-btn').forEach(btn => { btn.addEventListener('click', () => {
+                const missionId = btn.dataset.missionId;
+                const picks = Array.from(this.mainContent.querySelectorAll(`.hl-pick[data-mission-id="${missionId}"]`)).filter(ch => ch.checked).map(ch => ch.value);
+                this.game.startHunterMission(missionId, picks);
+            }); });
+            // Dynamic projected chance and CTA enablement per mission
+            const updateMissionChance = (missionId) => {
+                const def = (GAME_DATA.HUNTER_MISSIONS||[]).find(m => m.id === missionId); if (!def) return;
+                const needed = def.huntersNeeded || 1;
+                const picks = Array.from(this.mainContent.querySelectorAll(`.hl-pick[data-mission-id=\"${missionId}\"]`)).filter(ch => ch.checked).map(ch => ch.value);
+                const team = picks.map(id => (this.game.state.hunter?.roster||[]).find(h => h.instanceId === id)).filter(Boolean);
+                const teamSuccess = team.reduce((acc, h) => acc + (GAME_DATA.HUNTERS[h.classId]?.successBonus || 0), 0);
+                const metaBonus = 0.01 * (this.game.state.player.meta_skills[META_SKILLS.STEWARDSHIP].level - 1);
+                const base = def.baseSuccess || 0.5;
+                const chance = Math.max(0.05, Math.min(0.95, base + teamSuccess + metaBonus));
+                const span = document.getElementById(`hl-chance-${missionId}`); if (span) span.textContent = `${Math.round(chance*100)}%`;
+                const cta = document.getElementById(`hl-send-${missionId}`); if (cta) cta.disabled = (picks.length < needed);
+            };
+            document.querySelectorAll('.hl-pick').forEach(ch => {
+                ch.addEventListener('change', () => updateMissionChance(ch.dataset.missionId));
+            });
+
+            // Army
+            document.querySelectorAll('.hire-army-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireArmyUnit(btn.dataset.unitId)); });
+            const ar = document.getElementById('army-rally'); if (ar) ar.addEventListener('click', (e) => { const r = this.game.state.player.activeBuffs?.['armyRally']; if (!r || Date.now() >= r) { const rect = e.currentTarget.getBoundingClientRect(); this.juiceBurst('upgrade', rect.left + rect.width/2, rect.top + rect.height/2); } this.game.rallyArmy(); });
+            document.querySelectorAll('.army-upgrade-btn').forEach(btn => { btn.addEventListener('click', () => this.game.upgradeArmy(btn.dataset.type)); });
+            document.querySelectorAll('input[name="army-stance"]').forEach(r => { r.addEventListener('change', () => this.game.setArmyStance(r.value)); });
+>>>>>>> origin/main
             // Merchant
             document.querySelectorAll('.merchant-tab').forEach(btn => { btn.addEventListener('click', () => { this.game.state.merchant.selectedStallId = btn.dataset.stallId; this.renderView(); }); });
             document.querySelectorAll('.merchant-buy-btn').forEach(btn => { btn.addEventListener('click', (e) => {
@@ -2258,6 +3072,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }); });
             document.querySelectorAll('.merchant-sell-btn').forEach(btn => { btn.addEventListener('click', () => this.game.sellItem(btn.dataset.itemId, 1)); });
         }
+<<<<<<< HEAD
+=======
 
         showModal(title, content) {
             this.initNotify();
@@ -2346,7 +3162,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => { c.style.opacity = '0'; }, 620); setTimeout(() => c.remove(), 900);
             }
         }
-
         renderWorkerPanel(skillId) {
             const ws = this.game.state.workers[skillId]; const hireCost = this.game.getHireCost(skillId); const speedCost = this.game.getUpgradeCost(skillId, 'speed'); const yieldCost = this.game.getUpgradeCost(skillId, 'yield'); const speedLvl = ws.upgrades.speedLevel; const yieldLvl = ws.upgrades.yieldLevel; const theme = GAME_DATA.SKILLS[skillId].theme;
             if (skillId === 'woodcutting') {
@@ -2614,14 +3429,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const recruits = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${unitCards}</div>`;
             return `<h1 class="text-2xl font-semibold text-white mb-4">Army</h1>${hero}${upgrades}${recruits}`;
         }
+>>>>>>> origin/main
         renderRaidsView() {
-            const auto = this.game.state.combat.auto || { enabled: false, targetId: (GAME_DATA.COMBAT.ENEMIES?.[0]?.id)||null, buffers: { gold:0, items:{} } };
+            const auto = this.game.state.combat.auto || { enabled: false, targetId: ((GAME_DATA.COMBAT.ENEMIES||[]).find(e=>e.raid)?.id)||null, buffers: { gold:0, items:{} } };
             const buffs = this.game.state.player.activeBuffs || {};
             const rallyActive = buffs['armyRally'] && Date.now() < buffs['armyRally'];
             const rallyRemaining = rallyActive ? Math.ceil((buffs['armyRally'] - Date.now())/1000) : 0;
 
-            const target = (GAME_DATA.COMBAT.ENEMIES || []).find(x => x.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
-            const targetOptions = (GAME_DATA.COMBAT.ENEMIES || []).map(x => `<option value="${x.id}" ${auto.targetId===x.id?'selected':''}>${x.name} (Lv ${x.level})</option>`).join('');
+            const raidEnemies = (GAME_DATA.COMBAT.ENEMIES || []).filter(e => e.raid);
+            const target = raidEnemies.find(x => x.id === auto.targetId) || raidEnemies[0];
+            const targetOptions = raidEnemies.map(x => `<option value="${x.id}" ${auto.targetId===x.id?'selected':''}>${x.name} (Lv ${x.level})</option>`).join('');
 
             const raidComp = this.game.state.combat.auto?.raid?.composition || {};
             const useComp = raidComp && Object.keys(raidComp).length > 0;
@@ -2670,7 +3487,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const free = freeUnits[id] || 0;
                 return `<div class="unit-chip"><span>${def.emoji}</span><span class="text-xs">${def.name}</span><span class="font-mono text-white">x${owned}</span><span class="text-[10px] text-secondary ml-1">(${free} free)</span></div>`;
             }).join('');
-
             return `
                 <div class="block p-5 mb-5 medieval-glow raids-hero">
                     <div class="flex items-center justify-between gap-3">
@@ -2692,7 +3508,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="block p-4 rounded-md space-y-3">
                         <h2 class="text-lg font-bold">Targets</h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-3">
-                            ${(GAME_DATA.COMBAT.ENEMIES||[]).map(e => `
+                            ${(GAME_DATA.COMBAT.ENEMIES||[]).filter(e=>e.raid).map(e => `
                                 <div class="enemy-card glass-card p-4 rounded-md flex items-center justify-between ${auto.targetId===e.id ? 'selected' : ''}">
                                     <div>
                                         <div class="font-bold">${e.name}</div>
