@@ -991,7 +991,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     Object.keys(GAME_DATA.ARMY_CLASSES).forEach(id => { if (typeof this.state.army.units[id] !== 'number') this.state.army.units[id] = 0; });
                     // Backfill combat auto-battle defaults if missing
                     if (!this.state.combat) this.state.combat = { inCombat: false, enemy: null, lastPlayerAttack: 0, lastEnemyAttack: 0, playerAttackSpeedMs: 1600 };
-                    if (!this.state.combat.auto) this.state.combat.auto = { enabled: false, targetId: (GAME_DATA.COMBAT.ENEMIES?.[0]?.id) || null, lastTick: Date.now(), killsFrac: 0, buffers: { gold: 0, runes: 0, items: {} } };
+                    if (!this.state.combat.auto) this.state.combat.auto = { enabled: false, targetId: (GAME_DATA.COMBAT.ENEMIES?.[0]?.id) || null, lastTick: Date.now(), killsFrac: 0, buffers: { gold: 0, runes: 0, items: {} }, raid: { composition: {}, startedAt: 0, graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } } };
                     if (typeof this.state.combat.auto.autoClaim !== 'boolean') this.state.combat.auto.autoClaim = true;
                     if (!this.state.combat.auto.lastClaimMs) this.state.combat.auto.lastClaimMs = Date.now();
                  } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
@@ -1042,6 +1042,53 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const hungry = needed > 0; // unmet demand
             this.state.army.upkeep.hungry = hungry;
+            return { hungry, out };
+        }
+        // Composition-limited output for Raids selection
+        calculateCompositionOutput(composition) {
+            const comp = composition || {};
+            let dps = 0, hps = 0, foodPerMin = 0;
+            for (const [unitId, qtyRaw] of Object.entries(comp)) {
+                const qty = Math.max(0, qtyRaw | 0);
+                if (qty <= 0) continue;
+                const def = GAME_DATA.ARMY_CLASSES[unitId];
+                if (!def) continue;
+                dps += (def.dps || 0) * qty;
+                hps += (def.hps || 0) * qty;
+                foodPerMin += (def.foodPerMin || 0) * qty;
+            }
+            const up = this.state.army.upgrades || {};
+            dps *= (1 + 0.08 * (up.offenseLevel || 0));
+            hps *= (1 + 0.08 * (up.supportLevel || 0));
+            foodPerMin *= Math.pow(0.94, (up.logisticsLevel || 0));
+            const stance = this.state.army.stance || 'balanced';
+            if (stance === 'aggressive') { dps *= 1.25; hps *= 0.8; }
+            if (stance === 'defensive') { dps *= 0.8; hps *= 1.25; }
+            return { dps, hps, foodPerMin };
+        }
+        // Upkeep processor for selected composition (used in Raids auto)
+        consumeUpkeepForComposition(composition, deltaSec) {
+            const auto = this.state.combat.auto;
+            if (!auto.raid) auto.raid = { composition: {}, startedAt: 0, graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } };
+            const upkeepState = auto.raid.upkeep;
+            const foodIds = Object.keys(this.state.bank).filter(id => GAME_DATA.ITEMS[id]?.heals).sort((a,b) => (GAME_DATA.ITEMS[a].heals||0)-(GAME_DATA.ITEMS[b].heals||0));
+            const out = this.calculateCompositionOutput(composition);
+            const requiredFoodUnits = (out.foodPerMin / 60) * deltaSec;
+            upkeepState.foodBuffer += requiredFoodUnits;
+            let needed = Math.floor(upkeepState.foodBuffer);
+            if (needed > 0) {
+                for (const fid of foodIds) {
+                    if (needed <= 0) break;
+                    let have = this.state.bank[fid] || 0;
+                    if (have <= 0) continue;
+                    const take = Math.min(have, needed);
+                    this.removeFromBank(fid, take);
+                    needed -= take;
+                }
+                upkeepState.foodBuffer -= Math.floor(upkeepState.foodBuffer);
+            }
+            const hungry = needed > 0;
+            upkeepState.hungry = hungry;
             return { hungry, out };
         }
         rallyArmy(durationMs = 60000, runeCost = 2) {
@@ -1133,12 +1180,33 @@ document.addEventListener('DOMContentLoaded', () => {
             if (deltaSec < 0.1) { auto.lastTick = now; return; }
             auto.lastTick = now;
 
-            // Army upkeep and output snapshot
-            const upkeep = this.consumeArmyUpkeep(deltaSec);
-            const base = this.calculateArmyOutputPerSecond();
-            const hungryPenalty = upkeep.hungry ? 0.5 : 1.0;
             const rallyMult = this.hasBuff('armyRally') ? 2 : 1;
-            const dps = (base.dps || 0) * hungryPenalty * rallyMult;
+
+            // Determine whether to use selected composition or entire army
+            const comp = auto.raid?.composition || {};
+            const useComp = comp && Object.keys(comp).length > 0;
+
+            let dps = 0;
+            if (useComp) {
+                // Grace window before upkeep applies
+                const graceMs = auto.raid?.graceMs || 120000;
+                const startedAt = auto.raid?.startedAt || now;
+                const inGrace = (now - startedAt) < graceMs;
+                let hungryPenalty = 1.0;
+                if (!inGrace) {
+                    const upkeep = this.consumeUpkeepForComposition(comp, deltaSec);
+                    hungryPenalty = upkeep.hungry ? 0.5 : 1.0;
+                }
+                const out = this.calculateCompositionOutput(comp);
+                dps = (out.dps || 0) * hungryPenalty * rallyMult;
+            } else {
+                // Legacy behavior: whole army raids and consumes upkeep
+                const upkeep = this.consumeArmyUpkeep(deltaSec);
+                const base = this.calculateArmyOutputPerSecond();
+                const hungryPenalty = upkeep.hungry ? 0.5 : 1.0;
+                dps = (base.dps || 0) * hungryPenalty * rallyMult;
+            }
+
             // Choose target
             const target = (GAME_DATA.COMBAT.ENEMIES || []).find(e => e.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
             if (!target || !target.maxHp || dps <= 0) return;
@@ -1147,7 +1215,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const wholeKills = Math.floor(auto.killsFrac);
             if (wholeKills > 0) {
                 auto.killsFrac -= wholeKills;
-
                 // Roll rewards per kill
                 for (let i = 0; i < wholeKills; i++) {
                     // Gold roll within enemy range, add raw to buffer
@@ -1844,8 +1911,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Auto-battle metrics (no consumption here)
             const auto = this.game.state.combat.auto || { enabled: false, targetId: (GAME_DATA.COMBAT.ENEMIES?.[0]?.id)||null, buffers: { gold:0, items:{} } };
             const target = (GAME_DATA.COMBAT.ENEMIES || []).find(x => x.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
-            const base = this.game.calculateArmyOutputPerSecond();
-            const hungryPenalty = this.game.state.army.upkeep?.hungry ? 0.5 : 1.0;
+            const raidComp = this.game.state.combat.auto?.raid?.composition || {};
+            const useComp = raidComp && Object.keys(raidComp).length > 0;
+            const base = useComp ? this.game.calculateCompositionOutput(raidComp) : this.game.calculateArmyOutputPerSecond();
+            const hungryPenalty = useComp ? (this.game.state.combat.auto.raid.upkeep?.hungry ? 0.5 : 1.0) : (this.game.state.army.upkeep?.hungry ? 0.5 : 1.0);
             const rallyMult = this.game.hasBuff('armyRally') ? 2 : 1;
             const estDps = (base.dps || 0) * hungryPenalty * rallyMult;
             const killsPerSec = (target && target.maxHp > 0) ? (estDps / target.maxHp) : 0;
@@ -2245,10 +2314,47 @@ document.addEventListener('DOMContentLoaded', () => {
             // Auto-battle controls (shared by Combat and Raids)
             const abToggle = document.getElementById('auto-battle-toggle'); if (abToggle) abToggle.addEventListener('change', (e) => { this.game.state.combat.auto.enabled = !!e.target.checked; this.game.state.combat.auto.lastTick = Date.now(); });
             const abTarget = document.getElementById('auto-target-select'); if (abTarget) abTarget.addEventListener('change', (e) => { this.game.state.combat.auto.targetId = e.target.value; });
+            // Raid composition controls
+            const raidInputs = Array.from(document.querySelectorAll('.raid-comp-input'));
+            const raidAssigners = Array.from(document.querySelectorAll('.raid-assign-unit'));
+            const clampAssignment = (uid, val) => {
+                const free = (function(){
+                    const reserved = {};
+                    for (const m of (this.game.state.army.deployments?.active || [])) {
+                        for (const [rid, qty] of Object.entries(m.composition || {})) reserved[rid] = (reserved[rid] || 0) + qty;
+                    }
+                    const owned = this.game.state.army.units?.[uid] || 0;
+                    return Math.max(0, owned - (reserved[uid] || 0));
+                }).call(this);
+                return Math.max(0, Math.min(free, val));
+            };
+            raidAssigners.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const uid = btn.getAttribute('data-unit-id'); const dir = btn.getAttribute('data-dir');
+                    const input = document.querySelector(`.raid-comp-input[data-unit-id="${uid}"]`);
+                    if (!input) return;
+                    let v = parseInt(input.value || '0', 10) || 0;
+                    v = dir === '+1' ? v + 1 : v - 1;
+                    v = clampAssignment(uid, v);
+                    input.value = String(v);
+                    const auto = this.game.state.combat.auto; if (!auto.raid) auto.raid = { composition: {}, startedAt: 0, graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } };
+                    auto.raid.composition[uid] = v;
+                });
+            });
+            raidInputs.forEach(inp => {
+                inp.addEventListener('change', () => {
+                    const uid = inp.getAttribute('data-unit-id');
+                    let v = parseInt(inp.value || '0', 10) || 0;
+                    v = clampAssignment(uid, v);
+                    inp.value = String(v);
+                    const auto = this.game.state.combat.auto; if (!auto.raid) auto.raid = { composition: {}, startedAt: 0, graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } };
+                    auto.raid.composition[uid] = v;
+                });
+            });
             const claimBtn = document.getElementById('claim-war-spoils'); if (claimBtn) claimBtn.addEventListener('click', () => this.game.claimWarSpoils());
             const clearBtn = document.getElementById('clear-war-spoils'); if (clearBtn) clearBtn.addEventListener('click', () => this.game.clearWarSpoils());
             const abPlayPause = document.getElementById('auto-battle-playpause');
-            if (abPlayPause) abPlayPause.addEventListener('click', () => { const auto = this.game.state.combat.auto; auto.enabled = !auto.enabled; auto.lastTick = Date.now(); this.renderView(); });
+            if (abPlayPause) abPlayPause.addEventListener('click', () => { const auto = this.game.state.combat.auto; auto.enabled = !auto.enabled; auto.lastTick = Date.now(); if (!auto.raid) auto.raid = { composition: {}, startedAt: 0, graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } }; if (auto.enabled) { auto.raid.startedAt = Date.now(); auto.killsFrac = 0; } this.renderView(); });
             const abAutoClaim = document.getElementById('auto-claim-toggle');
             if (abAutoClaim) abAutoClaim.addEventListener('click', () => { const auto = this.game.state.combat.auto; auto.autoClaim = !auto.autoClaim; this.renderView(); });
             document.querySelectorAll('.select-raid-target').forEach(btn => { btn.addEventListener('click', () => { this.game.state.combat.auto.targetId = btn.dataset.enemyId; this.renderView(); }); });
@@ -2709,8 +2815,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const target = (GAME_DATA.COMBAT.ENEMIES || []).find(x => x.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
             const targetOptions = (GAME_DATA.COMBAT.ENEMIES || []).map(x => `<option value="${x.id}" ${auto.targetId===x.id?'selected':''}>${x.name} (Lv ${x.level})</option>`).join('');
 
-            const base = this.game.calculateArmyOutputPerSecond();
-            const hungryPenalty = this.game.state.army.upkeep?.hungry ? 0.5 : 1.0;
+            const raidComp = this.game.state.combat.auto?.raid?.composition || {};
+            const useComp = raidComp && Object.keys(raidComp).length > 0;
+            const base = useComp ? this.game.calculateCompositionOutput(raidComp) : this.game.calculateArmyOutputPerSecond();
+            const hungryPenalty = useComp ? (this.game.state.combat.auto.raid.upkeep?.hungry ? 0.5 : 1.0) : (this.game.state.army.upkeep?.hungry ? 0.5 : 1.0);
             const rallyMult = this.game.hasBuff('armyRally') ? 2 : 1;
             const estDps = (base.dps || 0) * hungryPenalty * rallyMult;
             const killsPerSec = (target && target.maxHp > 0) ? (estDps / target.maxHp) : 0;
@@ -2734,11 +2842,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>`;
 
+            const freeUnits = (() => {
+                const reserved = {};
+                for (const m of (this.game.state.army.deployments?.active || [])) {
+                    for (const [uid, qty] of Object.entries(m.composition || {})) reserved[uid] = (reserved[uid] || 0) + qty;
+                }
+                const out = {};
+                for (const id of Object.keys(GAME_DATA.ARMY_CLASSES)) {
+                    const owned = this.game.state.army.units?.[id] || 0;
+                    out[id] = Math.max(0, owned - (reserved[id] || 0));
+                }
+                return out;
+            })();
+
             const legionChips = Object.keys(GAME_DATA.ARMY_CLASSES).map(id => {
                 const def = GAME_DATA.ARMY_CLASSES[id];
                 const owned = this.game.state.army.units?.[id] || 0;
                 if (!owned) return '';
-                return `<div class="unit-chip"><span>${def.emoji}</span><span class="text-xs">${def.name}</span><span class="font-mono text-white">x${owned}</span></div>`;
+                const free = freeUnits[id] || 0;
+                return `<div class="unit-chip"><span>${def.emoji}</span><span class="text-xs">${def.name}</span><span class="font-mono text-white">x${owned}</span><span class="text-[10px] text-secondary ml-1">(${free} free)</span></div>`;
             }).join('');
 
             return `
@@ -2806,8 +2928,20 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </div>
                         <div class="block p-4 rounded-md">
+                            <h2 class="text-lg font-bold mb-2">Raid Composition</h2>
+                            <div class="space-y-2">
+                                ${Object.keys(GAME_DATA.ARMY_CLASSES).map(uid => {
+                                    const d = GAME_DATA.ARMY_CLASSES[uid];
+                                    const free = freeUnits[uid] || 0;
+                                    const current = auto.raid?.composition?.[uid] || 0;
+                                    return `<div class=\"flex items-center justify-between\">\n                                        <span class=\"text-xs text-secondary\">${d.emoji} ${d.name}</span>\n                                        <div class=\"flex items-center gap-1\">\n                                            <button class=\"chimera-button px-2 py-1 rounded-md raid-assign-unit\" data-unit-id=\"${uid}\" data-dir=\"-1\">-</button>\n                                            <input type=\"number\" min=\"0\" max=\"${free}\" value=\"${current}\" class=\"w-16 p-1 bg-primary border border-border-color rounded-md text-center raid-comp-input\" data-unit-id=\"${uid}\" />\n                                            <button class=\"chimera-button px-2 py-1 rounded-md raid-assign-unit\" data-unit-id=\"${uid}\" data-dir=\"+1\">+</button>\n                                        </div>\n                                    </div>`;
+                                }).join('')}
+                            </div>
+                            <div class="text-xs text-secondary mt-2">Grace: first 2m no rations consumed.</div>
+                        </div>
+                        <div class="block p-4 rounded-md">
                             <h2 class="text-lg font-bold mb-2">Legion</h2>
-                            <div class="flex flex-wrap gap-2">${legionChips || '<span class="text-secondary text-xs">No units yet.</span>'}</div>
+                            <div class="flex flex-wrap gap-2">${legionChips || '<span class=\"text-secondary text-xs\">No units yet.</span>'}</div>
                         </div>
                     </div>
                 </div>
