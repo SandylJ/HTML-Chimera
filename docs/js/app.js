@@ -270,12 +270,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 { id: 'wolf', name: 'Wolf', level: 5, hp: 60, maxHp: 60, attack: 7, defense: 2, gold: [12, 25], drops: [ {id:'raw_shrimp', qty:[1,1], chance:30}, {id:'oak_logs', qty:[1,2], chance:30}, {id:'willow_logs', qty:[1,1], chance:15}, {id:'iron_ore', qty:[1,1], chance:10}, {id:'gladiator_emblem', qty:[1,1], chance:3} ], attackSpeedMs: 1800, arena:true },
                 { id: 'skeleton', name: 'Skeleton', level: 10, hp: 120, maxHp: 120, attack: 12, defense: 4, gold: [30, 60], drops: [ {id:'bronze_bar', qty:[1,2], chance:35}, {id:'iron_ore', qty:[1,2], chance:30}, {id:'coal', qty:[1,2], chance:30}, {id:'silver_ore', qty:[1,1], chance:20}, {id:'rune_essence', qty:[2,4], chance:25}, {id:'gladiator_emblem', qty:[1,1], chance:5} ], attackSpeedMs: 1700, arena:true },
                 { id: 'minotaur', name: 'Minotaur', level: 18, hp: 240, maxHp: 240, attack: 18, defense: 6, gold: [70, 130], drops: [ {id:'minotaur_horn', qty:[1,1], chance:12}, {id:'bronze_bar', qty:[1,3], chance:40}, {id:'iron_bar', qty:[1,2], chance:25} ], attackSpeedMs: 1650, arena:true },
-                { id: 'hydra', name: 'Lernaean Hydra', level: 28, hp: 520, maxHp: 520, attack: 28, defense: 10, gold: [120, 220], drops: [ {id:'hydra_fang', qty:[1,2], chance:14}, {id:'silver_bar', qty:[1,2], chance:30}, {id:'gold_bar', qty:[1,1], chance:20} ], attackSpeedMs: 1500, arena:true },
+                { id: 'hydra', name: 'Lernaean Hydra', level: 28, hp: 520, maxHp: 520, attack: 28, defense: 10, gold: [120, 220], drops: [ {id:'hydra_fang', qty:[1,2], chance:14}, {id:'silver_bar', qty:[1,2], chance:30}, {id:'gold_bar', qty:[1,1], chance:20}, {id:'gold_ore', qty:[1,1], chance:25} ], attackSpeedMs: 1500, arena:true },
 
                 // Raid-only foes (Raids tab)
                 { id: 'voidling', name: 'Voidling', level: 22, hp: 380, maxHp: 380, attack: 22, defense: 9, gold: [90, 160], drops: [ {id:'void_crystal', qty:[1,2], chance:16}, {id:'voidstone', qty:[1,2], chance:25} ], attackSpeedMs: 1600, raid:true },
                 { id: 'phoenix', name: 'Ashen Phoenix', level: 34, hp: 800, maxHp: 800, attack: 34, defense: 12, gold: [180, 320], drops: [ {id:'phoenix_feather', qty:[1,2], chance:12}, {id:'gold_bar', qty:[1,2], chance:35} ], attackSpeedMs: 1450, raid:true },
-                { id: 'titan', name: 'Frost Titan', level: 46, hp: 1600, maxHp: 1600, attack: 48, defense: 18, gold: [320, 620], drops: [ {id:'titan_core', qty:[1,1], chance:10}, {id:'mithril_bar', qty:[1,2], chance:28}, {id:'adamant_bar', qty:[1,1], chance:20} ], attackSpeedMs: 1400, raid:true },
+                { id: 'titan', name: 'Frost Titan', level: 46, hp: 1600, maxHp: 1600, attack: 48, defense: 18, gold: [320, 620], drops: [ {id:'titan_core', qty:[1,1], chance:10}, {id:'mithril_bar', qty:[1,2], chance:28}, {id:'adamant_bar', qty:[1,1], chance:20}, {id:'mithril_ore', qty:[1,2], chance:22}, {id:'adamant_ore', qty:[1,1], chance:16} ], attackSpeedMs: 1400, raid:true },
                 { id: 'astral_drake', name: 'Astral Drake', level: 58, hp: 2600, maxHp: 2600, attack: 62, defense: 22, gold: [520, 980], drops: [ {id:'celestial_ore', qty:[1,2], chance:18}, {id:'mythic_relic', qty:[1,1], chance:6} ], attackSpeedMs: 1350, raid:true },
                 { id: 'void_emperor', name: 'The Void Emperor', level: 72, hp: 4200, maxHp: 4200, attack: 82, defense: 28, gold: [900, 1600], drops: [ {id:'ascendant_sigil', qty:[1,1], chance:5}, {id:'raid_insignia', qty:[1,2], chance:22}, {id:'rune_ore', qty:[1,1], chance:14} ], attackSpeedMs: 1300, raid:true }
             ]
@@ -929,7 +929,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-
         startAction(skillId, actionId, durationMinutes) {
             if (!this.state.activeActions) this.state.activeActions = {};
             // If an action is already running for this skill, settle it first
@@ -1081,7 +1080,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-
         // Worker systems
         ensureWorkerState() {
             if (!this.state.workers) {
@@ -1482,7 +1480,6 @@ document.addEventListener('DOMContentLoaded', () => {
             this.state.army.stance = stance;
             this.uiManager.renderView();
         }
-
         // Merchant helpers
         getMerchant() { return GAME_DATA.MERCHANTS?.bazaar || { stalls: [] }; }
         getStallById(stallId) { const m = this.getMerchant(); return (m.stalls || []).find(s => s.id === stallId) || (m.stalls || [])[0] || null; }
