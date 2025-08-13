@@ -263,6 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Combat state
             this.combat = { inCombat: false, enemy: null, lastPlayerAttack: 0, lastEnemyAttack: 0, playerAttackSpeedMs: 1600,
                 auto: { enabled: false, targetId: (GAME_DATA.COMBAT.ENEMIES?.[0]?.id) || null, lastTick: Date.now(), killsFrac: 0,
+                    autoClaim: true, lastClaimMs: Date.now(),
                     buffers: { gold: 0, runes: 0, items: {} } }
             };
 
@@ -991,6 +992,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Backfill combat auto-battle defaults if missing
                     if (!this.state.combat) this.state.combat = { inCombat: false, enemy: null, lastPlayerAttack: 0, lastEnemyAttack: 0, playerAttackSpeedMs: 1600 };
                     if (!this.state.combat.auto) this.state.combat.auto = { enabled: false, targetId: (GAME_DATA.COMBAT.ENEMIES?.[0]?.id) || null, lastTick: Date.now(), killsFrac: 0, buffers: { gold: 0, runes: 0, items: {} } };
+                    if (typeof this.state.combat.auto.autoClaim !== 'boolean') this.state.combat.auto.autoClaim = true;
+                    if (!this.state.combat.auto.lastClaimMs) this.state.combat.auto.lastClaimMs = Date.now();
                  } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
              }
          }
@@ -1142,24 +1145,43 @@ document.addEventListener('DOMContentLoaded', () => {
             const killsPerSec = dps / target.maxHp;
             auto.killsFrac = (auto.killsFrac || 0) + killsPerSec * deltaSec;
             const wholeKills = Math.floor(auto.killsFrac);
-            if (wholeKills <= 0) return;
-            auto.killsFrac -= wholeKills;
+            if (wholeKills > 0) {
+                auto.killsFrac -= wholeKills;
 
-            // Roll rewards per kill
-            for (let i = 0; i < wholeKills; i++) {
-                // Gold roll within enemy range, add raw to buffer
-                const minG = Array.isArray(target.gold) ? (target.gold[0] || 0) : 0;
-                const maxG = Array.isArray(target.gold) ? (target.gold[1] || 0) : 0;
-                const g = Math.floor(Math.random() * (maxG - minG + 1)) + minG;
-                auto.buffers.gold = (auto.buffers.gold || 0) + g;
-                // Drops
-                (target.drops || []).forEach(drop => {
-                    const chance = drop.chance || 0; // percent
-                    if (Math.random() * 100 < chance) {
-                        const [qmin, qmax] = Array.isArray(drop.qty) ? drop.qty : [drop.qty || 1, drop.qty || 1];
-                        const qty = Math.floor(Math.random() * (qmax - qmin + 1)) + qmin;
-                        if (!auto.buffers.items) auto.buffers.items = {};
-                        auto.buffers.items[drop.id] = (auto.buffers.items[drop.id] || 0) + qty;
+                // Roll rewards per kill
+                for (let i = 0; i < wholeKills; i++) {
+                    // Gold roll within enemy range, add raw to buffer
+                    const minG = Array.isArray(target.gold) ? (target.gold[0] || 0) : 0;
+                    const maxG = Array.isArray(target.gold) ? (target.gold[1] || 0) : 0;
+                    const g = Math.floor(Math.random() * (maxG - minG + 1)) + minG;
+                    auto.buffers.gold = (auto.buffers.gold || 0) + g;
+                    // Drops
+                    (target.drops || []).forEach(drop => {
+                        const chance = drop.chance || 0; // percent
+                        if (Math.random() * 100 < chance) {
+                            const [qmin, qmax] = Array.isArray(drop.qty) ? drop.qty : [drop.qty || 1, drop.qty || 1];
+                            const qty = Math.floor(Math.random() * (qmax - qmin + 1)) + qmin;
+                            if (!auto.buffers.items) auto.buffers.items = {};
+                            auto.buffers.items[drop.id] = (auto.buffers.items[drop.id] || 0) + qty;
+                        }
+                    });
+                }
+            }
+
+            // Auto-claim spoils if enabled
+            if (auto.autoClaim) {
+                const goldWhole = Math.floor(auto.buffers.gold || 0);
+                if (goldWhole > 0) {
+                    this.addGold(goldWhole);
+                    auto.buffers.gold -= goldWhole;
+                }
+                const itemsBuf = auto.buffers.items || {};
+                Object.keys(itemsBuf).forEach(id => {
+                    const qty = Math.floor(itemsBuf[id] || 0);
+                    if (qty > 0) {
+                        this.addToBank(id, qty);
+                        itemsBuf[id] -= qty;
+                        if (itemsBuf[id] <= 0) delete itemsBuf[id];
                     }
                 });
             }
@@ -1832,6 +1854,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const itemsEntries = Object.entries(auto.buffers?.items || {});
             const itemsHtml = itemsEntries.length ? itemsEntries.map(([id,q]) => `<span class="badge">${GAME_DATA.ITEMS[id]?.icon||'❔'} ${GAME_DATA.ITEMS[id]?.name||id} x${q}</span>`).join(' ') : '<span class="text-secondary text-xs">No items yet.</span>';
             const spoilsEmpty = (Math.floor(auto.buffers?.gold||0) <= 0) && itemsEntries.length === 0;
+            const killProgress = Math.max(0, Math.min(1, (auto.killsFrac || 0) % 1));
 
             return `
                 <div class="block combat-hero p-5 rounded-md mb-4">
@@ -1870,13 +1893,26 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="flex flex-wrap gap-2">${weapons || '<span class="text-secondary">Craft a weapon in Smithing.</span>'}</div>
                         <div class="flex flex-wrap gap-2">${foodButtons || '<span class="text-secondary">Cook food to heal.</span>'}</div>
                         <div class="block p-3 rounded-md mt-3">
-                            <h3 class="text-md font-bold mb-2">Auto-Battle</h3>
-                            <div class="flex items-center gap-2 mb-2">
-                                <label class="text-xs flex items-center gap-2"><input id="auto-battle-toggle" type="checkbox" ${auto.enabled?'checked':''}/> Enable</label>
-                                <select id="auto-target-select" class="chimera-button px-2 py-1 rounded">${targetOptions}</select>
+                            <h3 class="text-md font-bold mb-2">Auto Battler</h3>
+                            <div class="flex items-center gap-3">
+                                <div id="auto-kill-ring" class="ring" style="--ring-pct:${killProgress}">
+                                    <div class="ring-center">
+                                        <div class="text-center">
+                                            <div class="text-xs text-secondary">Next Kill</div>
+                                            <div id="auto-kill-progress" class="font-mono text-white">${Math.floor(killProgress*100)}%</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <button id="auto-battle-playpause" class="chimera-button juicy-button px-3 py-2 rounded-md">${auto.enabled ? 'Pause Auto' : 'Start Auto'}</button>
+                                        <button id="auto-claim-toggle" class="chimera-button px-3 py-2 rounded-md ${auto.autoClaim ? 'imperial-button' : ''}">${auto.autoClaim ? 'Auto-Claim ON' : 'Auto-Claim OFF'}</button>
+                                        <select id="auto-target-select" class="chimera-button px-2 py-1 rounded">${targetOptions}</select>
+                                    </div>
+                                    <div class="text-xs text-secondary">Kills/s: <span id="auto-kps" class="text-white font-mono">${killsPerSec.toFixed(2)}</span> • Gold/s: <span id="auto-gps" class="text-white font-mono">${estGoldPerSec.toFixed(1)}</span></div>
+                                    <div class="text-[11px] text-secondary">${auto.autoClaim ? 'Spoils are being claimed automatically.' : 'Spoils are cached for claiming.'}</div>
+                                </div>
                             </div>
-                            <div class="text-xs text-secondary">Kills/s: <span class="text-white font-mono">${killsPerSec.toFixed(2)}</span> • Gold/s: <span class="text-white font-mono">${estGoldPerSec.toFixed(1)}</span></div>
-                            <div class="text-[11px] text-secondary">Consumes food while active. Spoils are cached for claiming.</div>
                         </div>
                         <div class="block p-3 rounded-md">
                             <h3 class="text-md font-bold mb-2">War Spoils</h3>
@@ -1908,6 +1944,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     ? entries.map(([id, q]) => `<span class="badge">${GAME_DATA.ITEMS[id]?.icon||'❔'} ${GAME_DATA.ITEMS[id]?.name||id} x${q}</span>`).join(' ')
                     : '<span class="text-secondary text-xs">No items yet.</span>';
                 itemsContainer.innerHTML = html;
+            }
+            // Update auto-battle ring and metrics
+            const ring = document.getElementById('auto-kill-ring');
+            const progText = document.getElementById('auto-kill-progress');
+            if (ring || progText || document.getElementById('auto-kps') || document.getElementById('auto-gps')) {
+                const prog = Math.max(0, Math.min(1, (auto.killsFrac || 0) % 1));
+                if (ring) ring.style.setProperty('--ring-pct', prog);
+                if (progText) progText.textContent = `${Math.floor(prog * 100)}%`;
+                const base = this.game.calculateArmyOutputPerSecond();
+                const hungryPenalty = this.game.state.army.upkeep?.hungry ? 0.5 : 1.0;
+                const rallyMult = this.game.hasBuff('armyRally') ? 2 : 1;
+                const estDps = (base.dps || 0) * hungryPenalty * rallyMult;
+                const target = (GAME_DATA.COMBAT.ENEMIES || []).find(x => x.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
+                const kps = (target && target.maxHp > 0) ? (estDps / target.maxHp) : 0;
+                const gps = kps * (target && Array.isArray(target.gold) ? (target.gold[0] + target.gold[1]) / 2 : 0) * this.game.goldMultiplier();
+                const kpsEl = document.getElementById('auto-kps');
+                const gpsEl = document.getElementById('auto-gps');
+                if (kpsEl) kpsEl.textContent = kps.toFixed(2);
+                if (gpsEl) gpsEl.textContent = gps.toFixed(1);
             }
             // Toggle buttons
             const claimBtn = document.getElementById('claim-war-spoils');
@@ -2191,6 +2246,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const abTarget = document.getElementById('auto-target-select'); if (abTarget) abTarget.addEventListener('change', (e) => { this.game.state.combat.auto.targetId = e.target.value; });
             const claimBtn = document.getElementById('claim-war-spoils'); if (claimBtn) claimBtn.addEventListener('click', () => this.game.claimWarSpoils());
             const clearBtn = document.getElementById('clear-war-spoils'); if (clearBtn) clearBtn.addEventListener('click', () => this.game.clearWarSpoils());
+            // New epic auto-battler controls
+            const abPlayPause = document.getElementById('auto-battle-playpause');
+            if (abPlayPause) abPlayPause.addEventListener('click', () => { const auto = this.game.state.combat.auto; auto.enabled = !auto.enabled; auto.lastTick = Date.now(); this.renderView(); });
+            const abAutoClaim = document.getElementById('auto-claim-toggle');
+            if (abAutoClaim) abAutoClaim.addEventListener('click', () => { const auto = this.game.state.combat.auto; auto.autoClaim = !auto.autoClaim; this.renderView(); });
 
             // Empire hiring events
             document.querySelectorAll('.hire-unit-btn').forEach(btn => { btn.addEventListener('click', () => { this.game.hireEmpireUnit(btn.dataset.unitId); this.pulseAt(btn); this.game.uiManager.playSound('hire'); }); });
