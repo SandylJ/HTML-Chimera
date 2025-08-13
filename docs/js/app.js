@@ -2192,7 +2192,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h2 class="text-lg font-bold mb-2">Gather</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">${gatherCards}</div>
                 </div>
-                <div class="block p-4 col-span-1 md:col-span-2 xl:grid-cols-3">
+                <div class="block p-4 col-span-1 md:col-span-2 xl:col-span-3">
                     <h2 class="text-lg font-bold mb-2">Brew</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">${brewCards || '<span class="text-secondary text-xs">No recipes yet.</span>'}</div>
                 </div>
@@ -3197,6 +3197,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 hunter: { title: "Trapper's Outpost", emoji: '🪤', worker: 'Trapper' },
                 archaeology: { title: 'Ancient Digsite', emoji: '🏺', worker: 'Excavator' },
                 divination: { title: "Diviner's Grove", emoji: '🔮', worker: 'Diviner' },
+                herblore: { title: "Herbalist's Sanctuary", emoji: '🌿', worker: 'Herbalist' },
             };
             if (headerMeta[skillId]) {
                 const meta = headerMeta[skillId];
@@ -3256,7 +3257,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderWorkerAssign(skillId, action) {
             const ws = this.game.state.workers[skillId]; const assigned = ws.assigned[action.id] || 0; const total = ws.total; const sumAssigned = Object.values(ws.assigned).reduce((a,b)=>a+b,0); const free = Math.max(0, total - sumAssigned); const speedMult = this.game.getWorkerSpeedMultiplier(skillId, action); const yieldMult = this.game.getWorkerYieldMultiplier(skillId, action);
-            const NAMES = { woodcutting: { worker: 'Timberhands' }, mining: { worker: 'Miners' }, fishing: { worker: 'Anglers' }, farming: { worker: 'Farmhands' }, hunter: { worker: 'Trappers' }, archaeology: { worker: 'Excavators' }, divination: { worker: 'Diviners' }, };
+            const NAMES = { woodcutting: { worker: 'Timberhands' }, mining: { worker: 'Miners' }, fishing: { worker: 'Anglers' }, farming: { worker: 'Farmhands' }, hunter: { worker: 'Trappers' }, archaeology: { worker: 'Excavators' }, divination: { worker: 'Diviners' }, herblore: { worker: 'Herbalists' }, };
             const workerName = (NAMES[skillId] || { worker: 'Workers' }).worker;
             return `
                 <div class="mt-3 p-2 rounded-md bg-black/30 border border-border-color">
