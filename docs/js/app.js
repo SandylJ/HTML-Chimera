@@ -2722,9 +2722,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const spoilsEmpty = (Math.floor(auto.buffers?.gold||0) <= 0) && itemsEntries.length === 0;
             const killProgress = Math.max(0, Math.min(1, (auto.killsFrac || 0) % 1));
             const allies = this.game.state.army.production || { dps: 0, hps: 0 };
+            const armyUnitsTotal = Object.values(this.game.state.army.units || {}).reduce((a,b)=>a+(b||0),0);
+            const emptyState = armyUnitsTotal > 0 ? '' : `
+                <div class="block p-4 rounded-md mb-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold">Your legion stands idle</h2>
+                            <p class="text-secondary text-sm">Recruit units in the Army tab to begin raiding.</p>
+                        </div>
+                        <button id="goto-army" class="chimera-button juicy-button px-4 py-2 rounded-md">Go to Army</button>
+                    </div>
+                </div>`;
+
+            const legionChips = Object.keys(GAME_DATA.ARMY_CLASSES).map(id => {
+                const def = GAME_DATA.ARMY_CLASSES[id];
+                const owned = this.game.state.army.units?.[id] || 0;
+                if (!owned) return '';
+                return `<div class="unit-chip"><span>${def.emoji}</span><span class="text-xs">${def.name}</span><span class="font-mono text-white">x${owned}</span></div>`;
+            }).join('');
 
             return `
-                <div class="block p-5 mb-5 medieval-glow combat-hero">
+                <div class="block p-5 mb-5 medieval-glow raids-hero">
                     <div class="flex items-center justify-between gap-3">
                         <div class="flex items-center gap-3">
                             <div class="text-2xl">🐉</div>
@@ -2739,17 +2757,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                 </div>
+                ${emptyState}
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <div class="block p-4 rounded-md space-y-3">
                         <h2 class="text-lg font-bold">Targets</h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-3">
                             ${(GAME_DATA.COMBAT.ENEMIES||[]).map(e => `
-                                <div class="enemy-card glass-card p-4 rounded-md flex items-center justify-between">
+                                <div class="enemy-card glass-card p-4 rounded-md flex items-center justify-between ${auto.targetId===e.id ? 'selected' : ''}">
                                     <div>
                                         <div class="font-bold">${e.name}</div>
                                         <div class="text-xs text-secondary">Lv ${e.level} • ${e.maxHp} HP</div>
                                     </div>
-                                    <button class="chimera-button juicy-button px-3 py-2 rounded-md select-raid-target" data-enemy-id="${e.id}">Target</button>
+                                    <button class="chimera-button juicy-button px-3 py-2 rounded-md select-raid-target" data-enemy-id="${e.id}">${auto.targetId===e.id ? 'Selected' : 'Target'}</button>
                                 </div>
                             `).join('')}
                         </div>
@@ -2776,13 +2795,19 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </div>
                     </div>
-                    <div class="block p-4 rounded-md space-y-3 spoils-panel">
-                        <h2 class="text-lg font-bold">War Spoils</h2>
-                        <div class="text-sm mb-1">Gold: <span id="war-spoils-gold" class="font-mono spoils-gold">${Math.floor(auto.buffers?.gold||0).toLocaleString()}</span></div>
-                        <div id="war-spoils-items" class="flex flex-wrap gap-2">${itemsHtml}</div>
-                        <div class="flex items-center gap-2">
-                            <button id="claim-war-spoils" class="chimera-button juicy-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Claim All</button>
-                            <button id="clear-war-spoils" class="chimera-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Clear</button>
+                    <div class="flex flex-col gap-4">
+                        <div class="block p-4 rounded-md space-y-3 spoils-panel">
+                            <h2 class="text-lg font-bold">War Spoils</h2>
+                            <div class="text-sm mb-1">Gold: <span id="war-spoils-gold" class="font-mono spoils-gold">${Math.floor(auto.buffers?.gold||0).toLocaleString()}</span></div>
+                            <div id="war-spoils-items" class="flex flex-wrap gap-2">${itemsHtml}</div>
+                            <div class="flex items-center gap-2">
+                                <button id="claim-war-spoils" class="chimera-button juicy-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Claim All</button>
+                                <button id="clear-war-spoils" class="chimera-button px-3 py-2 rounded-md" ${spoilsEmpty?'disabled':''}>Clear</button>
+                            </div>
+                        </div>
+                        <div class="block p-4 rounded-md">
+                            <h2 class="text-lg font-bold mb-2">Legion</h2>
+                            <div class="flex flex-wrap gap-2">${legionChips || '<span class="text-secondary text-xs">No units yet.</span>'}</div>
                         </div>
                     </div>
                 </div>
