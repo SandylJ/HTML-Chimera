@@ -1542,7 +1542,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (this.state.combat.inCombat) return; // pause while in manual combat
             const now = Date.now();
             const deltaSec = (now - (auto.lastTick || now)) / 1000;
-            if (deltaSec < 0.1) { auto.lastTick = now; return; }
+            if (deltaSec < 0.1) { return; }
             auto.lastTick = now;
 
             const rallyMult = this.hasBuff('armyRally') ? 2 : 1;
