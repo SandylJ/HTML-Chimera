@@ -152,7 +152,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 { id: 'wolf', name: 'Wolf', level: 5, hp: 60, maxHp: 60, attack: 7, defense: 2, gold: [12, 25], drops: [ {id:'raw_shrimp', qty:[1,1], chance:30} ], attackSpeedMs: 1800 },
                 { id: 'skeleton', name: 'Skeleton', level: 10, hp: 120, maxHp: 120, attack: 12, defense: 4, gold: [30, 60], drops: [ {id:'bronze_bar', qty:[1,2], chance:35} ], attackSpeedMs: 1700 },
                 { id: 'troll', name: 'Troll', level: 20, hp: 300, maxHp: 300, attack: 20, defense: 8, gold: [80, 150], drops: [ {id:'item_ancient_key', qty:[1,1], chance:10} ], attackSpeedMs: 1600 },
-            ]
+            ],
+            WORKERS: {
+                squire: { id: 'squire', name: 'Squire', emoji: '🛡️', description: 'Assists fighters, increasing DPS.', baseCost: 180, costGrowth: 1.20, dps: 0.5 },
+                medic: { id: 'medic', name: 'Field Medic', emoji: '🏥', description: 'Tends wounds, adding HPS.', baseCost: 200, costGrowth: 1.22, hps: 0.4 }
+            }
         },
         ARMY_CLASSES: {
             knight: { id: 'knight', name: 'Knight', emoji: '🛡️', role: 'Defender', description: 'Armored vanguard that holds the line.', baseCost: 150, costGrowth: 1.22, dps: 3, hps: 0.0, foodPerMin: 0.6 },
@@ -264,7 +268,10 @@ document.addEventListener('DOMContentLoaded', () => {
             this.combat = { inCombat: false, enemy: null, lastPlayerAttack: 0, lastEnemyAttack: 0, playerAttackSpeedMs: 1600,
                 auto: { enabled: false, targetId: (GAME_DATA.COMBAT.ENEMIES?.[0]?.id) || null, lastTick: Date.now(), killsFrac: 0,
                     autoClaim: true, lastClaimMs: Date.now(),
-                    buffers: { gold: 0, runes: 0, items: {} } }
+                    buffers: { gold: 0, runes: 0, items: {} } },
+                combatWorkers: { squire: 0, medic: 0 },
+                autoHire: { enabled: false, reserveGold: 0 },
+                drafted: {}
             };
 
             // Clicker state
@@ -407,12 +414,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     const base = this.calculateArmyOutputPerSecond();
                     const hungryPenalty = upkeep.hungry ? 0.5 : 1.0;
                     const rallyMult = this.hasBuff('armyRally') ? 2 : 1;
-                    const dps = base.dps * hungryPenalty * rallyMult;
-                    const hps = base.hps * hungryPenalty * rallyMult;
-                    this.state.army.production = { dps, hps, hungry: upkeep.hungry };
-                    // Apply damage to enemy and heals to player
-                    const dmg = dps * armyDeltaSec;
-                    const heal = hps * armyDeltaSec;
+                    const armyDps = base.dps * hungryPenalty * rallyMult;
+                    const armyHps = base.hps * hungryPenalty * rallyMult;
+                    // Support contributions (combat workers + drafted civilians)
+                    const cw = this.calculateCombatWorkersOutputPerSecond();
+                    const draft = this.getDraftedSupportOutputPerSecond();
+                    const totalDps = armyDps + (cw.dps || 0) + (draft.dps || 0);
+                    const totalHps = armyHps + (cw.hps || 0) + (draft.hps || 0);
+                    // Keep army.production as army-only for other UIs relying on army state
+                    this.state.army.production = { dps: armyDps, hps: armyHps, hungry: upkeep.hungry };
+                    // Apply damage to enemy and heals to player using total output
+                    const dmg = totalDps * armyDeltaSec;
+                    const heal = totalHps * armyDeltaSec;
                     if (dmg > 0) {
                         this.state.combat.enemy.hp = Math.max(0, this.state.combat.enemy.hp - dmg);
                         this.state.army.fly.accumDmg += dmg;
@@ -476,6 +489,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             // Empire auto-hiring
             this.processEmpireAutoHire(now);
+
+            // Combat worker auto-hire
+            this.processCombatWorkerAutoHire(now);
 
             // Hunter mission loop
             this.processHunterMissions(delta);
@@ -783,6 +799,25 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        processCombatWorkerAutoHire(nowMs) {
+            const auto = this.state.combat?.autoHire; if (!auto || !auto.enabled) return;
+            const last = auto.lastAutoMs || 0; if ((nowMs - last) < 1000) return; auto.lastAutoMs = nowMs;
+            // Choose the cheapest combat worker we can afford (after reserve)
+            const defs = GAME_DATA.COMBAT.WORKERS || {};
+            let bestId = null, bestCost = Infinity;
+            Object.keys(defs).forEach(id => {
+                const cost = this.getCombatWorkerCost(id);
+                if (cost < bestCost) { bestCost = cost; bestId = id; }
+            });
+            if (!bestId) return;
+            const reserve = auto.reserveGold || 0;
+            if (this.state.player.gold - reserve >= bestCost && this.spendGold(bestCost)) {
+                this.state.combat.combatWorkers[bestId] = (this.state.combat.combatWorkers[bestId] || 0) + 1;
+                this.uiManager.notifyResource('gold', -bestCost);
+                this.uiManager.showFloatingText(`Auto-hired ${GAME_DATA.COMBAT.WORKERS[bestId].name}`, 'text-green-300');
+            }
+        }
+
         // Worker systems
         ensureWorkerState() {
             if (!this.state.workers) {
@@ -921,6 +956,32 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!this.state.combat.inCombat) return; if (!victory) { this.uiManager.showModal('Defeated', '<p>You were defeated. Rest to recover HP.</p>'); }
             this.state.combat.inCombat = false; this.state.combat.enemy = null; this.uiManager.renderView();
         }
+        // Combat Workers
+        getCombatWorkerCost(id) {
+            const def = GAME_DATA.COMBAT.WORKERS?.[id]; if (!def) return Infinity;
+            const owned = this.state.combat?.combatWorkers?.[id] || 0;
+            return Math.floor(def.baseCost * Math.pow(def.costGrowth || 1.2, owned));
+        }
+        hireCombatWorker(id) {
+            const def = GAME_DATA.COMBAT.WORKERS?.[id]; if (!def) return;
+            const price = this.getCombatWorkerCost(id);
+            if (!this.spendGold(price)) { this.uiManager.showModal('Insufficient GP', `<p>You need ${price} GP to hire a ${def.name}.</p>`); return; }
+            if (!this.state.combat.combatWorkers) this.state.combat.combatWorkers = {};
+            this.state.combat.combatWorkers[id] = (this.state.combat.combatWorkers[id] || 0) + 1;
+            this.uiManager.playSound('hire');
+            this.uiManager.showFloatingText(`+1 ${def.name}`, 'text-green-300');
+            this.uiManager.renderView();
+        }
+        calculateCombatWorkersOutputPerSecond() {
+            const cw = this.state.combat?.combatWorkers || {};
+            let dps = 0, hps = 0;
+            Object.keys(GAME_DATA.COMBAT.WORKERS || {}).forEach(id => {
+                const def = GAME_DATA.COMBAT.WORKERS[id]; const qty = cw[id] || 0; if (qty <= 0) return;
+                if (def.dps) dps += def.dps * qty;
+                if (def.hps) hps += def.hps * qty;
+            });
+            return { dps, hps };
+        }
         handleEnemyDefeat(enemy) {
             // Gold
             const g = Math.floor(Math.random() * (enemy.gold[1] - enemy.gold[0] + 1)) + enemy.gold[0]; this.addGold(g);
@@ -994,6 +1055,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!this.state.combat.auto) this.state.combat.auto = { enabled: false, targetId: (GAME_DATA.COMBAT.ENEMIES?.[0]?.id) || null, lastTick: Date.now(), killsFrac: 0, buffers: { gold: 0, runes: 0, items: {} } };
                     if (typeof this.state.combat.auto.autoClaim !== 'boolean') this.state.combat.auto.autoClaim = true;
                     if (!this.state.combat.auto.lastClaimMs) this.state.combat.auto.lastClaimMs = Date.now();
+                    if (!this.state.combat.combatWorkers) this.state.combat.combatWorkers = { squire: 0, medic: 0 };
+                    if (!this.state.combat.autoHire) this.state.combat.autoHire = { enabled: false, reserveGold: 0 };
+                    if (!this.state.combat.drafted) this.state.combat.drafted = {};
                  } catch (e) { console.error('Failed to load game, starting new.', e); this.state = new GameState(); }
              }
          }
@@ -1138,7 +1202,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const base = this.calculateArmyOutputPerSecond();
             const hungryPenalty = upkeep.hungry ? 0.5 : 1.0;
             const rallyMult = this.hasBuff('armyRally') ? 2 : 1;
-            const dps = (base.dps || 0) * hungryPenalty * rallyMult;
+            const armyDps = (base.dps || 0) * hungryPenalty * rallyMult;
+            const cw = this.calculateCombatWorkersOutputPerSecond();
+            const draft = this.getDraftedSupportOutputPerSecond();
+            const dps = armyDps + (cw.dps || 0) + (draft.dps || 0);
             // Choose target
             const target = (GAME_DATA.COMBAT.ENEMIES || []).find(e => e.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
             if (!target || !target.maxHp || dps <= 0) return;
@@ -1200,6 +1267,58 @@ document.addEventListener('DOMContentLoaded', () => {
             this.uiManager.renderView();
         }
         clearWarSpoils() { const auto = this.state.combat?.auto; if (!auto) return; auto.buffers = { gold: 0, runes: 0, items: {} }; this.uiManager.renderView(); }
+
+        // Drafting system: temporarily assign existing workers as combat support
+        getDraftedSupportOutputPerSecond() {
+            const drafted = this.state.combat?.drafted || {};
+            let dps = 0, hps = 0;
+            // Simple mapping: miners add small DPS, cooks (cooking) add HPS, smithing adds DPS, farming adds HPS
+            const map = {
+                mining: { dpsPer: 0.05 },
+                woodcutting: { dpsPer: 0.03 },
+                smithing: { dpsPer: 0.06 },
+                cooking: { hpsPer: 0.08 },
+                farming: { hpsPer: 0.05 },
+                fishing: { hpsPer: 0.03 },
+                hunter: { dpsPer: 0.07 },
+                divination: { hpsPer: 0.02 },
+                archaeology: { dpsPer: 0.02 }
+            };
+            Object.keys(drafted).forEach(skillId => {
+                const qty = drafted[skillId] || 0; if (qty <= 0) return;
+                const cfg = map[skillId] || {};
+                if (cfg.dpsPer) dps += cfg.dpsPer * qty;
+                if (cfg.hpsPer) hps += cfg.hpsPer * qty;
+            });
+            return { dps, hps };
+        }
+        draftWorkers(skillId, count) {
+            this.ensureWorkerState();
+            const ws = this.state.workers[skillId]; if (!ws) return false;
+            const assigned = Object.values(ws.assigned || {}).reduce((a,b)=>a+(b||0),0);
+            const free = Math.max(0, (ws.total || 0) - assigned);
+            const take = Math.max(0, Math.min(free, count)); if (take <= 0) return false;
+            if (!this.state.combat.drafted) this.state.combat.drafted = {};
+            this.state.combat.drafted[skillId] = (this.state.combat.drafted[skillId] || 0) + take;
+            this.uiManager.showFloatingText(`Drafted ${take} ${GAME_DATA.SKILLS[skillId]?.name||skillId}`, 'text-yellow-300');
+            this.uiManager.renderView();
+            return true;
+        }
+        recallDrafted(skillId, count) {
+            if (!this.state.combat?.drafted) return false;
+            const have = this.state.combat.drafted[skillId] || 0;
+            const giveBack = Math.max(0, Math.min(have, count)); if (giveBack <= 0) return false;
+            this.state.combat.drafted[skillId] = have - giveBack;
+            if (this.state.combat.drafted[skillId] <= 0) delete this.state.combat.drafted[skillId];
+            this.uiManager.showFloatingText(`Recalled ${giveBack} ${GAME_DATA.SKILLS[skillId]?.name||skillId}`, 'text-green-300');
+            this.uiManager.renderView();
+            return true;
+        }
+        recallAllDrafted() {
+            if (!this.state.combat?.drafted) return;
+            this.state.combat.drafted = {};
+            this.uiManager.renderView();
+        }
     }
 
     class UIManager {
@@ -1836,7 +1955,7 @@ document.addEventListener('DOMContentLoaded', () => {
                    </div>`
                 : `<p class="text-secondary">Choose a foe from the left to begin combat.</p>`;
 
-            const allies = this.game.state.army.production || { dps: 0, hps: 0 };
+            const allies = this.game.state.army.production || { dps: 0, hps: 0 }; const support = this.game.calculateCombatWorkersOutputPerSecond(); const drafted = this.game.getDraftedSupportOutputPerSecond(); const totalDps = (allies.dps||0)+(support.dps||0)+(drafted.dps||0); const totalHps = (allies.hps||0)+(support.hps||0)+(drafted.hps||0);
             const rallyCta = rallyActive
                 ? `<button id="army-rally" class="chimera-button imperial-button px-3 py-2 rounded-md opacity-80">Rallying… ${rallyRemaining}s</button>`
                 : `<button id="army-rally" class="chimera-button imperial-button juicy-button px-3 py-2 rounded-md">Rally Army — 2 Runes</button>`;
@@ -1847,7 +1966,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const base = this.game.calculateArmyOutputPerSecond();
             const hungryPenalty = this.game.state.army.upkeep?.hungry ? 0.5 : 1.0;
             const rallyMult = this.game.hasBuff('armyRally') ? 2 : 1;
-            const estDps = (base.dps || 0) * hungryPenalty * rallyMult;
+            const supportNow = this.game.calculateCombatWorkersOutputPerSecond();
+            const draftedNow = this.game.getDraftedSupportOutputPerSecond();
+            const estDps = ((base.dps || 0) + (supportNow.dps||0) + (draftedNow.dps||0)) * hungryPenalty * rallyMult;
             const killsPerSec = (target && target.maxHp > 0) ? (estDps / target.maxHp) : 0;
             const avgGold = target && Array.isArray(target.gold) ? (target.gold[0] + target.gold[1]) / 2 : 0;
             const estGoldPerSec = killsPerSec * avgGold * this.game.goldMultiplier();
@@ -1865,7 +1986,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class="text-secondary text-sm">Face fearsome foes. Rally your army and unleash powerful spells.</p>
                         </div>
                         <div class="flex items-center gap-2">
-                            <span class="badge"><i class="fas fa-users"></i> Allies: DPS ${Math.max(0, allies.dps || 0).toFixed(1)} • HPS ${Math.max(0, allies.hps || 0).toFixed(1)}${this.game.state.army.upkeep?.hungry ? ' <span class="text-red-400 ml-1">Hungry</span>' : ''}</span>
+                            <span class="badge"><i class="fas fa-users"></i> Force: DPS ${Math.max(0, totalDps || 0).toFixed(1)} • HPS ${Math.max(0, totalHps || 0).toFixed(1)}${this.game.state.army.upkeep?.hungry ? ' <span class=\"text-red-400 ml-1\">Hungry</span>' : ''}</span>
                             ${rallyCta}
                         </div>
                     </div>
@@ -1875,6 +1996,27 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="block p-4 rounded-md">
                             <h2 class="text-lg font-bold mb-2">Enemies</h2>
                             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-3">${enemiesGrid}</div>
+                        </div>
+                        <div class="block p-4 rounded-md">
+                            <h2 class="text-lg font-bold mb-2">Battle Support</h2>
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="text-xs text-secondary">Auto-hire</div>
+                                <label class="text-xs"><input id="cw-auto-toggle" type="checkbox" ${this.game.state.combat?.autoHire?.enabled?'checked':''}/> Enable</label>
+                            </div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <label class="text-xs text-secondary">Reserve</label>
+                                <input id="cw-auto-reserve" class="chimera-button px-2 py-1 rounded w-20 text-right" type="number" min="0" value="${this.game.state.combat?.autoHire?.reserveGold||0}" />
+                            </div>
+                            <div class="space-y-2">
+                                ${Object.keys(GAME_DATA.COMBAT.WORKERS).map(id=>{ const w=GAME_DATA.COMBAT.WORKERS[id]; const owned=this.game.state.combat?.combatWorkers?.[id]||0; const price=this.game.getCombatWorkerCost(id); const line = [w.dps?`+${w.dps}/s DPS each`:null, w.hps?`+${w.hps}/s HPS each`:null].filter(Boolean).join(' • '); return `<div class=\"flex items-center justify-between gap-2\"><div><div class=\"font-semibold\">${w.emoji} ${w.name} <span class=\"text-secondary font-normal\">x${owned}</span></div><div class=\"text-xs text-secondary\">${w.description} • ${line}</div></div><button class=\"hire-combat-worker-btn chimera-button juicy-button px-2 py-1 rounded-md\" data-cw-id=\"${id}\">Hire — ${price} GP</button></div>`; }).join('')}
+                            </div>
+                            <div class="mt-3">
+                                <h3 class="text-sm font-semibold mb-1">Draft Civilians</h3>
+                                <div class="space-y-2">
+                                    ${Object.keys(GAME_DATA.SKILLS).map(sid=>{ const skill=GAME_DATA.SKILLS[sid]; const ws=this.game.state.workers[ sid ]||{total:0,assigned:{}}; const assigned=Object.values(ws.assigned||{}).reduce((a,b)=>a+(b||0),0); const free=Math.max(0,(ws.total||0)-assigned-(this.game.state.combat?.drafted?.[sid]||0)); const drafted=this.game.state.combat?.drafted?.[sid]||0; return `<div class=\"flex items-center justify-between gap-2\"><div class=\"text-xs\"><span class=\"font-semibold\"><i class=\"fas ${skill.icon}\"></i> ${skill.name}</span><span class=\"text-secondary ml-2\">Free: ${free} • Drafted: ${drafted}</span></div><div class=\"flex items-center gap-1\"><button class=\"draft-btn chimera-button px-2 py-1 rounded\" data-skill-id=\"${sid}\" data-delta=\"+1\" ${free<=0?'disabled':''}>+1</button><button class=\"draft-btn chimera-button px-2 py-1 rounded\" data-skill-id=\"${sid}\" data-delta=\"-1\" ${drafted<=0?'disabled':''}>-1</button></div></div>`; }).join('')}
+                                </div>
+                                <div class="mt-2"><button id="recall-all-drafted" class="chimera-button px-3 py-2 rounded-md" ${Object.keys(this.game.state.combat?.drafted||{}).length===0?'disabled':''}>Recall All</button></div>
+                            </div>
                         </div>
                     </div>
                     <div class="block battle-arena p-4 rounded-md flex flex-col gap-3">
@@ -1956,7 +2098,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const base = this.game.calculateArmyOutputPerSecond();
                 const hungryPenalty = this.game.state.army.upkeep?.hungry ? 0.5 : 1.0;
                 const rallyMult = this.game.hasBuff('armyRally') ? 2 : 1;
-                const estDps = (base.dps || 0) * hungryPenalty * rallyMult;
+                const supportNow = this.game.calculateCombatWorkersOutputPerSecond();
+                const draftedNow = this.game.getDraftedSupportOutputPerSecond();
+                const estDps = ((base.dps || 0) + (supportNow.dps||0) + (draftedNow.dps||0)) * hungryPenalty * rallyMult;
                 const target = (GAME_DATA.COMBAT.ENEMIES || []).find(x => x.id === auto.targetId) || (GAME_DATA.COMBAT.ENEMIES || [])[0];
                 const kps = (target && target.maxHp > 0) ? (estDps / target.maxHp) : 0;
                 const gps = kps * (target && Array.isArray(target.gold) ? (target.gold[0] + target.gold[1]) / 2 : 0) * this.game.goldMultiplier();
@@ -2343,6 +2487,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.game.buyItem(btn.dataset.itemId, 1);
             }); });
             document.querySelectorAll('.merchant-sell-btn').forEach(btn => { btn.addEventListener('click', () => this.game.sellItem(btn.dataset.itemId, 1)); });
+            // Combat worker hiring
+            document.querySelectorAll('.hire-combat-worker-btn').forEach(btn => { btn.addEventListener('click', () => this.game.hireCombatWorker(btn.dataset.cwId)); });
+            const cwAutoToggle = document.getElementById('cw-auto-toggle'); if (cwAutoToggle) cwAutoToggle.addEventListener('change', (e) => { this.game.state.combat.autoHire.enabled = !!e.target.checked; });
+            const cwAutoReserve = document.getElementById('cw-auto-reserve'); if (cwAutoReserve) cwAutoReserve.addEventListener('change', (e) => { const v = parseInt(e.target.value||'0',10); this.game.state.combat.autoHire.reserveGold = isNaN(v)?0:Math.max(0,v); });
+            // Drafting controls
+            document.querySelectorAll('.draft-btn').forEach(btn => { btn.addEventListener('click', () => { const sid = btn.dataset.skillId; const delta = parseInt(btn.dataset.delta, 10); if (delta > 0) this.game.draftWorkers(sid, delta); else this.game.recallDrafted(sid, -delta); }); });
+            const recallAll = document.getElementById('recall-all-drafted'); if (recallAll) recallAll.addEventListener('click', () => this.game.recallAllDrafted());
         }
 
         showModal(title, content) {
@@ -2712,7 +2863,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const base = this.game.calculateArmyOutputPerSecond();
             const hungryPenalty = this.game.state.army.upkeep?.hungry ? 0.5 : 1.0;
             const rallyMult = this.game.hasBuff('armyRally') ? 2 : 1;
-            const estDps = (base.dps || 0) * hungryPenalty * rallyMult;
+            const supportNow = this.game.calculateCombatWorkersOutputPerSecond();
+            const draftedNow = this.game.getDraftedSupportOutputPerSecond();
+            const estDps = ((base.dps || 0) + (supportNow.dps||0) + (draftedNow.dps||0)) * hungryPenalty * rallyMult;
             const killsPerSec = (target && target.maxHp > 0) ? (estDps / target.maxHp) : 0;
             const avgGold = target && Array.isArray(target.gold) ? (target.gold[0] + target.gold[1]) / 2 : 0;
             const estGoldPerSec = killsPerSec * avgGold * this.game.goldMultiplier();
@@ -2721,7 +2874,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const itemsHtml = itemsEntries.length ? itemsEntries.map(([id,q]) => `<span class="spoils-item">${GAME_DATA.ITEMS[id]?.icon||'❔'} ${GAME_DATA.ITEMS[id]?.name||id} x${q}</span>`).join(' ') : '<span class="text-secondary text-xs">No items yet.</span>';
             const spoilsEmpty = (Math.floor(auto.buffers?.gold||0) <= 0) && itemsEntries.length === 0;
             const killProgress = Math.max(0, Math.min(1, (auto.killsFrac || 0) % 1));
-            const allies = this.game.state.army.production || { dps: 0, hps: 0 };
+            const allies = this.game.state.army.production || { dps: 0, hps: 0 }; const support = this.game.calculateCombatWorkersOutputPerSecond(); const drafted = this.game.getDraftedSupportOutputPerSecond(); const totalDps = (allies.dps||0)+(support.dps||0)+(drafted.dps||0); const totalHps = (allies.hps||0)+(support.hps||0)+(drafted.hps||0);
             const armyUnitsTotal = Object.values(this.game.state.army.units || {}).reduce((a,b)=>a+(b||0),0);
             const emptyState = armyUnitsTotal > 0 ? '' : `
                 <div class="block p-4 rounded-md mb-4">
