@@ -637,6 +637,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         goldMultiplier() { let mult = 1; if (this.hasBuff('doubleGold')) mult *= 2; const gh = GAME_DATA.SPELLS.find(s => s.effect === 'goldBoost'); if (this.hasBuff('goldBoost')) mult *= (1 + (gh?.magnitude || 0)); const artistry = 1 + (this.state.player.meta_skills[META_SKILLS.ARTISTRY].level - 1) * 0.02; return mult * artistry; }
 
+        // Reward scaling based on enemy level and difficulty
+        getEnemyDifficultyKey(enemy) {
+            if (!enemy) return 'normal';
+            if (enemy.difficulty) return enemy.difficulty;
+            // Infer difficulty if not provided
+            const lv = enemy.level || 1;
+            if (enemy.raid) return lv >= 55 ? 'legendary' : (lv >= 35 ? 'elite' : 'hard');
+            return lv <= 5 ? 'easy' : (lv <= 18 ? 'normal' : (lv <= 30 ? 'hard' : 'elite'));
+        }
+        getEnemyGoldMultiplier(enemy) {
+            const level = (enemy?.level) || 1;
+            const diffKey = this.getEnemyDifficultyKey(enemy);
+            const diffMult = ({ easy: 0.9, normal: 1.0, hard: 1.25, elite: 1.5, legendary: 2.0 })[diffKey] || 1.0;
+            return Math.max(0.1, (1 + level / 40) * diffMult);
+        }
+        getEnemyLootFactors(enemy) {
+            const goldMult = this.getEnemyGoldMultiplier(enemy);
+            const chanceMult = Math.min(2.0, 0.7 + 0.3 * goldMult);
+            const qtyMult = Math.min(3.0, 0.5 + 0.5 * goldMult);
+            const anyItemChance = Math.min(20, (enemy?.raid ? 6 : 3) + (enemy?.level || 1) * 0.1 + (goldMult - 1) * 5);
+            return { chanceMult, qtyMult, anyItemChance };
+        }
+        rollRandomCatalogItemId() {
+            const ids = Object.keys(GAME_DATA.ITEMS || {});
+            if (!ids.length) return null;
+            return ids[Math.floor(Math.random() * ids.length)];
+        }
+
         // Golden item helpers
         goldenConfig() {
             // Merge optional dataset config with sensible defaults
@@ -1248,17 +1276,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
                  handleEnemyDefeat(enemy) {
              // Roll rewards
-             const g = Math.floor(Math.random() * (enemy.gold[1] - enemy.gold[0] + 1)) + enemy.gold[0];
+             const baseMin = enemy.gold[0], baseMax = enemy.gold[1];
+             const goldMult = this.getEnemyGoldMultiplier(enemy);
+             const g = Math.floor((Math.floor(Math.random() * (baseMax - baseMin + 1)) + baseMin) * goldMult);
              const itemsMap = {};
+             const lf = this.getEnemyLootFactors(enemy);
              (enemy.drops || []).forEach(drop => {
-                 const chance = drop.chance || 0;
+                 const baseChance = drop.chance || 0;
+                 const chance = Math.min(100, baseChance * lf.chanceMult);
                  if (Math.random() * 100 < chance) {
                      const [qmin, qmax] = Array.isArray(drop.qty) ? drop.qty : [drop.qty || 1, drop.qty || 1];
-                     const q = Math.floor(Math.random() * (qmax - qmin + 1)) + qmin;
+                     const baseQ = Math.floor(Math.random() * (qmax - qmin + 1)) + qmin;
+                     const q = Math.max(1, Math.floor(baseQ * lf.qtyMult));
                      const id = this.maybeGoldenizeItem(drop.id);
                      itemsMap[id] = (itemsMap[id] || 0) + q;
                  }
              });
+             // Random item from full catalog (ensures all items are possible)
+             if (Math.random() * 100 < lf.anyItemChance) {
+                 const rid = this.rollRandomCatalogItemId();
+                 if (rid) {
+                     const id = this.maybeGoldenizeItem(rid);
+                     const q = Math.max(1, Math.floor(1 * lf.qtyMult));
+                     itemsMap[id] = (itemsMap[id] || 0) + q;
+                 }
+             }
              // Global + arena loot rolls (epic system)
              const rolls = (GAME_DATA.LOOT?.perKillRolls) || 0;
              for (let i = 0; i < rolls; i++) {
@@ -1611,21 +1653,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Roll rewards per kill
                                  for (let i = 0; i < wholeKills; i++) {
                      // Gold roll within enemy range, add raw to buffer
-                     const minG = Array.isArray(target.gold) ? (target.gold[0] || 0) : 0;
-                     const maxG = Array.isArray(target.gold) ? (target.gold[1] || 0) : 0;
-                     const g = Math.floor(Math.random() * (maxG - minG + 1)) + minG;
-                     auto.buffers.gold = (auto.buffers.gold || 0) + g;
-                     // Drops
-                     (target.drops || []).forEach(drop => {
-                         const chance = drop.chance || 0; // percent
-                         if (Math.random() * 100 < chance) {
-                             const [qmin, qmax] = Array.isArray(drop.qty) ? drop.qty : [drop.qty || 1, drop.qty || 1];
-                             const qty = Math.floor(Math.random() * (qmax - qmin + 1)) + qmin;
-                             const id = this.maybeGoldenizeItem(drop.id);
-                             if (!auto.buffers.items) auto.buffers.items = {};
-                             auto.buffers.items[id] = (auto.buffers.items[id] || 0) + qty;
-                         }
-                     });
+                                           const minG = Array.isArray(target.gold) ? (target.gold[0] || 0) : 0;
+                      const maxG = Array.isArray(target.gold) ? (target.gold[1] || 0) : 0;
+                      const g = Math.floor((Math.floor(Math.random() * (maxG - minG + 1)) + minG) * this.getEnemyGoldMultiplier(target));
+                      auto.buffers.gold = (auto.buffers.gold || 0) + g;
+                      // Drops
+                      const lf = this.getEnemyLootFactors(target);
+                      (target.drops || []).forEach(drop => {
+                          const baseChance = drop.chance || 0; // percent
+                          const chance = Math.min(100, baseChance * lf.chanceMult);
+                          if (Math.random() * 100 < chance) {
+                              const [qmin, qmax] = Array.isArray(drop.qty) ? drop.qty : [drop.qty || 1, drop.qty || 1];
+                              const baseQ = Math.floor(Math.random() * (qmax - qmin + 1)) + qmin;
+                              const qty = Math.max(1, Math.floor(baseQ * lf.qtyMult));
+                              const id = this.maybeGoldenizeItem(drop.id);
+                              if (!auto.buffers.items) auto.buffers.items = {};
+                              auto.buffers.items[id] = (auto.buffers.items[id] || 0) + qty;
+                          }
+                      });
+                      // Global catalog random roll
+                      if (Math.random() * 100 < lf.anyItemChance) {
+                          const rid = this.rollRandomCatalogItemId();
+                          if (rid) {
+                              const id = this.maybeGoldenizeItem(rid);
+                              const qty = Math.max(1, Math.floor(1 * lf.qtyMult));
+                              if (!auto.buffers.items) auto.buffers.items = {};
+                              auto.buffers.items[id] = (auto.buffers.items[id] || 0) + qty;
+                          }
+                      }
                      // Shared themed drop table
                      if (target.sharedDropTable) {
                          const sharedRoll = this.rollSharedTable(target.sharedDropTable);
@@ -2360,7 +2415,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const estDps = (base.dps || 0) * hungryPenalty * rallyMult;
             const killsPerSec = (target && target.maxHp > 0) ? (estDps / target.maxHp) : 0;
             const avgGold = target && Array.isArray(target.gold) ? (target.gold[0] + target.gold[1]) / 2 : 0;
-            const estGoldPerSec = killsPerSec * avgGold * this.game.goldMultiplier();
+            const estGoldPerSec = killsPerSec * avgGold * this.game.getEnemyGoldMultiplier(target) * this.game.goldMultiplier();
             const targetOptions = arenaEnemies.map(x => `<option value="${x.id}" ${auto.targetId===x.id?'selected':''}>${x.name} (Lv ${x.level})</option>`).join('');
             const itemsEntries = Object.entries(auto.buffers?.items || {});
             const itemsHtml = itemsEntries.length ? itemsEntries.map(([id,q]) => `<span class="badge">${GAME_DATA.ITEMS[id]?.icon||'❔'} ${GAME_DATA.ITEMS[id]?.name||id} x${q}</span>`).join(' ') : '<span class="text-secondary text-xs">No items yet.</span>';
@@ -2386,7 +2441,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-3">${enemiesGrid}</div>
                         </div>
                     </div>
-                    <div class="block battle-arena p-4 rounded-md flex flex-col gap-3">
+                    <div class="block battle-arena p-4 rounded-md flex flex-col gap-3" id="combat-arena">
                         <h2 class="text-lg font-bold">Arena</h2>
                         ${combatStatus}
                         <div class="flex items-center gap-2 mt-2">
@@ -2477,18 +2532,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 const pool = (GAME_DATA.COMBAT.ENEMIES || []).filter(e => mode === 'raid' ? e.raid : e.arena);
                 const target = pool.find(x => x.id === auto.targetId) || pool[0];
                 const kps = (target && target.maxHp > 0) ? (estDps / target.maxHp) : 0;
-                const gps = kps * (target && Array.isArray(target.gold) ? (target.gold[0] + target.gold[1]) / 2 : 0) * this.game.goldMultiplier();
+                const gps = kps * (target && Array.isArray(target.gold) ? (target.gold[0] + target.gold[1]) / 2 : 0) * this.game.getEnemyGoldMultiplier(target) * this.game.goldMultiplier();
                 const kpsEl = document.getElementById('auto-kps');
                 const gpsEl = document.getElementById('auto-gps');
                 if (kpsEl) kpsEl.textContent = kps.toFixed(2);
                 if (gpsEl) gpsEl.textContent = gps.toFixed(1);
             }
-            // Toggle buttons
+            // Bind controls and toggle buttons
             const claimBtn = document.getElementById('claim-war-spoils');
             const clearBtn = document.getElementById('clear-war-spoils');
+            const playPauseBtn = document.getElementById('auto-battle-playpause');
+            const autoClaimBtn = document.getElementById('auto-claim-toggle');
+            const targetSelect = document.getElementById('auto-target-select');
             const spoilsEmpty = (Math.floor(auto.buffers?.gold || 0) <= 0) && Object.keys(auto.buffers?.items || {}).length === 0;
-            if (claimBtn) claimBtn.disabled = spoilsEmpty;
-            if (clearBtn) clearBtn.disabled = spoilsEmpty;
+            if (claimBtn) { claimBtn.disabled = spoilsEmpty; claimBtn.onclick = () => this.game.claimWarSpoils(); }
+            if (clearBtn) { clearBtn.disabled = spoilsEmpty; clearBtn.onclick = () => this.game.clearWarSpoils(); }
+            if (playPauseBtn) { playPauseBtn.onclick = () => { auto.enabled = !auto.enabled; this.renderView(); }; }
+            if (autoClaimBtn) { autoClaimBtn.onclick = () => { auto.autoClaim = !auto.autoClaim; this.renderView(); }; }
+            if (targetSelect) { targetSelect.onchange = (e) => { auto.targetId = e.target.value; if (!auto.enabled) this.renderView(); }; }
         }
         renderClickerView() {
             const units = GAME_DATA.UNITS;
@@ -2954,6 +3015,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.game.buyItem(btn.dataset.itemId, 1);
             }); });
             document.querySelectorAll('.merchant-sell-btn').forEach(btn => { btn.addEventListener('click', () => this.game.sellItem(btn.dataset.itemId, 1)); });
+
+            // Combat/Raids auto-battler controls
+            const playPause = document.getElementById('auto-battle-playpause'); if (playPause) playPause.addEventListener('click', () => { const a = this.game.state.combat.auto; a.enabled = !a.enabled; this.renderView(); });
+            const autoClaim = document.getElementById('auto-claim-toggle'); if (autoClaim) autoClaim.addEventListener('click', () => { const a = this.game.state.combat.auto; a.autoClaim = !a.autoClaim; this.renderView(); });
+            const targetSel = document.getElementById('auto-target-select'); if (targetSel) targetSel.addEventListener('change', (e) => { this.game.state.combat.auto.targetId = e.target.value; if (!this.game.state.combat.auto.enabled) this.renderView(); });
+            document.querySelectorAll('.select-raid-target').forEach(btn => { btn.addEventListener('click', () => { this.game.state.combat.auto.targetId = btn.dataset.enemyId; this.renderView(); }); });
+            document.querySelectorAll('.raid-assign-unit').forEach(btn => { btn.addEventListener('click', () => { const uid = btn.dataset.unitId; const dir = btn.dataset.dir === '+1' ? 1 : -1; const auto = this.game.state.combat.auto; auto.raid = auto.raid || { composition: {}, startedAt: Date.now(), graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } }; const current = auto.raid.composition[uid] || 0; const free = Math.max(0, (this.game.state.army.units[uid]||0) - current); const next = Math.max(0, current + (dir === 1 ? Math.min(1, free) : -1)); auto.raid.composition[uid] = next; if (!auto.raid.startedAt) auto.raid.startedAt = Date.now(); this.renderView(); }); });
+            document.querySelectorAll('.raid-comp-input').forEach(inp => { inp.addEventListener('change', () => { const uid = inp.dataset.unitId; const want = Math.max(0, Math.min(parseInt(inp.value||'0',10) || 0, (this.game.state.army.units[uid]||0))); const auto = this.game.state.combat.auto; auto.raid = auto.raid || { composition: {}, startedAt: Date.now(), graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } }; auto.raid.composition[uid] = want; this.renderView(); }); });
+            const claimBtn = document.getElementById('claim-war-spoils'); if (claimBtn) claimBtn.addEventListener('click', () => this.game.claimWarSpoils());
+            const clearBtn = document.getElementById('clear-war-spoils'); if (clearBtn) clearBtn.addEventListener('click', () => this.game.clearWarSpoils());
         }
 
         showModal(title, content) {
@@ -3307,7 +3378,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const estDps = (base.dps || 0) * hungryPenalty * rallyMult;
             const killsPerSec = (target && target.maxHp > 0) ? (estDps / target.maxHp) : 0;
             const avgGold = target && Array.isArray(target.gold) ? (target.gold[0] + target.gold[1]) / 2 : 0;
-            const estGoldPerSec = killsPerSec * avgGold * this.game.goldMultiplier();
+            const estGoldPerSec = killsPerSec * avgGold * this.game.getEnemyGoldMultiplier(target) * this.game.goldMultiplier();
 
             const itemsEntries = Object.entries(auto.buffers?.items || {});
             const itemsHtml = itemsEntries.length ? itemsEntries.map(([id,q]) => `<span class="spoils-item">${GAME_DATA.ITEMS[id]?.icon||'❔'} ${GAME_DATA.ITEMS[id]?.name||id} x${q}</span>`).join(' ') : '<span class="text-secondary text-xs">No items yet.</span>';
@@ -3378,7 +3449,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             `).join('')}
                         </div>
                     </div>
-                    <div class="block battle-arena p-4 rounded-md flex flex-col gap-3">
+                    <div class="block battle-arena p-4 rounded-md flex flex-col gap-3" id="raids-arena">
                         <h2 class="text-lg font-bold">Auto Battler</h2>
                         <div class="flex items-center gap-3">
                             <div id="auto-kill-ring" class="ring" style="--ring-pct:${killProgress}">
