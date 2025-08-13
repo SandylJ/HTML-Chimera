@@ -356,7 +356,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.player.mastery[id] = {};
             });
             Object.values(META_SKILLS).forEach(name => { this.player.meta_skills[name] = new Skill(name, name); });
-
             // Worker systems: Mining Overseer, Fishing Harbor, Farming Estate
             this.workers = {
                 woodcutting: {
@@ -454,6 +453,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
         goldMultiplier() { let mult = 1; if (this.hasBuff('doubleGold')) mult *= 2; const gh = GAME_DATA.SPELLS.find(s => s.effect === 'goldBoost'); if (this.hasBuff('goldBoost')) mult *= (1 + (gh?.magnitude || 0)); const artistry = 1 + (this.state.player.meta_skills[META_SKILLS.ARTISTRY].level - 1) * 0.02; return mult * artistry; }
 
+        // Golden item helpers
+        goldenConfig() {
+            // Merge optional dataset config with sensible defaults
+            const cfg = (GAME_DATA.LOOT && GAME_DATA.LOOT.golden) || {};
+            return {
+                chancePercent: typeof cfg.chancePercent === 'number' ? cfg.chancePercent : 3,
+                namePrefix: cfg.namePrefix || 'Golden',
+                icon: cfg.icon || '🌟'
+            };
+        }
+        rollGolden() { const cfg = this.goldenConfig(); return Math.random() * 100 < cfg.chancePercent; }
+        toGoldenId(baseId) { return `golden_${baseId}`; }
+        ensureGoldenItemDef(baseId) {
+            const gid = this.toGoldenId(baseId);
+            if (!GAME_DATA.ITEMS[gid]) {
+                const base = GAME_DATA.ITEMS[baseId] || { name: baseId, icon: '❔' };
+                const cfg = this.goldenConfig();
+                GAME_DATA.ITEMS[gid] = { name: `${cfg.namePrefix} ${base.name}`.trim(), icon: cfg.icon };
+            }
+            return gid;
+        }
+        maybeGoldenizeItem(itemId) {
+            if (!itemId || typeof itemId !== 'string') return itemId;
+            if (itemId.startsWith('golden_')) return itemId;
+            return this.rollGolden() ? this.ensureGoldenItemDef(itemId) : itemId;
+        }
+
         update() {
             const now = Date.now(); const delta = (now - this.state.lastUpdate); this.state.lastUpdate = now;
 
@@ -539,7 +565,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const gps = this.state.clicker.autoClickers * this.state.clicker.goldPerClick;
                 if (gps > 0) this.addGold(gps);
             }
-
             // Empire production
             const empireDeltaSec = (now - this.state.empire.lastTick) / 1000;
             if (empireDeltaSec > 0.1) {
@@ -740,7 +765,6 @@ document.addEventListener('DOMContentLoaded', () => {
             delete this.state.activeActions[skillId];
             this.uiManager.render();
         }
-
         craftItem(skillId, recipeId, quantity) {
             const recipe = GAME_DATA.RECIPES[skillId].find(r => r.id === recipeId); if (!recipe) return;
             const canCraft = recipe.input.every(inp => (this.state.bank[inp.itemId] || 0) >= inp.quantity * quantity); if (!canCraft) return;
@@ -940,7 +964,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.uiManager.showFloatingText('All workers already deployed', 'text-secondary');
             }
         }
-
         // Rune helpers
         getRuneItemIds() { return Object.keys(GAME_DATA.ITEMS).filter(id => id.endsWith('_rune')); }
         getTotalRuneItemCount() { return this.getRuneItemIds().reduce((sum, id) => sum + (this.state.bank[id] || 0), 0); }
@@ -1016,7 +1039,8 @@ document.addEventListener('DOMContentLoaded', () => {
                  if (Math.random() * 100 < chance) {
                      const [qmin, qmax] = Array.isArray(drop.qty) ? drop.qty : [drop.qty || 1, drop.qty || 1];
                      const q = Math.floor(Math.random() * (qmax - qmin + 1)) + qmin;
-                     itemsMap[drop.id] = (itemsMap[drop.id] || 0) + q;
+                     const id = this.maybeGoldenizeItem(drop.id);
+                     itemsMap[id] = (itemsMap[id] || 0) + q;
                  }
              });
              // Global loot rolls (epic system)
@@ -1025,7 +1049,10 @@ document.addEventListener('DOMContentLoaded', () => {
                  const extra = this.rollGlobalLoot();
                  if (extra.gold) this.enqueueWarSpoils(extra.gold, {});
                  if (extra.runes) this.state.combat.auto.buffers.runes = (this.state.combat.auto.buffers.runes||0) + extra.runes;
-                 Object.entries(extra.items || {}).forEach(([id, q]) => { itemsMap[id] = (itemsMap[id] || 0) + q; });
+                 Object.entries(extra.items || {}).forEach(([id, q]) => {
+                     const gid = this.maybeGoldenizeItem(id);
+                     itemsMap[gid] = (itemsMap[gid] || 0) + q;
+                 });
              }
              // Route through War Spoils to unify behavior with auto-combat
              this.enqueueWarSpoils(g, itemsMap);
@@ -1281,7 +1308,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return total;
         }
-
         // Passive auto-combat processor (army raids)
         processAutoCombat() {
             const auto = this.state.combat?.auto; if (!auto || !auto.enabled) return;
@@ -1339,8 +1365,9 @@ document.addEventListener('DOMContentLoaded', () => {
                          if (Math.random() * 100 < chance) {
                              const [qmin, qmax] = Array.isArray(drop.qty) ? drop.qty : [drop.qty || 1, drop.qty || 1];
                              const qty = Math.floor(Math.random() * (qmax - qmin + 1)) + qmin;
+                             const id = this.maybeGoldenizeItem(drop.id);
                              if (!auto.buffers.items) auto.buffers.items = {};
-                             auto.buffers.items[drop.id] = (auto.buffers.items[drop.id] || 0) + qty;
+                             auto.buffers.items[id] = (auto.buffers.items[id] || 0) + qty;
                          }
                      });
                      // Global loot rolls (epic system)
@@ -1350,8 +1377,9 @@ document.addEventListener('DOMContentLoaded', () => {
                          if (ex.gold) auto.buffers.gold = (auto.buffers.gold||0) + ex.gold;
                          if (ex.runes) auto.buffers.runes = (auto.buffers.runes||0) + ex.runes;
                          Object.entries(ex.items || {}).forEach(([id, q]) => {
+                             const gid = this.maybeGoldenizeItem(id);
                              if (!auto.buffers.items) auto.buffers.items = {};
-                             auto.buffers.items[id] = (auto.buffers.items[id] || 0) + q;
+                             auto.buffers.items[gid] = (auto.buffers.items[gid] || 0) + q;
                          });
                      }
                  }
@@ -1480,7 +1508,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // If in combat, update view footer elements
             if (this.currentView === 'combat') this.renderCombatFooter();
         }
-
         updateMasteryBar() {
             const container = document.getElementById('mastery-progress-bar'); const activeMap = this.game.state.activeActions || {}; const activeList = Object.values(activeMap); const inCombat = this.game.state.combat.inCombat; if ((activeList.length === 0) && !inCombat) { container.innerHTML = ''; container.classList.add('hidden'); return; }
             container.classList.remove('hidden');
@@ -1639,7 +1666,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="text-xs text-secondary mt-1">${a.desc}</div>
                 </div>`).join('');
-
             return `
                 <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
                     <div class="xl:col-span-3 block p-5 medieval-glow gradient-empire">
@@ -2031,7 +2057,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }).join('');
             return `<h1 class="text-2xl font-semibold text-white mb-4">Meta Skills</h1><p class="text-secondary mb-4">These skills are leveled up by completing real-life tasks. They provide passive bonuses to your in-game actions.</p><div class="grid grid-cols-1 md:grid-cols-2 gap-4">${skillsHtml}</div>`;
         }
-
         renderCombatView() {
             const buffs = this.game.state.player.activeBuffs || {};
             const rallyActive = buffs['armyRally'] && Date.now() < buffs['armyRally'];
@@ -2229,7 +2254,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (claimBtn) claimBtn.disabled = spoilsEmpty;
             if (clearBtn) clearBtn.disabled = spoilsEmpty;
         }
-
         renderClickerView() {
             const units = GAME_DATA.UNITS;
             const owned = this.game.state.empire.units;
@@ -2410,7 +2434,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Emperor decree: assignments happen automatically via All Systems Go
             return `${hero}<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-4">${cards}</div>`;
         }
-
         renderMerchantView() {
             const bazaar = this.game.getMerchant();
             const selected = this.game.state.merchant?.selectedStallId || (bazaar.stalls?.[0]?.id);
@@ -2596,7 +2619,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.assign-worker-btn').forEach(btn => { btn.addEventListener('click', () => {
                 const id = btn.dataset.actionId; const dir = btn.dataset.dir; const skill = btn.dataset.skillId; const ws = this.game.state.workers[skill]; const sumAssigned = Object.values(ws.assigned).reduce((a,b)=>a+b,0); if (dir === '+1') { if (sumAssigned < ws.total) ws.assigned[id] = (ws.assigned[id]||0)+1; } else { ws.assigned[id] = Math.max(0,(ws.assigned[id]||0)-1); } this.render();
             }); });
-
             // Farming estate
             const hireFarm = document.getElementById('hire-farmhand'); if (hireFarm) hireFarm.addEventListener('click', () => this.game.hireWorker('farming'));
             const upFI = document.getElementById('upgrade-farming-irrigation'); if (upFI) upFI.addEventListener('click', () => this.game.upgradeWorkers('farming', 'irrigation'));
@@ -2608,7 +2630,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const id = btn.dataset.actionId; const dir = btn.dataset.dir === '+1' ? 1 : -1; const wfarm = this.game.state.workers.farming;
                     const sumAssigned = Object.values(wfarm.assigned).reduce((a,b)=>a+b,0);
                     const free = Math.max(0, wfarm.total - sumAssigned);
-                    if (dir === 1 && free <= 0) return; if (dir === -1 && (wfarm.assigned[id] || 0) <= 0) return;
+                    if (dir === 1 && free <= 0) return;
+                    if (dir === -1 && (wfarm.assigned[id] || 0) <= 0) return;
                     wfarm.assigned[id] = Math.max(0, (wfarm.assigned[id] || 0) + dir);
                     this.renderView();
                 });
@@ -2758,7 +2781,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => { c.style.opacity = '0'; }, 620); setTimeout(() => c.remove(), 900);
             }
         }
-
         renderWorkerPanel(skillId) {
             const ws = this.game.state.workers[skillId]; const hireCost = this.game.getHireCost(skillId); const speedCost = this.game.getUpgradeCost(skillId, 'speed'); const yieldCost = this.game.getUpgradeCost(skillId, 'yield'); const speedLvl = ws.upgrades.speedLevel; const yieldLvl = ws.upgrades.yieldLevel; const theme = GAME_DATA.SKILLS[skillId].theme;
             if (skillId === 'woodcutting') {
