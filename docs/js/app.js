@@ -3602,4 +3602,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const game = new GameManager(); game.init(); window.chimeraGame = game;
+
+    // Populate skill navigation lists (Gathering/Artisan)
+    const buildSkillLink = (id, skill) => `<a href="#" class="sidebar-link flex items-center p-3" data-view="${id}"><i class="fas ${skill.icon} w-6 text-center"></i><span>${skill.name}</span></a>`;
+    const gatheringNav = document.getElementById('gathering-skills-nav');
+    const artisanNav = document.getElementById('artisan-skills-nav');
+    if (gatheringNav) {
+        const html = Object.keys(GAME_DATA.SKILLS)
+            .filter(id => GAME_DATA.SKILLS[id].type === 'gathering')
+            .map(id => buildSkillLink(id, GAME_DATA.SKILLS[id]))
+            .join('');
+        gatheringNav.innerHTML = html;
+    }
+    if (artisanNav) {
+        const html = Object.keys(GAME_DATA.SKILLS)
+            .filter(id => GAME_DATA.SKILLS[id].type === 'artisan')
+            .map(id => buildSkillLink(id, GAME_DATA.SKILLS[id]))
+            .join('');
+        artisanNav.innerHTML = html;
+    }
+
+    // Sidebar tab click handling (delegated)
+    const sidebarEl = document.getElementById('sidebar');
+    if (sidebarEl) {
+        sidebarEl.addEventListener('click', (evt) => {
+            const link = evt.target.closest('.sidebar-link');
+            if (!link) return;
+            evt.preventDefault();
+            const view = link.getAttribute('data-view');
+            if (!view) return;
+            if (game && game.uiManager) {
+                game.uiManager.currentView = view;
+                if (typeof game.uiManager.render === 'function') game.uiManager.render();
+                else if (typeof game.uiManager.renderView === 'function') game.uiManager.renderView();
+            }
+            // Update active styling
+            document.querySelectorAll('.sidebar-link').forEach(a => a.classList.toggle('active', a === link));
+        });
+    }
 });
