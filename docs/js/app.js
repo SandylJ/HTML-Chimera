@@ -1691,9 +1691,8 @@ document.addEventListener('DOMContentLoaded', () => {
                          const rareKey = target.sharedDropTable.replace('_common','_rare');
                          if ((Math.random() * 100) < 25 && (GAME_DATA.LOOT?.sharedTables?.[rareKey])) {
                              const rr = this.rollSharedTable(rareKey);
-                             if (rr) {
-                                 if (!auto.buffers.items) auto.buffers.items = {};
-                                 auto.buffers.items[rr.id] = (auto.buffers.items[rr.id] || 0) + rr.qty;
+                     if (rareRoll) {
+                         itemsMap[rareRoll.id] = (itemsMap[rareRoll.id] || 0) + rareRoll.qty;
                              }
                          }
                      }
