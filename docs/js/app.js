@@ -3007,6 +3007,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const ar = document.getElementById('army-rally'); if (ar) ar.addEventListener('click', (e) => { const r = this.game.state.player.activeBuffs?.['armyRally']; if (!r || Date.now() >= r) { const rect = e.currentTarget.getBoundingClientRect(); this.juiceBurst('upgrade', rect.left + rect.width/2, rect.top + rect.height/2); } this.game.rallyArmy(); });
             document.querySelectorAll('.army-upgrade-btn').forEach(btn => { btn.addEventListener('click', () => this.game.upgradeArmy(btn.dataset.type)); });
             document.querySelectorAll('input[name="army-stance"]').forEach(r => { r.addEventListener('change', () => this.game.setArmyStance(r.value)); });
+            document.querySelectorAll('.formation-option').forEach(label => {
+                label.addEventListener('click', () => {
+                    const radio = label.querySelector('input[name="army-stance"]');
+                    if (radio) {
+                        radio.checked = true;
+                        this.game.setArmyStance(radio.value);
+                    }
+                });
+            });
+            
+            // Army parade feature
+            const paradeBtn = document.getElementById('army-parade');
+            if (paradeBtn) {
+                paradeBtn.addEventListener('click', () => {
+                    this.startArmyParade();
+                });
+            }
             // Merchant
             document.querySelectorAll('.merchant-tab').forEach(btn => { btn.addEventListener('click', () => { this.game.state.merchant.selectedStallId = btn.dataset.stallId; this.renderView(); }); });
             document.querySelectorAll('.merchant-buy-btn').forEach(btn => { btn.addEventListener('click', (e) => {
@@ -3286,78 +3303,222 @@ document.addEventListener('DOMContentLoaded', () => {
             const offenseCost = this.game.getArmyUpgradeCost('offense');
             const supportCost = this.game.getArmyUpgradeCost('support');
             const logisticsCost = this.game.getArmyUpgradeCost('logistics');
+            
+            // Calculate total army strength and battle readiness
+            const totalUnits = Object.values(this.game.state.army.units || {}).reduce((a,b)=>a+(b||0),0);
+            const armyPower = Math.floor(prod.dps * 10 + prod.hps * 5);
+            const battleReadiness = totalUnits > 0 ? (hungry ? 'HUNGRY' : (rallyActive ? 'RALLIED' : 'READY')) : 'EMPTY';
+            const readinessColor = {
+                'EMPTY': 'text-gray-400',
+                'HUNGRY': 'text-red-400 animate-pulse',
+                'READY': 'text-green-400',
+                'RALLIED': 'text-yellow-300 font-bold animate-pulse'
+            }[battleReadiness];
+
+            // Enhanced unit cards with visual improvements
             const unitCards = Object.keys(GAME_DATA.ARMY_CLASSES).map(id => {
                 const def = GAME_DATA.ARMY_CLASSES[id];
                 const owned = this.game.state.army.units[id] || 0;
                 const cost = this.game.getArmyUnitCost(id);
                 const lines = [];
-                if (def.dps) lines.push(`DPS +${def.dps}`);
-                if (def.hps) lines.push(`HPS +${def.hps}`);
-                if (def.foodPerMin) lines.push(`Upkeep ${def.foodPerMin}/m`);
+                if (def.dps) lines.push(`⚔️ DPS +${def.dps}`);
+                if (def.hps) lines.push(`❤️ HPS +${def.hps}`);
+                if (def.foodPerMin) lines.push(`🍖 Upkeep ${def.foodPerMin}/m`);
+                
+                // Add visual flair based on unit count
+                const unitBadge = owned > 0 ? `<div class="absolute -top-2 -right-2 bg-yellow-500 text-black text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">${owned}</div>` : '';
+                const glowClass = owned > 10 ? 'ring-2 ring-yellow-400 ring-opacity-50' : (owned > 5 ? 'ring-1 ring-blue-400 ring-opacity-30' : '');
+                
                 return `
-                    <div class="block p-4 flex flex-col justify-between">
+                    <div class="relative army-unit-card block p-4 flex flex-col justify-between transition-all duration-300 hover:scale-105 hover:shadow-xl ${glowClass}">
+                        ${unitBadge}
                         <div>
-                            <h3 class="text-lg font-bold">${def.emoji} ${def.name} <span class="text-xs text-secondary">(${def.role})</span></h3>
-                            <p class="text-secondary text-xs">${def.description}</p>
-                            <p class="text-secondary text-xs mt-1">${lines.join(' • ')}</p>
-                            <p class="text-white text-sm mt-2">Owned: <span class="font-mono">${owned}</span></p>
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-2xl animate-bounce">${def.emoji}</span>
+                                <div>
+                                    <h3 class="text-lg font-bold">${def.name}</h3>
+                                    <span class="text-xs text-secondary bg-gray-700 px-2 py-1 rounded-full">${def.role}</span>
+                                </div>
+                            </div>
+                            <p class="text-secondary text-xs italic">"${def.description}"</p>
+                            <div class="mt-2 flex flex-wrap gap-1">
+                                ${lines.map(line => `<span class="text-xs bg-gray-800 px-2 py-1 rounded">${line}</span>`).join('')}
+                            </div>
+                            <div class="mt-2 flex items-center justify-between">
+                                <span class="text-white text-sm">Enlisted: <span class="font-mono text-yellow-300">${owned}</span></span>
+                                ${owned > 0 ? `<span class="text-xs text-green-400">✓ Active</span>` : `<span class="text-xs text-gray-400">○ Recruiting</span>`}
+                            </div>
                         </div>
-                        <button class="hire-army-btn chimera-button juicy-button px-3 py-2 rounded-md mt-3" data-unit-id="${id}">Recruit — ${cost} GP</button>
+                        <button class="hire-army-btn chimera-button juicy-button imperial-button px-3 py-2 rounded-md mt-3 relative overflow-hidden" data-unit-id="${id}">
+                            <span class="relative z-10">Recruit — ${cost.toLocaleString()} GP</span>
+                            <div class="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 opacity-0 transition-opacity hover:opacity-20"></div>
+                        </button>
                     </div>
                 `;
             }).join('');
+
+            // Epic hero section with battle animations
             const hero = `
-                <div class="block p-5 mb-5 medieval-glow gradient-army">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-3">
-                            <div class="text-2xl">🛡️⚔️</div>
-                            <div>
-                                <h1 class="text-xl font-extrabold tracking-wide">War Council</h1>
-                                <p class="text-secondary text-sm">Command your forces. Train, rally, and conquer.</p>
+                <div class="relative block p-5 mb-5 medieval-glow gradient-army overflow-hidden">
+                    <div class="absolute inset-0 opacity-10">
+                        <div class="army-bg-pattern"></div>
+                    </div>
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="text-3xl animate-pulse">${totalUnits > 0 ? '🏰⚔️' : '🏗️'}</div>
+                                <div>
+                                    <h1 class="text-2xl font-extrabold tracking-wide bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">War Council</h1>
+                                    <p class="text-secondary text-sm">Command ${totalUnits} elite warriors. Train, rally, and dominate the battlefield.</p>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <span class="text-xs text-secondary">Battle Status:</span>
+                                        <span class="${readinessColor} text-xs font-bold">${battleReadiness}</span>
+                                        <span class="text-xs text-secondary">• Army Power: <span class="text-white font-mono">${armyPower}</span></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                ${totalUnits > 0 ? `
+                                    <button id="army-parade" class="chimera-button px-3 py-2 rounded-md hover:bg-purple-600 transition-colors">
+                                        🎭 Parade
+                                    </button>
+                                    <button id="army-rally" class="chimera-button juicy-button imperial-button px-4 py-3 rounded-md font-extrabold tracking-wide transform transition-all hover:scale-105 ${rallyActive ? 'animate-pulse' : ''}">
+                                        ${rallyActive ? `🔥 RALLY ACTIVE • ${rallyRemaining}s` : '⚡ RALLY TROOPS'}
+                                    </button>
+                                ` : `
+                                    <div class="text-center p-2">
+                                        <div class="text-yellow-400 text-xs">Recruit units to unlock rally</div>
+                                    </div>
+                                `}
                             </div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <button id="army-rally" class="chimera-button juicy-button imperial-button px-4 py-3 rounded-md font-extrabold tracking-wide">${rallyActive ? `Rally Active • ${rallyRemaining}s` : 'Rally Troops'}</button>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+                            <div class="glass-card rounded-md p-3 text-center shine hover:scale-105 transition-transform">
+                                <div class="text-[11px] text-secondary uppercase tracking-wider">⚔️ DAMAGE</div>
+                                <div class="text-2xl font-mono text-red-400 font-bold">${prod.dps.toFixed(1)}<span class="text-xs text-secondary">/s</span></div>
+                                <div class="text-xs text-secondary mt-1">${stance === 'aggressive' ? '+25% Aggressive' : stance === 'defensive' ? '-20% Defensive' : 'Balanced'}</div>
+                            </div>
+                            <div class="glass-card rounded-md p-3 text-center shine hover:scale-105 transition-transform">
+                                <div class="text-[11px] text-secondary uppercase tracking-wider">❤️ HEALING</div>
+                                <div class="text-2xl font-mono text-green-400 font-bold">${prod.hps.toFixed(1)}<span class="text-xs text-secondary">/s</span></div>
+                                <div class="text-xs text-secondary mt-1">${stance === 'defensive' ? '+25% Defensive' : stance === 'aggressive' ? '-20% Aggressive' : 'Balanced'}</div>
+                            </div>
+                            <div class="glass-card rounded-md p-3 text-center shine hover:scale-105 transition-transform">
+                                <div class="text-[11px] text-secondary uppercase tracking-wider">🍖 UPKEEP</div>
+                                <div class="text-xl font-mono text-yellow-400 font-bold">${foodPerMin.toFixed(1)}<span class="text-xs text-secondary">/m</span> ${hungry ? '<span class="text-red-400 text-xs ml-1 animate-pulse">HUNGRY!</span>' : ''}</div>
+                                <div class="text-xs text-secondary mt-1">Supply efficiency: ${((1-(up.logisticsLevel||0)*0.06)*100).toFixed(0)}%</div>
+                            </div>
+                            <div class="glass-card rounded-md p-3 text-center shine hover:scale-105 transition-transform">
+                                <div class="text-[11px] text-secondary uppercase tracking-wider">📦 RATIONS</div>
+                                <div class="text-xl font-mono text-blue-400 font-bold">${edible}<span class="text-xs text-secondary"> items</span></div>
+                                <div class="text-xs ${minutesLeft === '∞' ? 'text-green-400' : minutesLeft > 60 ? 'text-green-400' : minutesLeft > 10 ? 'text-yellow-400' : 'text-red-400'} mt-1">${minutesLeft}m remaining</div>
+                            </div>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-                        <div class="glass-card rounded-md p-3 text-center shine"><div class="text-[11px] text-secondary uppercase tracking-wider">DPS</div><div class="text-2xl font-mono text-white">${prod.dps.toFixed(1)}</div></div>
-                        <div class="glass-card rounded-md p-3 text-center shine"><div class="text-[11px] text-secondary uppercase tracking-wider">HPS</div><div class="text-2xl font-mono text-white">${prod.hps.toFixed(1)}</div></div>
-                        <div class="glass-card rounded-md p-3 text-center shine"><div class="text-[11px] text-secondary uppercase tracking-wider">Upkeep</div><div class="text-xl font-mono text-white">${foodPerMin.toFixed(1)}/m ${hungry ? '<span class="text-red-400 text-xs ml-1">Hungry</span>' : ''}</div></div>
-                        <div class="glass-card rounded-md p-3 text-center shine"><div class="text-[11px] text-secondary uppercase tracking-wider">Rations</div><div class="text-xl font-mono text-white">${edible} items • ${minutesLeft}m</div></div>
-                    </div>
                 </div>`;
+
+            // Enhanced upgrades section with visual progress
             const upgrades = `
-                <div class="block p-5 mb-5">
-                    <h2 class="text-lg font-bold mb-2">Doctrine & Upgrades</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div class="block p-3 flex flex-col">
-                            <div class="flex items-center justify-between"><div class="font-semibold">Offense Drills</div><div class="text-xs text-secondary">L${up.offenseLevel||0}</div></div>
-                            <p class="text-xs text-secondary mt-1">+8% Army DPS per level.</p>
-                            <button class="army-upgrade-btn chimera-button juicy-button px-3 py-2 rounded-md mt-2" data-type="offense">Upgrade — ${offenseCost} GP</button>
+                <div class="block p-5 mb-5 bg-gradient-to-br from-gray-900 to-gray-800 border border-yellow-500 border-opacity-30">
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="text-xl">📜</span>
+                        <h2 class="text-xl font-bold text-yellow-400">Military Doctrine & Upgrades</h2>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-red-900 bg-opacity-30 border border-red-500 border-opacity-50 p-4 rounded-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg">⚔️</span>
+                                    <div class="font-semibold text-red-400">Offense Drills</div>
+                                </div>
+                                <div class="text-xs bg-red-700 px-2 py-1 rounded">L${up.offenseLevel||0}</div>
+                            </div>
+                            <p class="text-xs text-secondary mb-2">Enhanced combat training increases army damage by 8% per level.</p>
+                            <div class="w-full bg-gray-700 rounded-full h-2 mb-3">
+                                <div class="bg-red-500 h-2 rounded-full" style="width: ${Math.min(100, (up.offenseLevel||0) * 10)}%"></div>
+                            </div>
+                            <button class="army-upgrade-btn chimera-button juicy-button w-full px-3 py-2 rounded-md" data-type="offense">
+                                🎯 Upgrade — ${offenseCost.toLocaleString()} GP
+                            </button>
                         </div>
-                        <div class="block p-3 flex flex-col">
-                            <div class="flex items-center justify-between"><div class="font-semibold">Field Medics</div><div class="text-xs text-secondary">L${up.supportLevel||0}</div></div>
-                            <p class="text-xs text-secondary mt-1">+8% Army HPS per level.</p>
-                            <button class="army-upgrade-btn chimera-button juicy-button px-3 py-2 rounded-md mt-2" data-type="support">Upgrade — ${supportCost} GP</button>
+                        <div class="bg-green-900 bg-opacity-30 border border-green-500 border-opacity-50 p-4 rounded-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg">⛑️</span>
+                                    <div class="font-semibold text-green-400">Field Medics</div>
+                                </div>
+                                <div class="text-xs bg-green-700 px-2 py-1 rounded">L${up.supportLevel||0}</div>
+                            </div>
+                            <p class="text-xs text-secondary mb-2">Advanced medical training increases army healing by 8% per level.</p>
+                            <div class="w-full bg-gray-700 rounded-full h-2 mb-3">
+                                <div class="bg-green-500 h-2 rounded-full" style="width: ${Math.min(100, (up.supportLevel||0) * 10)}%"></div>
+                            </div>
+                            <button class="army-upgrade-btn chimera-button juicy-button w-full px-3 py-2 rounded-md" data-type="support">
+                                🏥 Upgrade — ${supportCost.toLocaleString()} GP
+                            </button>
                         </div>
-                        <div class="block p-3 flex flex-col">
-                            <div class="flex items-center justify-between"><div class="font-semibold">Supply Lines</div><div class="text-xs text-secondary">L${up.logisticsLevel||0}</div></div>
-                            <p class="text-xs text-secondary mt-1">-6% Upkeep per level.</p>
-                            <button class="army-upgrade-btn chimera-button juicy-button px-3 py-2 rounded-md mt-2" data-type="logistics">Upgrade — ${logisticsCost} GP</button>
+                        <div class="bg-blue-900 bg-opacity-30 border border-blue-500 border-opacity-50 p-4 rounded-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg">📦</span>
+                                    <div class="font-semibold text-blue-400">Supply Lines</div>
+                                </div>
+                                <div class="text-xs bg-blue-700 px-2 py-1 rounded">L${up.logisticsLevel||0}</div>
+                            </div>
+                            <p class="text-xs text-secondary mb-2">Optimized logistics reduce food consumption by 6% per level.</p>
+                            <div class="w-full bg-gray-700 rounded-full h-2 mb-3">
+                                <div class="bg-blue-500 h-2 rounded-full" style="width: ${Math.min(100, (up.logisticsLevel||0) * 10)}%"></div>
+                            </div>
+                            <button class="army-upgrade-btn chimera-button juicy-button w-full px-3 py-2 rounded-md" data-type="logistics">
+                                📈 Upgrade — ${logisticsCost.toLocaleString()} GP
+                            </button>
                         </div>
                     </div>
-                    <div class="mt-4">
-                        <div class="text-xs text-secondary mb-1">Formations</div>
-                        <div class="flex items-center gap-2">
-                            <label class="text-xs flex items-center gap-1"><input type="radio" name="army-stance" value="balanced" ${stance==='balanced'?'checked':''}/> Balanced</label>
-                            <label class="text-xs flex items-center gap-1"><input type="radio" name="army-stance" value="aggressive" ${stance==='aggressive'?'checked':''}/> Aggressive</label>
-                            <label class="text-xs flex items-center gap-1"><input type="radio" name="army-stance" value="defensive" ${stance==='defensive'?'checked':''}/> Defensive</label>
+                    <div class="mt-6 p-4 bg-gray-800 rounded-lg border border-gray-600">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-lg">🎯</span>
+                            <div class="text-lg font-semibold text-yellow-400">Battle Formations</div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-3">
+                            <label class="formation-option cursor-pointer p-3 rounded-lg border-2 transition-all ${stance==='balanced'?'border-yellow-400 bg-yellow-900 bg-opacity-30':'border-gray-600 hover:border-gray-500'}">
+                                <input type="radio" name="army-stance" value="balanced" ${stance==='balanced'?'checked':''} class="hidden"/>
+                                <div class="text-center">
+                                    <div class="text-2xl mb-1">⚖️</div>
+                                    <div class="font-semibold text-yellow-400">Balanced</div>
+                                    <div class="text-xs text-secondary mt-1">Standard formation</div>
+                                </div>
+                            </label>
+                            <label class="formation-option cursor-pointer p-3 rounded-lg border-2 transition-all ${stance==='aggressive'?'border-red-400 bg-red-900 bg-opacity-30':'border-gray-600 hover:border-gray-500'}">
+                                <input type="radio" name="army-stance" value="aggressive" ${stance==='aggressive'?'checked':''} class="hidden"/>
+                                <div class="text-center">
+                                    <div class="text-2xl mb-1">⚔️</div>
+                                    <div class="font-semibold text-red-400">Aggressive</div>
+                                    <div class="text-xs text-secondary mt-1">+25% DPS, -20% HPS</div>
+                                </div>
+                            </label>
+                            <label class="formation-option cursor-pointer p-3 rounded-lg border-2 transition-all ${stance==='defensive'?'border-green-400 bg-green-900 bg-opacity-30':'border-gray-600 hover:border-gray-500'}">
+                                <input type="radio" name="army-stance" value="defensive" ${stance==='defensive'?'checked':''} class="hidden"/>
+                                <div class="text-center">
+                                    <div class="text-2xl mb-1">🛡️</div>
+                                    <div class="font-semibold text-green-400">Defensive</div>
+                                    <div class="text-xs text-secondary mt-1">+25% HPS, -20% DPS</div>
+                                </div>
+                            </label>
                         </div>
                     </div>
                 </div>`;
-            const recruits = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${unitCards}</div>`;
-            return `<h1 class="text-2xl font-semibold text-white mb-4">Army</h1>${hero}${upgrades}${recruits}`;
+
+            const recruits = `
+                <div class="mb-5">
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="text-xl">🏺</span>
+                        <h2 class="text-xl font-bold text-yellow-400">Recruitment Hall</h2>
+                        <div class="text-xs text-secondary ml-auto">Total Units: <span class="text-white font-mono">${totalUnits}</span></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${unitCards}</div>
+                </div>`;
+            
+            return `${hero}${upgrades}${recruits}`;
         }
         renderRaidsView() {
             const auto = this.game.state.combat.auto || { enabled: false, targetId: ((GAME_DATA.COMBAT.ENEMIES||[]).find(e=>e.raid)?.id)||null, buffers: { gold:0, items:{} } };
