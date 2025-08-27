@@ -1,0 +1,602 @@
+:root {
+    --bg-primary: #0d1117;
+    --bg-secondary: #161b22;
+    --border-color: #30363d;
+    --text-primary: #c9d1d9;
+    --text-secondary: #8b949e;
+    --accent-blue: #58a6ff;
+    --accent-green: #3fb950;
+    --accent-red: #f85149;
+    --font-main: 'Inter', sans-serif;
+    --homestead-gradient-start: #2d3748;
+    --homestead-gradient-end: #1a202c;
+}
+
+body {
+    font-family: var(--font-main);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.block {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+}
+
+.sidebar-link {
+    transition: background-color 0.2s ease;
+}
+
+.sidebar-link:hover,
+.sidebar-link.active {
+    background-color: #21262d;
+}
+
+.sidebar-link.active {
+    border-right: 3px solid var(--accent-blue);
+}
+
+.xp-bar-bg { background-color: #010409; }
+.xp-bar-fill { background-color: var(--accent-blue); transition: width 0.5s ease-out; }
+.mastery-bar-fill { background-color: #ffc107; }
+.stamina-bar-fill { background-color: var(--accent-green); }
+
+.chimera-button {
+    background-color: #21262d;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+}
+
+.chimera-button:hover { background-color: #30363d; border-color: #8b949e; }
+.chimera-button:disabled { background-color: #0d1117; border-color: #21262d; color: var(--text-secondary); cursor: not-allowed; }
+
+/* Spectacular MMO-style flytext */
+.floating-text {
+    position: absolute;
+    font-size: 1.125rem;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    pointer-events: none;
+    z-index: 100;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.6), 0 0 6px rgba(0,0,0,0.35);
+    will-change: transform, opacity;
+    user-select: none;
+    animation: fly-rise 1.6s ease-out forwards;
+}
+
+/* Type flavors */
+.fly-damage { animation: fly-rise 1.4s ease-out forwards, fly-wiggle 1.4s ease-out; filter: drop-shadow(0 0 6px rgba(248,81,73,0.6)); }
+.fly-crit { animation: fly-pop 0.2s ease-out, fly-rise 1.6s ease-out 0.05s forwards, fly-wiggle 1.6s ease-out 0.05s; filter: drop-shadow(0 0 8px rgba(255,196,0,0.8)); transform-origin: center; }
+.fly-heal { animation: fly-rise 1.6s ease-out forwards, fly-wiggle 1.6s ease-out; filter: drop-shadow(0 0 6px rgba(63,185,80,0.7)); }
+.fly-xp { animation: fly-rise 1.6s ease-out forwards, fly-wiggle 1.6s ease-out; filter: drop-shadow(0 0 6px rgba(88,166,255,0.7)); }
+.fly-loot { animation: fly-rise 1.8s ease-out forwards, fly-wiggle 1.8s ease-out, fly-shine 1.2s ease-in-out; filter: drop-shadow(0 0 8px rgba(255,214,10,0.6)); }
+.fly-level { animation: fly-pop 0.25s ease-out, fly-rise 1.9s ease-out 0.05s forwards, fly-wiggle 1.9s ease-out 0.05s, fly-shine 1.8s ease-in-out; filter: drop-shadow(0 0 10px rgba(63,185,80,0.85)); }
+
+/* Animations */
+@keyframes fly-rise {
+  0% { opacity: 0; transform: translate(-50%, 8px) scale(0.98); }
+  10% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -56px) scale(0.98); }
+}
+
+@keyframes fly-pop { 0% { transform: translate(-50%, 0) scale(0.6); } 100% { transform: translate(-50%, 0) scale(1.15); } }
+
+@keyframes fly-wiggle {
+  0% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(calc(-50% + 6px)) translateY(-24px); }
+  100% { transform: translateX(calc(-50% - 4px)) translateY(-48px); }
+}
+
+@keyframes fly-shine { 0%, 100% { filter: drop-shadow(0 0 8px rgba(255,255,255,0.1)); } 50% { filter: drop-shadow(0 0 12px rgba(255,255,255,0.7)); } }
+
+.tooltip { position: relative; display: inline-block; }
+.tooltip .tooltiptext { visibility: hidden; width: 220px; background-color: #010409; color: #fff; text-align: left; border-radius: 6px; padding: 8px; position: absolute; z-index: 50; bottom: 125%; left: 50%; margin-left: -110px; opacity: 0; transition: opacity 0.3s; border: 1px solid var(--border-color); font-size: 0.8rem; }
+.tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+
+.border-woodcutting { border-color: #654321; }
+.bg-woodcutting { background-color: #654321; }
+.border-mining { border-color: #808080; }
+.bg-mining { background-color: #808080; }
+.border-fishing { border-color: #00bfff; }
+.bg-fishing { background-color: #00bfff; }
+.border-firemaking { border-color: #ff4500; }
+.bg-firemaking { background-color: #ff4500; }
+.border-smithing { border-color: #a9a9a9; }
+.bg-smithing { background-color: #a9a9a9; }
+.border-cooking { border-color: #d2691e; }
+.bg-cooking { background-color: #d2691e; }
+.border-farming { border-color: #6b8e23; }
+.bg-farming { background-color: #6b8e23; }
+
+/* Small badge chips used in cards */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #1f2937;
+    border: 1px solid var(--border-color);
+    border-radius: 9999px;
+    padding: 2px 8px;
+    font-size: 11px;
+}
+.badge i { opacity: 0.9; }
+
+/* New gathering themes */
+.border-farming { border-color: #6b8e23; }
+.bg-farming { background-color: #6b8e23; }
+.border-hunter { border-color: #556b2f; }
+.bg-hunter { background-color: #556b2f; }
+.border-archaeology { border-color: #c2b280; }
+.bg-archaeology { background-color: #c2b280; }
+.border-divination { border-color: #7b68ee; }
+.bg-divination { background-color: #7b68ee; }
+
+/* Badges */
+.badge { display:inline-flex; align-items:center; gap:6px; background-color:#1f2937; border:1px solid var(--border-color); border-radius:9999px; padding:2px 8px; font-size:11px; }
+.badge i { opacity:0.9; }
+
+/* Meta Skills interactive UI */
+.meskill-card { transition: transform 120ms ease-out, box-shadow 200ms ease; will-change: transform; }
+.meskill-card:hover { box-shadow: 0 12px 24px rgba(0,0,0,0.3); }
+.meskill-badge { display:inline-block; background:#111827; border:1px solid var(--border-color); padding:2px 8px; border-radius:9999px; font-size:12px; color:var(--text-secondary); }
+
+/* Animated progress ring using conic-gradient */
+.ring { --size: 82px; --thickness: 8px; width: var(--size); height: var(--size); position: relative; border-radius: 9999px; background:
+    conic-gradient(var(--ring-color, var(--accent-blue)) calc(var(--ring-pct, 0) * 360deg), #111827 0);
+    box-shadow: inset 0 0 0 1px var(--border-color);
+}
+.ring::before { content: ""; position: absolute; inset: var(--thickness); background: var(--bg-secondary); border-radius: inherit; box-shadow: inset 0 0 0 1px var(--border-color); }
+.ring-center { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; }
+
+/* Farming hero banner */
+.farming-hero {
+    background: linear-gradient(135deg, rgba(107,142,35,0.25), rgba(34,197,94,0.15));
+    border: 1px solid var(--border-color);
+}
+/* Spectacular dopamine/juice styles */
+.juicy-button {
+  background: linear-gradient(180deg, rgba(255,214,153,0.12), rgba(255,214,153,0));
+  border: 1px solid rgba(255,214,153,0.18);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+  transition: transform 120ms ease, box-shadow 180ms ease, filter 180ms ease;
+  transform: translateZ(0);
+}
+.juicy-button:hover { transform: translateY(-1px) scale(1.02); box-shadow: 0 10px 22px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08); filter: brightness(1.04); }
+.juicy-button:active { transform: translateY(0) scale(0.98); filter: brightness(0.98); }
+.pulse-pop { animation: pop 220ms cubic-bezier(.17,.67,.32,1.31); }
+@keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.06)} 100%{transform:scale(1)} }
+
+.gradient-wood { background: radial-gradient(120% 120% at 0% 0%, rgba(120,80,40,0.25), rgba(20,12,6,0.15)), linear-gradient(180deg, rgba(255,196,120,0.06), rgba(0,0,0,0)); }
+.glass-card { backdrop-filter: blur(4px); background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0)); border: 1px solid rgba(255,255,255,0.06); }
+.shine { position: relative; overflow: hidden; }
+.shine:before { content: ""; position: absolute; top: -120%; left: -30%; width: 60%; height: 340%; transform: rotate(25deg); background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent); animation: shimmer 3.5s ease-in-out infinite; }
+@keyframes shimmer { 0%{left:-60%} 100%{left:140%} }
+
+.medieval-glow { box-shadow: 0 0 0 1px rgba(255,215,0,0.08) inset, 0 0 24px rgba(255,215,0,0.06); }
+
+/* Workforce generic gradient (subtle neutral) */
+.gradient-workforce { background: radial-gradient(120% 120% at 0% 0%, rgba(120,120,120,0.18), rgba(10,10,10,0.12)), linear-gradient(180deg, rgba(180,180,180,0.04), rgba(0,0,0,0)); }
+
+.confetti-piece { position:absolute; width:8px; height:12px; opacity:0; transform: translate3d(0,0,0) rotate(0deg); border-radius:2px; will-change: transform, opacity; }
+.coin-piece { position:absolute; font-size:16px; opacity:0; will-change: transform, opacity; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5)); }
+
+.rune-spark { position: absolute; width: 6px; height: 6px; border-radius: 9999px; background: rgba(88,166,255,0.95); box-shadow: 0 0 10px rgba(88,166,255,0.7); animation: spark-fly 900ms ease-out forwards; }
+@keyframes spark-fly { 0% { opacity: 0; transform: translate(var(--sx, 0), var(--sy, 0)) scale(0.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--tx, 0), var(--ty, -140px)) scale(1.1); } }
+.altar-zone { position: relative; height: 260px; border: 1px dashed var(--border-color); background: radial-gradient(120px 80px at 50% 60%, rgba(88,166,255,0.15), transparent 70%); border-radius: 12px; overflow: hidden; }
+.altar-core { position: absolute; left: 50%; top: 56%; transform: translate(-50%, -50%); width: 140px; height: 140px; border-radius: 9999px; background: radial-gradient(circle at 50% 45%, rgba(88,166,255,0.3), rgba(10,132,255,0.14) 45%, transparent 65%); box-shadow: 0 0 40px rgba(88,166,255,0.18), inset 0 0 24px rgba(88,166,255,0.16); border: 1px solid rgba(88,166,255,0.25); }
+.altar-sigil { position: absolute; left: 50%; top: 56%; transform: translate(-50%, -50%); font-size: 38px; color: rgba(255,255,255,0.9); text-shadow: 0 0 10px rgba(88,166,255,0.6); }
+.altar-glow { position: absolute; inset: -20px; background: conic-gradient(from 0deg, rgba(88,166,255,0.08), rgba(255,255,255,0.04), rgba(88,166,255,0.08)); filter: blur(12px); opacity: 0.7; animation: altar-rotate 9s linear infinite; pointer-events: none; }
+@keyframes altar-rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.rune-essence-token { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-color); background: rgba(2,6,23,0.5); padding: 6px 10px; border-radius: 9999px; cursor: grab; user-select: none; }
+.rune-output-badge { display:inline-flex; align-items:center; gap:6px; border:1px solid rgba(88,166,255,0.35); background: rgba(2,6,23,0.6); padding: 6px 10px; border-radius: 9999px; }
+.medieval-border { border-image: linear-gradient(45deg, #8b5a2b, #b8860b) 1; border-width: 1px; border-style: solid; }
+
+.rc-altar-card { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; background: rgba(2,6,23,0.35); transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease; display: flex; flex-direction: column; gap: 6px; }
+.rc-altar-card:hover { transform: translateY(-2px); border-color: rgba(88,166,255,0.35); background: rgba(2,6,23,0.55); }
+.rc-altar-card.rc-selected { border-color: rgba(255,255,255,0.4); box-shadow: 0 0 0 1px rgba(88,166,255,0.25) inset; }
+.rc-locked { opacity: 0.55; filter: grayscale(0.2); }
+.bg-primary { background-color: var(--bg-primary); }
+
+@media (min-width: 768px) {
+  .altar-zone { height: 360px; }
+}
+
+/* Homestead-specific styles */
+.gradient-homestead { 
+    background: radial-gradient(120% 120% at 0% 0%, rgba(76, 175, 80, 0.2), rgba(33, 150, 243, 0.15), rgba(0, 0, 0, 0.1)); 
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.task-card {
+    transition: all 0.2s ease-in-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.task-card:active {
+    transform: translateY(0px) scale(0.98);
+}
+
+.category-btn {
+    transition: all 0.2s ease-in-out;
+}
+
+.category-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Task difficulty color coding */
+.border-green-500 {
+    border-color: #10b981 !important;
+}
+
+.border-blue-500 {
+    border-color: #3b82f6 !important;
+}
+
+.border-yellow-500 {
+    border-color: #f59e0b !important;
+}
+
+.border-red-500 {
+    border-color: #ef4444 !important;
+}
+
+.bg-green-900\/20 {
+    background-color: rgba(6, 78, 59, 0.2) !important;
+}
+
+.bg-blue-900\/20 {
+    background-color: rgba(30, 58, 138, 0.2) !important;
+}
+
+.bg-yellow-900\/20 {
+    background-color: rgba(120, 53, 15, 0.2) !important;
+}
+
+.bg-red-900\/20 {
+    background-color: rgba(127, 29, 29, 0.2) !important;
+}
+
+/* Saga-specific styles */
+.saga-card {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.saga-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(147, 51, 234, 0.2);
+}
+
+.saga-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #7c3aed, #a855f7, #c084fc);
+}
+
+.sub-quest-item {
+    transition: all 0.2s ease;
+}
+
+.sub-quest-item:hover {
+    transform: translateX(4px);
+}
+
+.complete-subquest-btn {
+    transition: all 0.2s ease;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    background: transparent;
+}
+
+.complete-subquest-btn:hover:not(:disabled) {
+    background: rgba(147, 51, 234, 0.2);
+    transform: scale(1.1);
+}
+
+.completed-saga-card {
+    transition: all 0.2s ease;
+}
+
+.completed-saga-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+.bg-purple-900\/20 {
+    background-color: rgba(76, 29, 149, 0.2) !important;
+}
+
+.bg-green-900\/30 {
+    background-color: rgba(6, 78, 59, 0.3) !important;
+}
+
+.bg-yellow-900\/20 {
+    background-color: rgba(120, 53, 15, 0.2) !important;
+}
+
+/* Expedition-specific styles */
+.expedition-card {
+    transition: all 0.3s ease;
+    position: relative;
+    background: linear-gradient(135deg, rgba(0,0,0,0.6), rgba(0,0,0,0.3));
+}
+
+.expedition-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+
+.expedition-card.ring-2 {
+    animation: expeditionActive 2s ease-in-out infinite;
+}
+
+@keyframes expeditionActive {
+    0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
+    50% { box-shadow: 0 0 25px rgba(59, 130, 246, 0.8); }
+}
+
+.locked-expedition {
+    filter: grayscale(50%);
+    transition: all 0.2s ease;
+}
+
+.locked-expedition:hover {
+    filter: grayscale(30%);
+    transform: translateY(-1px);
+}
+
+.launch-expedition-btn {
+    transition: all 0.2s ease;
+    background: linear-gradient(45deg, #2563eb, #3b82f6);
+}
+
+.launch-expedition-btn:hover {
+    background: linear-gradient(45deg, #1d4ed8, #2563eb);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+.launch-expedition-btn:active {
+    transform: translateY(0);
+}
+
+.cancel-expedition-btn {
+    transition: all 0.2s ease;
+}
+
+.cancel-expedition-btn:hover {
+    background: rgba(185, 28, 28, 0.3) !important;
+    transform: scale(1.05);
+}
+
+/* Live Update Animations */
+.xp-bar-fill {
+    transition: width 0.8s ease-out;
+}
+
+.expedition-card .bg-blue-500 {
+    transition: width 0.5s ease-out;
+}
+
+/* Level up animation */
+@keyframes levelUpPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.level-up-animation {
+    animation: levelUpPulse 0.6s ease-in-out;
+}
+
+/* Skill XP gain animation */
+@keyframes xpGain {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.xp-gain-animation {
+    animation: xpGain 0.4s ease-in-out;
+}
+
+/* Progress bar fill animation */
+@keyframes progressFill {
+    0% { transform: scaleX(0.98); }
+    50% { transform: scaleX(1.02); }
+    100% { transform: scaleX(1); }
+}
+
+.progress-update {
+    animation: progressFill 0.3s ease-in-out;
+}
+
+/* Sidebar XP Tooltip Styles */
+.sidebar-xp-tooltip {
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(71, 85, 105, 0.6);
+}
+
+.sidebar-xp-tooltip::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(51, 65, 85, 0.95));
+    border-radius: 0.5rem;
+    z-index: -1;
+}
+
+/* Enhanced XP bar animations for sidebar */
+.sidebar-link .xp-bar-fill {
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.sidebar-link .xp-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+
+.sidebar-link:hover .xp-bar-fill::after {
+    transform: translateX(100%);
+}
+
+/* Tooltip positioning improvements */
+.sidebar-link {
+    position: relative;
+}
+
+.sidebar-link .xp-bar-bg {
+    overflow: visible;
+}
+
+/* Sidebar Minimize Functionality */
+.sidebar {
+    transition: all 0.3s ease-in-out;
+}
+
+.sidebar.minimized {
+    overflow: hidden;
+}
+
+.sidebar.minimized > *:not(#sidebar-toggle) {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Minimize button positioning and styling */
+#sidebar-toggle {
+    position: absolute;
+    right: -12px;
+    top: 24px;
+    z-index: 1000;
+    transition: all 0.3s ease-in-out;
+    pointer-events: auto !important;
+}
+
+#sidebar-toggle:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+/* Ensure the toggle button stays visible when minimized */
+.sidebar.minimized #sidebar-toggle {
+    opacity: 1 !important;
+    right: -12px !important;
+}
+
+/* Enhanced Empire Equipment System Styles */
+.equipment-skill-section {
+    border-left: 3px solid var(--accent-blue);
+    padding-left: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.equipment-skill-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.equipment-item {
+    border-left: 2px solid var(--accent-blue);
+    transition: all 0.2s ease;
+}
+
+.equipment-item:hover {
+    border-left-color: var(--accent-green);
+    transform: translateX(2px);
+}
+
+.equipment-bonus-text {
+    font-size: 0.75rem;
+    color: var(--accent-blue);
+    margin-top: 0.25rem;
+    line-height: 1.2;
+}
+
+/* Equipment inventory styling */
+.equipment-inventory-item {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.equipment-inventory-item:hover {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(147, 51, 234, 0.15));
+    border-color: rgba(59, 130, 246, 0.5);
+}
+
+/* Facility upgrade indicators */
+.facility-active {
+    ring: 1px;
+    ring-color: var(--accent-blue);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(147, 51, 234, 0.05));
+}
+
+.facility-max {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.1));
+    border-color: var(--accent-green);
+}
+
+/* Worker morale indicators */
+.morale-high {
+    color: var(--accent-green);
+    text-shadow: 0 0 8px rgba(63, 185, 80, 0.5);
+}
+
+.morale-medium {
+    color: #fbbf24;
+    text-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+}
+
+.morale-low {
+    color: var(--accent-red);
+    text-shadow: 0 0 8px rgba(248, 81, 73, 0.5);
+}
+
+/* Equipment coverage indicator */
+.equipment-coverage-high {
+    color: var(--accent-green);
+}
+
+.equipment-coverage-medium {
+    color: #fbbf24;
+}
+
+.equipment-coverage-low {
+    color: var(--accent-red);
+}
