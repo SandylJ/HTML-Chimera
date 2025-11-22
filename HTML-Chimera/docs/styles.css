@@ -600,3 +600,79 @@ body {
 .equipment-coverage-low {
     color: var(--accent-red);
 }
+
+/* Expedition Loot Animation Styles */
+.loot-animation-container {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 214, 10, 0.1));
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.loot-items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.loot-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.15), rgba(255, 214, 10, 0.15));
+    border: 1px solid rgba(255, 193, 7, 0.4);
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+}
+
+.loot-item:hover {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.25), rgba(255, 214, 10, 0.25));
+    border-color: rgba(255, 193, 7, 0.6);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+}
+
+.loot-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.loot-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+/* Loot Animation Keyframes */
+@keyframes animate-loot {
+    0% {
+        opacity: 0;
+        transform: translateY(20px) scale(0.8);
+    }
+    50% {
+        opacity: 1;
+        transform: translateY(-5px) scale(1.05);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.animate-loot {
+    animation: animate-loot 0.6s ease-out forwards;
+}
+
+/* Staggered animation for multiple loot items */
+.loot-item:nth-child(1) { animation-delay: 0.1s; }
+.loot-item:nth-child(2) { animation-delay: 0.3s; }
+.loot-item:nth-child(3) { animation-delay: 0.5s; }
+.loot-item:nth-child(4) { animation-delay: 0.7s; }
+.loot-item:nth-child(5) { animation-delay: 0.9s; }
