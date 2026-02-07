@@ -299,3 +299,57 @@ body {
 .auto-hint { font-size: 11px; color: var(--text-secondary); }
 /* Raids hero add-ons */
 .raids-hero { background: radial-gradient(120% 120% at 0% 0%, rgba(255,0,128,0.12), rgba(88,166,255,0.08)), linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0)); border: 1px solid var(--border-color); box-shadow: 0 12px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.04); }
+
+/* Enhanced Army Styles */
+.army-unit-card { background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.1)); border: 1px solid var(--border-color); border-radius: 8px; position: relative; overflow: hidden; }
+.army-unit-card:hover { border-color: rgba(255,215,0,0.4); box-shadow: 0 8px 25px rgba(255,215,0,0.15); }
+.army-unit-card.elite { border: 2px solid rgba(255,215,0,0.8); box-shadow: 0 0 20px rgba(255,215,0,0.3); }
+
+.army-bg-pattern { 
+    background-image: 
+        radial-gradient(circle at 25% 25%, rgba(255,215,0,0.1) 2px, transparent 2px),
+        radial-gradient(circle at 75% 75%, rgba(255,165,0,0.1) 1px, transparent 1px);
+    background-size: 40px 40px, 20px 20px;
+    animation: army-pattern-drift 20s linear infinite;
+}
+
+@keyframes army-pattern-drift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(40px, 40px); }
+}
+
+.formation-option { transition: all 0.3s ease; }
+.formation-option:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+
+/* Battle readiness indicators */
+.battle-status-ready { color: #10b981; text-shadow: 0 0 10px rgba(16,185,129,0.5); }
+.battle-status-hungry { color: #ef4444; text-shadow: 0 0 10px rgba(239,68,68,0.5); animation: hungry-pulse 2s ease-in-out infinite; }
+.battle-status-rallied { color: #f59e0b; text-shadow: 0 0 10px rgba(245,158,11,0.5); animation: rally-glow 1.5s ease-in-out infinite; }
+
+@keyframes hungry-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+@keyframes rally-glow {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* Army upgrade progress bars */
+.upgrade-progress { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); position: relative; overflow: hidden; }
+.upgrade-progress::after { content: ""; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); animation: progress-shimmer 2s ease-in-out infinite; }
+
+@keyframes progress-shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* Unit recruitment animations */
+.hire-army-btn:active { transform: scale(0.95); }
+.hire-army-btn:hover .relative { animation: recruit-bounce 0.6s ease-in-out; }
+
+@keyframes recruit-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+}
