@@ -299,3 +299,419 @@ body {
 .auto-hint { font-size: 11px; color: var(--text-secondary); }
 /* Raids hero add-ons */
 .raids-hero { background: radial-gradient(120% 120% at 0% 0%, rgba(255,0,128,0.12), rgba(88,166,255,0.08)), linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0)); border: 1px solid var(--border-color); box-shadow: 0 12px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.04); }
+
+/* EPIC BANKING UI ENHANCEMENTS */
+
+/* Bank Grid Layout */
+.epic-bank-grid {
+    gap: 16px;
+    padding: 8px;
+}
+
+/* Enhanced Bank Items */
+.epic-bank-item {
+    position: relative;
+    min-height: 120px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.epic-bank-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent, rgba(255,255,255,0.04), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.epic-bank-item:hover::before {
+    opacity: 1;
+}
+
+.epic-bank-item:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.2);
+}
+
+/* Item Icon Container */
+.item-icon-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.item-icon-container .icon {
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4));
+    transition: all 0.3s ease;
+}
+
+.epic-bank-item:hover .item-icon-container .icon {
+    transform: scale(1.1);
+    filter: drop-shadow(0 4px 16px rgba(0,0,0,0.6));
+}
+
+/* Quantity Badges */
+.quantity-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 20px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(255,107,53,0.4);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* Golden Item Effects */
+.golden-shimmer {
+    animation: golden-pulse 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 12px rgba(255,215,0,0.5));
+}
+
+.golden-mega-shimmer {
+    animation: golden-pulse 2s ease-in-out infinite, golden-rotate 8s linear infinite;
+    filter: drop-shadow(0 0 20px rgba(255,215,0,0.8));
+}
+
+@keyframes golden-pulse {
+    0%, 100% { filter: brightness(1) drop-shadow(0 0 12px rgba(255,215,0,0.5)); }
+    50% { filter: brightness(1.2) drop-shadow(0 0 20px rgba(255,215,0,0.8)); }
+}
+
+@keyframes golden-rotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Enhanced Tooltips */
+.enhanced-tooltip {
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
+    background: linear-gradient(135deg, rgba(15,15,15,0.95), rgba(25,25,25,0.95));
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 16px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+}
+
+.epic-tooltip:hover .enhanced-tooltip {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-8px);
+    pointer-events: auto;
+}
+
+.tooltip-header {
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.tooltip-icon {
+    margin-bottom: 8px;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+}
+
+.tooltip-title {
+    font-size: 18px;
+    margin-bottom: 4px;
+}
+
+.tooltip-rarity {
+    font-size: 11px;
+    opacity: 0.8;
+}
+
+.tooltip-description {
+    line-height: 1.4;
+    color: #c9d1d9;
+}
+
+.tooltip-stats .stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    font-size: 12px;
+}
+
+.tooltip-footer {
+    text-align: center;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 8px;
+    margin-top: 8px;
+}
+
+/* Epic Item Modal */
+.epic-item-modal {
+    max-width: 500px;
+    width: 100%;
+}
+
+.epic-item-modal .modal-header {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.item-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.mega-icon {
+    font-size: 80px;
+    filter: drop-shadow(0 4px 16px rgba(0,0,0,0.6));
+    margin-bottom: 8px;
+}
+
+.item-details {
+    text-align: center;
+}
+
+.item-title {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.item-rarity {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.item-quantity {
+    font-size: 16px;
+    color: #8b949e;
+}
+
+/* Item Stats Grid */
+.item-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.stat-item i {
+    width: 16px;
+    text-align: center;
+}
+
+/* Action Buttons */
+.epic-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    margin: 4px;
+    background: linear-gradient(135deg, rgba(88,166,255,0.2), rgba(168,85,247,0.2));
+    border: 1px solid rgba(88,166,255,0.3);
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.epic-action-btn:hover {
+    background: linear-gradient(135deg, rgba(88,166,255,0.3), rgba(168,85,247,0.3));
+    border-color: rgba(88,166,255,0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.epic-action-btn:active {
+    transform: translateY(0);
+}
+
+.epic-action-btn.equipped {
+    background: linear-gradient(135deg, rgba(34,197,94,0.3), rgba(16,185,129,0.3));
+    border-color: rgba(34,197,94,0.5);
+}
+
+/* Use/Consume Actions */
+.use-item-btn {
+    background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(16,185,129,0.2));
+    border-color: rgba(34,197,94,0.3);
+}
+
+.use-item-btn:hover {
+    background: linear-gradient(135deg, rgba(34,197,94,0.3), rgba(16,185,129,0.3));
+    border-color: rgba(34,197,94,0.5);
+}
+
+/* Equip Actions */
+.equip-item-btn {
+    background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(220,38,38,0.2));
+    border-color: rgba(239,68,68,0.3);
+}
+
+.equip-item-btn:hover {
+    background: linear-gradient(135deg, rgba(239,68,68,0.3), rgba(220,38,38,0.3));
+    border-color: rgba(239,68,68,0.5);
+}
+
+/* Craft Actions */
+.craft-with-btn {
+    background: linear-gradient(135deg, rgba(251,146,60,0.2), rgba(249,115,22,0.2));
+    border-color: rgba(251,146,60,0.3);
+}
+
+.craft-with-btn:hover {
+    background: linear-gradient(135deg, rgba(251,146,60,0.3), rgba(249,115,22,0.3));
+    border-color: rgba(251,146,60,0.5);
+}
+
+/* Sell Actions */
+.sell-item-btn {
+    background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(234,179,8,0.2));
+    border-color: rgba(255,215,0,0.3);
+}
+
+.sell-item-btn:hover {
+    background: linear-gradient(135deg, rgba(255,215,0,0.3), rgba(234,179,8,0.3));
+    border-color: rgba(255,215,0,0.5);
+}
+
+/* Spell Actions */
+.spell-cast-btn {
+    background: linear-gradient(135deg, rgba(168,85,247,0.2), rgba(147,51,234,0.2));
+    border-color: rgba(168,85,247,0.3);
+}
+
+.spell-cast-btn:hover {
+    background: linear-gradient(135deg, rgba(168,85,247,0.3), rgba(147,51,234,0.3));
+    border-color: rgba(168,85,247,0.5);
+}
+
+/* Bulk Actions */
+.bulk-action-btn {
+    background: linear-gradient(135deg, rgba(156,163,175,0.2), rgba(107,114,128,0.2));
+    border-color: rgba(156,163,175,0.3);
+}
+
+.bulk-action-btn:hover {
+    background: linear-gradient(135deg, rgba(156,163,175,0.3), rgba(107,114,128,0.3));
+    border-color: rgba(156,163,175,0.5);
+}
+
+/* Action Buttons Container */
+.action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+/* Bank Title Animation */
+.bank-title {
+    background: linear-gradient(45deg, #ffd700, #ffed4e, #ffd700);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: bank-title-shimmer 3s ease-in-out infinite;
+}
+
+@keyframes bank-title-shimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+/* Enhanced Modal Backdrop */
+.epic-modal {
+    backdrop-filter: blur(8px);
+}
+
+.epic-modal .modal-content {
+    background: linear-gradient(135deg, rgba(15,15,15,0.95), rgba(25,25,25,0.95));
+    border: 1px solid rgba(255,255,255,0.15);
+    box-shadow: 0 32px 64px rgba(0,0,0,0.8);
+}
+
+/* Recipe and Spell Cards */
+.recipe-card, .spell-card {
+    transition: all 0.3s ease;
+}
+
+.recipe-card:hover, .spell-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .epic-bank-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+    
+    .enhanced-tooltip {
+        width: 250px;
+    }
+    
+    .mega-icon {
+        font-size: 60px;
+    }
+    
+    .item-title {
+        font-size: 22px;
+    }
+    
+    .item-stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .epic-bank-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+    
+    .epic-action-btn {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+}

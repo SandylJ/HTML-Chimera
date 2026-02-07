@@ -2310,26 +2310,323 @@ document.addEventListener('DOMContentLoaded', () => {
             const itemsHtml = order.filter(id => (this.game.state.bank[id]||0) > 0).map((itemId, idx) => {
                 const quantity = this.game.state.bank[itemId] || 0;
                 const itemData = GAME_DATA.ITEMS[itemId]; if (!itemData) return '';
+                
+                // Enhanced descriptions with more detail
                 const descParts = [];
-                if (itemData.heals) descParts.push(`Restores ${itemData.heals} HP`);
-                if (itemData.damage) descParts.push(`Weapon • +${itemData.damage} ATK`);
-                if (['air_rune','mind_rune','water_rune','earth_rune','fire_rune','body_rune','cosmic_rune','chaos_rune','nature_rune','law_rune','death_rune','blood_rune'].includes(itemId)) descParts.push('Spell component');
-                const desc = descParts.join(' • ') || 'A curious item of unknown power.';
+                const type = this.getItemType(itemId);
+                const rarity = this.getItemRarity(itemId, quantity);
+                
+                if (itemData.heals) descParts.push(`<span class="text-green-400">❤️ Restores ${itemData.heals} HP</span>`);
+                if (itemData.damage) descParts.push(`<span class="text-red-400">⚔️ Weapon • +${itemData.damage} ATK</span>`);
+                if (['air_rune','mind_rune','water_rune','earth_rune','fire_rune','body_rune','cosmic_rune','chaos_rune','nature_rune','law_rune','death_rune','blood_rune'].includes(itemId)) descParts.push('<span class="text-purple-400">🔮 Spell component</span>');
+                
+                // Add type and usage hints
+                if (type === 'food' && !itemData.heals) descParts.push('<span class="text-yellow-400">🍖 Cooking ingredient</span>');
+                if (type === 'material') descParts.push('<span class="text-blue-400">🔧 Crafting material</span>');
+                if (type === 'resource') descParts.push('<span class="text-cyan-400">⛏️ Raw resource</span>');
+                if (itemId.includes('potion') || itemId.includes('elixir') || itemId.includes('tonic')) descParts.push('<span class="text-green-400">🧪 Consumable potion</span>');
+                
+                const desc = descParts.join('<br>') || '<span class="text-gray-400">A curious item of unknown power.</span>';
+                const rarityClass = rarity === 'golden' ? 'text-yellow-300' : rarity === 'rare' ? 'text-purple-300' : 'text-white';
+                
                 return `
-                    <div class="bank-slot block p-2 flex flex-col items-center justify-center text-center glass-card rounded-md"
-                         draggable="true" data-item-id="${itemId}" data-index="${idx}">
+                    <div class="bank-slot epic-bank-item block p-3 flex flex-col items-center justify-center text-center glass-card rounded-lg hover:scale-105 transition-all duration-200 cursor-pointer"
+                         draggable="true" data-item-id="${itemId}" data-index="${idx}"
+                         onclick="game.uiManager.showItemModal('${itemId}')">
                         <div class="epic-tooltip">
-                            <div class="icon text-3xl">${itemData.icon || '❔'}</div>
-                            <div class="panel">
-                                <div class="name">${itemData.name}</div>
-                                <div class="desc">${desc}</div>
-                                <div class="qty">Owned: <span class="font-mono">${quantity.toLocaleString()}</span></div>
+                            <div class="item-icon-container relative">
+                                <div class="icon text-4xl ${rarity === 'golden' ? 'golden-shimmer' : ''}">${itemData.icon || '❔'}</div>
+                                ${quantity > 999 ? '<div class="quantity-badge">999+</div>' : quantity > 99 ? '<div class="quantity-badge">99+</div>' : ''}
+                            </div>
+                            <div class="item-name text-xs mt-1 ${rarityClass} font-medium">${itemData.name}</div>
+                            <div class="quantity-text text-xs text-gray-400 font-mono">${quantity.toLocaleString()}</div>
+                            
+                            <!-- Enhanced Hover Tooltip -->
+                            <div class="enhanced-tooltip">
+                                <div class="tooltip-header">
+                                    <div class="tooltip-icon text-5xl">${itemData.icon || '❔'}</div>
+                                    <div class="tooltip-title ${rarityClass} font-bold text-lg">${itemData.name}</div>
+                                    <div class="tooltip-rarity text-xs uppercase tracking-wider ${rarity === 'golden' ? 'text-yellow-400' : rarity === 'rare' ? 'text-purple-400' : 'text-gray-400'}">${rarity}</div>
+                                </div>
+                                <div class="tooltip-description text-sm mb-3">${desc}</div>
+                                <div class="tooltip-stats">
+                                    <div class="stat-row">
+                                        <span class="text-gray-400">Owned:</span>
+                                        <span class="font-mono text-white">${quantity.toLocaleString()}</span>
+                                    </div>
+                                    ${type ? `<div class="stat-row"><span class="text-gray-400">Type:</span><span class="text-blue-300">${type}</span></div>` : ''}
+                                </div>
+                                <div class="tooltip-footer text-xs text-gray-500 mt-2">
+                                    Click for details and actions
+                                </div>
                             </div>
                         </div>
                     </div>`;
             }).join('');
-            const grid = itemsHtml || `<p class="text-secondary col-span-full text-center">Your bank is empty. Gather some resources!</p>`;
-            return `<h1 class="text-2xl font-semibold text-white mb-4">Bank</h1><div id="bank-grid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4">${grid}</div>`;
+            const grid = itemsHtml || `<p class="text-secondary col-span-full text-center py-8">Your bank is empty. Gather some resources!</p>`;
+            return `
+                <div class="bank-header mb-6">
+                    <h1 class="text-3xl font-bold text-white mb-2 bank-title">🏦 Royal Treasury</h1>
+                    <p class="text-gray-400">Click any item for detailed information and actions</p>
+                </div>
+                <div id="bank-grid" class="epic-bank-grid grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-4">${grid}</div>
+            `;
+        }
+        
+        // Helper functions for enhanced item information
+        getItemType(itemId) {
+            const item = GAME_DATA.ITEMS[itemId];
+            if (!item) return null;
+            
+            if (item.heals) return 'food';
+            if (item.damage) return 'weapon';
+            if (itemId.includes('_rune')) return 'rune';
+            if (itemId.includes('_ore') || itemId.includes('_logs') || itemId.includes('essence')) return 'resource';
+            if (itemId.includes('_bar') || itemId.includes('potion') || itemId.includes('elixir')) return 'crafted';
+            if (itemId.includes('herb_') || itemId.includes('raw_')) return 'material';
+            return 'misc';
+        }
+        
+        getItemRarity(itemId, quantity) {
+            if (itemId.startsWith('golden_')) return 'golden';
+            if (itemId.includes('legendary') || itemId.includes('mythic') || itemId.includes('ascendant')) return 'legendary';
+            if (itemId.includes('dragon') || itemId.includes('phoenix') || quantity > 10000) return 'rare';
+            return 'common';
+        }
+        
+        // Epic Item Modal System
+        showItemModal(itemId) {
+            const item = GAME_DATA.ITEMS[itemId];
+            const quantity = this.game.state.bank[itemId] || 0;
+            if (!item || quantity <= 0) return;
+            
+            const type = this.getItemType(itemId);
+            const rarity = this.getItemRarity(itemId, quantity);
+            const rarityClass = rarity === 'golden' ? 'text-yellow-300' : rarity === 'legendary' ? 'text-purple-300' : rarity === 'rare' ? 'text-blue-300' : 'text-white';
+            
+            // Generate action buttons based on item type
+            const actions = this.generateItemActions(itemId, item, type);
+            
+            const modalContent = `
+                <div class="epic-item-modal">
+                    <div class="modal-header">
+                        <div class="item-display">
+                            <div class="mega-icon ${rarity === 'golden' ? 'golden-mega-shimmer' : ''}">${item.icon || '❔'}</div>
+                            <div class="item-details">
+                                <h2 class="item-title ${rarityClass}">${item.name}</h2>
+                                <div class="item-rarity ${rarity === 'golden' ? 'text-yellow-400' : rarity === 'legendary' ? 'text-purple-400' : rarity === 'rare' ? 'text-blue-400' : 'text-gray-400'}">${rarity.toUpperCase()}</div>
+                                <div class="item-quantity">Owned: <span class="font-mono text-white">${quantity.toLocaleString()}</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="item-description mb-4">
+                            ${this.getEnhancedItemDescription(itemId, item, type)}
+                        </div>
+                        
+                        <div class="item-stats">
+                            ${this.getItemStats(itemId, item)}
+                        </div>
+                        
+                        <div class="action-buttons">
+                            ${actions}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            this.showModal('Item Details', modalContent, 'epic-modal');
+        }
+        
+        // Generate action buttons based on item type and properties
+        generateItemActions(itemId, item, type) {
+            const actions = [];
+            const quantity = this.game.state.bank[itemId] || 0;
+            
+            // Use/Consume actions
+            if (item.heals) {
+                actions.push(`<button class="epic-action-btn use-item-btn" data-item-id="${itemId}" data-action="eat">
+                    <i class="fas fa-heart"></i> Use (+${item.heals} HP)
+                </button>`);
+            }
+            
+            if (item.damage) {
+                const isEquipped = this.game.state.player.weapon === itemId;
+                actions.push(`<button class="epic-action-btn equip-item-btn ${isEquipped ? 'equipped' : ''}" data-item-id="${itemId}" data-action="equip">
+                    <i class="fas fa-sword"></i> ${isEquipped ? 'Equipped' : 'Equip Weapon'}
+                </button>`);
+            }
+            
+            if (itemId.includes('potion') || itemId.includes('elixir') || itemId.includes('tonic')) {
+                actions.push(`<button class="epic-action-btn use-item-btn" data-item-id="${itemId}" data-action="drink">
+                    <i class="fas fa-flask"></i> Drink Potion
+                </button>`);
+            }
+            
+            // Crafting actions
+            const recipes = this.getRecipesUsingItem(itemId);
+            if (recipes.length > 0) {
+                actions.push(`<button class="epic-action-btn craft-with-btn" data-item-id="${itemId}" data-action="craft">
+                    <i class="fas fa-hammer"></i> Craft With (${recipes.length} recipes)
+                </button>`);
+            }
+            
+            // Selling/Trading actions
+            const sellPrice = this.getItemSellPrice(itemId);
+            if (sellPrice > 0) {
+                actions.push(`<button class="epic-action-btn sell-item-btn" data-item-id="${itemId}" data-action="sell">
+                    <i class="fas fa-coins"></i> Sell (${sellPrice} GP each)
+                </button>`);
+            }
+            
+            // Special actions based on item type
+            if (type === 'rune') {
+                actions.push(`<button class="epic-action-btn spell-cast-btn" data-item-id="${itemId}" data-action="spells">
+                    <i class="fas fa-magic"></i> View Spells
+                </button>`);
+            }
+            
+            // Bulk actions if quantity > 1
+            if (quantity > 1) {
+                actions.push(`<button class="epic-action-btn bulk-action-btn" data-item-id="${itemId}" data-action="bulk">
+                    <i class="fas fa-layer-group"></i> Bulk Actions
+                </button>`);
+            }
+            
+            return actions.length > 0 ? actions.join('') : '<p class="text-gray-400 italic">No actions available for this item.</p>';
+        }
+        
+        // Enhanced item descriptions with lore and details
+        getEnhancedItemDescription(itemId, item, type) {
+            const descriptions = {
+                // Weapons
+                'bronze_dagger': 'A simple yet deadly blade forged from bronze. Perfect for new adventurers seeking their first taste of combat.',
+                
+                // Food
+                'shrimp': 'Freshly cooked shrimp, still warm and seasoned to perfection. Restores health and satisfies hunger.',
+                'sardine': 'A grilled sardine with a crispy exterior and tender flesh. Popular among fishermen and warriors alike.',
+                
+                // Resources
+                'logs': 'Sturdy wooden logs from the forest. Essential for construction, fuel, and countless crafting recipes.',
+                'copper_ore': 'Raw copper ore with a distinctive reddish gleam. The foundation of many alloys and tools.',
+                'tin_ore': 'Silvery tin ore that combines beautifully with copper to create bronze.',
+                'iron_ore': 'Dense iron ore, the backbone of advanced metallurgy and weaponcraft.',
+                
+                // Runes
+                'air_rune': 'A crystallized essence of wind and storm. Pulses with elemental energy and whispers of ancient magic.',
+                'mind_rune': 'This ethereal rune contains the power of thought and mental clarity. Valued by scholars and mages.',
+                'water_rune': 'Cool to the touch, this rune channels the fluid power of rivers, seas, and rain.',
+                'earth_rune': 'Solid and grounding, this rune embodies the strength and stability of mountains.',
+                'fire_rune': 'Warm and flickering with inner flame, this rune carries the destructive and creative power of fire.',
+                
+                // Special items
+                'bird_nest': 'A carefully woven nest abandoned by its feathered inhabitants. Sometimes contains valuable treasures.',
+                'feather': 'A delicate feather that catches the light beautifully. Prized by fletchers and collectors.'
+            };
+            
+            const specific = descriptions[itemId];
+            if (specific) return `<p class="text-gray-300">${specific}</p>`;
+            
+            // Generic descriptions based on type
+            const typeDescriptions = {
+                'food': 'A nutritious item that can restore health and satisfy hunger. Essential for long adventures.',
+                'weapon': 'A tool of war and protection. Increases combat effectiveness when equipped.',
+                'rune': 'A magical essence crystallized into physical form. Required for casting powerful spells.',
+                'resource': 'A raw material gathered from the world. Valuable for crafting and trading.',
+                'material': 'A processed ingredient used in various crafting recipes.',
+                'crafted': 'A carefully crafted item showing the skill of its creator.',
+                'misc': 'An item of unknown or varied utility. Its true value may be discovered through experimentation.'
+            };
+            
+            return `<p class="text-gray-300">${typeDescriptions[type] || typeDescriptions['misc']}</p>`;
+        }
+        
+        // Get item statistics and properties
+        getItemStats(itemId, item) {
+            const stats = [];
+            
+            if (item.heals) {
+                stats.push(`<div class="stat-item healing">
+                    <i class="fas fa-heart text-green-400"></i>
+                    <span>Healing: ${item.heals} HP</span>
+                </div>`);
+            }
+            
+            if (item.damage) {
+                stats.push(`<div class="stat-item damage">
+                    <i class="fas fa-sword text-red-400"></i>
+                    <span>Damage: +${item.damage}</span>
+                </div>`);
+            }
+            
+            // Add crafting recipes that use this item
+            const recipes = this.getRecipesUsingItem(itemId);
+            if (recipes.length > 0) {
+                stats.push(`<div class="stat-item recipes">
+                    <i class="fas fa-hammer text-blue-400"></i>
+                    <span>Used in ${recipes.length} recipe${recipes.length === 1 ? '' : 's'}</span>
+                </div>`);
+            }
+            
+            // Add gathering source if applicable
+            const source = this.getItemSource(itemId);
+            if (source) {
+                stats.push(`<div class="stat-item source">
+                    <i class="fas fa-map-marker text-yellow-400"></i>
+                    <span>Source: ${source}</span>
+                </div>`);
+            }
+            
+            return stats.length > 0 ? `<div class="item-stats-grid">${stats.join('')}</div>` : '';
+        }
+        
+        // Helper to find recipes that use an item
+        getRecipesUsingItem(itemId) {
+            const recipes = [];
+            Object.values(GAME_DATA.RECIPES || {}).forEach(skillRecipes => {
+                skillRecipes.forEach(recipe => {
+                    if (recipe.input && recipe.input.some(inp => inp.itemId === itemId)) {
+                        recipes.push(recipe);
+                    }
+                });
+            });
+            return recipes;
+        }
+        
+        // Get item sell price from merchant data
+        getItemSellPrice(itemId) {
+            const merchants = GAME_DATA.MERCHANTS?.bazaar?.stalls || [];
+            for (const stall of merchants) {
+                const stockItem = stall.stock?.find(s => s.itemId === itemId);
+                if (stockItem && stockItem.sell) {
+                    return stockItem.sell;
+                }
+            }
+            return 0;
+        }
+        
+        // Get where an item can be gathered/obtained
+        getItemSource(itemId) {
+            // Check gathering actions
+            for (const [skill, actions] of Object.entries(GAME_DATA.ACTIONS || {})) {
+                for (const action of actions) {
+                    if (action.output?.itemId === itemId) {
+                        return `${GAME_DATA.SKILLS[skill]?.name || skill} - ${action.name}`;
+                    }
+                }
+            }
+            
+            // Check recipes
+            for (const [skill, recipes] of Object.entries(GAME_DATA.RECIPES || {})) {
+                for (const recipe of recipes) {
+                    if (recipe.output?.itemId === itemId) {
+                        return `${GAME_DATA.SKILLS[skill]?.name || skill} - Crafting`;
+                    }
+                }
+            }
+            
+            return null;
         }
         renderMetaSkillsView() {
             const skillsHtml = Object.values(this.game.state.player.meta_skills).map(skill => {
@@ -2947,6 +3244,70 @@ document.addEventListener('DOMContentLoaded', () => {
         removeNotification(key) { if (!this._notify || !this._notify.map[key]) return; const el = this._notify.map[key].el; el.classList.add('notify-out'); setTimeout(() => { el.remove(); }, 220); clearTimeout(this._notify.timers[key]); delete this._notify.timers[key]; delete this._notify.map[key]; }
         notifyResource(type, amount) { if (!amount || amount <= 0) return; const icons = { gold: '<i class=\"fas fa-coins text-yellow-300\"></i>', runes: '<i class=\"fas fa-gem text-purple-300\"></i>', stamina: '<i class=\"fas fa-bolt text-green-400\"></i>' }; const labels = { gold: 'GP', runes: 'Runes', stamina: 'Stamina' }; const key = `res:${type}`; this.createOrUpdateNotification(key, { increment: amount, icon: icons[type] || '', label: labels[type] || type, kind: type }); }
         notifyItem(itemId, qty) { if (!qty || qty <= 0) return; const item = GAME_DATA.ITEMS[itemId]; const name = item?.name || itemId; const icon = item?.icon || '❔'; const key = `item:${itemId}`; this.createOrUpdateNotification(key, { increment: qty, icon: icon, label: name, kind: 'item' }); }
+        
+        attachViewEventListeners() {
+            // General UI event listeners
+            document.querySelectorAll('.start-action-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const skillId = btn.dataset.skillId;
+                    const actionId = btn.dataset.actionId;
+                    this.game.startAction(skillId, actionId);
+                });
+            });
+            
+            document.querySelectorAll('.craft-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const skillId = btn.dataset.skillId;
+                    const recipeId = btn.dataset.recipeId;
+                    const quantity = parseInt(btn.dataset.quantity) || 1;
+                    this.game.craftItem(skillId, recipeId, quantity);
+                });
+            });
+            
+            document.querySelectorAll('.start-combat-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const enemyId = btn.dataset.enemyId;
+                    this.game.startCombat(enemyId);
+                });
+            });
+            
+            document.querySelectorAll('.hire-worker-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const skillId = btn.dataset.skillId;
+                    this.game.hireWorker(skillId);
+                });
+            });
+            
+            document.querySelectorAll('.upgrade-worker-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const skillId = btn.dataset.skillId;
+                    const type = btn.dataset.type;
+                    this.game.upgradeWorkers(skillId, type);
+                });
+            });
+            
+            // Clicker specific events
+            document.querySelectorAll('.hire-empire-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const unitId = btn.dataset.unitId;
+                    this.game.hireEmpireUnit(unitId);
+                });
+            });
+            
+            document.querySelectorAll('.cast-spell-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const spellId = btn.dataset.spellId;
+                    this.game.castSpell(spellId);
+                });
+            });
+            
+            document.querySelectorAll('.buy-chest-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const chestId = btn.dataset.chestId;
+                    this.game.buyChest(chestId);
+                });
+            });
+            
             const upFR = document.getElementById('upgrade-farming-tractor'); if (upFR) upFR.addEventListener('click', () => this.game.upgradeWorkers('farming', 'tractor'));
             document.querySelectorAll('.assign-farming-worker-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -3024,6 +3385,223 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.raid-comp-input').forEach(inp => { inp.addEventListener('change', () => { const uid = inp.dataset.unitId; const want = Math.max(0, Math.min(parseInt(inp.value||'0',10) || 0, (this.game.state.army.units[uid]||0))); const auto = this.game.state.combat.auto; auto.raid = auto.raid || { composition: {}, startedAt: Date.now(), graceMs: 120000, upkeep: { foodBuffer: 0, hungry: false } }; auto.raid.composition[uid] = want; this.renderView(); }); });
             const claimBtn = document.getElementById('claim-war-spoils'); if (claimBtn) claimBtn.addEventListener('click', () => this.game.claimWarSpoils());
             const clearBtn = document.getElementById('clear-war-spoils'); if (clearBtn) clearBtn.addEventListener('click', () => this.game.clearWarSpoils());
+            
+            // Enhanced Bank Item Modal Actions
+            document.querySelectorAll('.epic-action-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const itemId = btn.dataset.itemId;
+                    const action = btn.dataset.action;
+                    
+                    if (!itemId || !action) return;
+                    
+                    switch (action) {
+                        case 'eat':
+                            this.game.eatFood(itemId);
+                            this.showFloatingText('Food consumed!', 'text-green-300');
+                            this.hideModal();
+                            break;
+                            
+                        case 'drink':
+                            this.game.drinkPotion(itemId);
+                            this.showFloatingText('Potion consumed!', 'text-blue-300');
+                            this.hideModal();
+                            break;
+                            
+                        case 'equip':
+                            this.game.equipWeapon(itemId);
+                            this.showFloatingText('Weapon equipped!', 'text-red-300');
+                            this.hideModal();
+                            break;
+                            
+                        case 'sell':
+                            const sellPrice = this.getItemSellPrice(itemId);
+                            const quantity = this.game.state.bank[itemId] || 0;
+                            if (quantity > 0 && sellPrice > 0) {
+                                this.game.removeFromBank(itemId, 1);
+                                this.game.addGold(sellPrice);
+                                this.showFloatingText(`Sold for ${sellPrice} GP!`, 'text-yellow-300');
+                                this.hideModal();
+                            }
+                            break;
+                            
+                        case 'bulk':
+                            this.showBulkActionModal(itemId);
+                            break;
+                            
+                        case 'craft':
+                            this.showCraftingModal(itemId);
+                            break;
+                            
+                        case 'spells':
+                            this.showSpellsModal(itemId);
+                            break;
+                    }
+                });
+            });
+        }
+        
+        // Enhanced modal for bulk actions
+        showBulkActionModal(itemId) {
+            const item = GAME_DATA.ITEMS[itemId];
+            const quantity = this.game.state.bank[itemId] || 0;
+            if (!item || quantity <= 1) return;
+            
+            const sellPrice = this.getItemSellPrice(itemId);
+            const bulkActions = [];
+            
+            if (item.heals) {
+                bulkActions.push(`<button class="bulk-action-btn epic-action-btn" data-item-id="${itemId}" data-action="eat-all">
+                    <i class="fas fa-utensils"></i> Eat All (${quantity}x)
+                </button>`);
+            }
+            
+            if (sellPrice > 0) {
+                const totalValue = sellPrice * quantity;
+                bulkActions.push(`<button class="bulk-action-btn epic-action-btn" data-item-id="${itemId}" data-action="sell-all">
+                    <i class="fas fa-coins"></i> Sell All (${totalValue} GP)
+                </button>`);
+            }
+            
+            const content = `
+                <div class="bulk-modal">
+                    <div class="item-header mb-4">
+                        <div class="text-center">
+                            <div class="text-6xl mb-2">${item.icon || '❔'}</div>
+                            <h3 class="text-lg font-bold">${item.name}</h3>
+                            <p class="text-gray-400">Quantity: ${quantity.toLocaleString()}</p>
+                        </div>
+                    </div>
+                    <div class="bulk-actions space-y-2">
+                        ${bulkActions.join('')}
+                    </div>
+                </div>
+            `;
+            
+            this.showModal('Bulk Actions', content);
+            
+            // Add event listeners for bulk actions
+            document.querySelectorAll('.bulk-action-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const action = btn.dataset.action;
+                    const id = btn.dataset.itemId;
+                    const qty = this.game.state.bank[id] || 0;
+                    
+                    if (action === 'eat-all' && qty > 0) {
+                        const healAmount = item.heals * qty;
+                        this.game.removeFromBank(id, qty);
+                        this.game.state.player.hp = Math.min(this.game.state.player.hpMax, this.game.state.player.hp + healAmount);
+                        this.showFloatingText(`Ate ${qty}x ${item.name} (+${healAmount} HP)`, 'text-green-300');
+                        this.hideModal();
+                    } else if (action === 'sell-all' && qty > 0 && sellPrice > 0) {
+                        this.game.removeFromBank(id, qty);
+                        this.game.addGold(sellPrice * qty);
+                        this.showFloatingText(`Sold ${qty}x ${item.name} for ${sellPrice * qty} GP!`, 'text-yellow-300');
+                        this.hideModal();
+                    }
+                });
+            });
+        }
+        
+        // Enhanced modal for crafting with an item
+        showCraftingModal(itemId) {
+            const recipes = this.getRecipesUsingItem(itemId);
+            if (recipes.length === 0) return;
+            
+            const recipeCards = recipes.map(recipe => {
+                const canCraft = recipe.input.every(inp => (this.game.state.bank[inp.itemId] || 0) >= inp.quantity);
+                const skillName = Object.keys(GAME_DATA.RECIPES).find(skill => 
+                    GAME_DATA.RECIPES[skill].some(r => r.id === recipe.id)
+                );
+                
+                return `
+                    <div class="recipe-card glass-card p-3 rounded-md ${canCraft ? 'cursor-pointer hover:bg-gray-700' : 'opacity-50'}">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-semibold">${recipe.name}</h4>
+                                <p class="text-xs text-gray-400">${skillName} • Level ${recipe.level}</p>
+                            </div>
+                            ${canCraft ? `<button class="craft-recipe-btn epic-action-btn" data-recipe-id="${recipe.id}" data-skill="${skillName}">
+                                <i class="fas fa-hammer"></i> Craft
+                            </button>` : '<span class="text-red-400 text-xs">Cannot craft</span>'}
+                        </div>
+                        <div class="mt-2 text-xs">
+                            <div class="text-gray-400">Requires:</div>
+                            ${recipe.input.map(inp => {
+                                const have = this.game.state.bank[inp.itemId] || 0;
+                                const item = GAME_DATA.ITEMS[inp.itemId];
+                                return `<span class="${have >= inp.quantity ? 'text-green-300' : 'text-red-300'}">${item?.name || inp.itemId} x${inp.quantity}</span>`;
+                            }).join(', ')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            const content = `
+                <div class="crafting-modal">
+                    <h3 class="text-lg font-bold mb-4">Recipes using ${GAME_DATA.ITEMS[itemId]?.name || itemId}</h3>
+                    <div class="space-y-2">${recipeCards}</div>
+                </div>
+            `;
+            
+            this.showModal('Crafting Recipes', content);
+            
+            // Add craft button listeners
+            document.querySelectorAll('.craft-recipe-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const recipeId = btn.dataset.recipeId;
+                    const skill = btn.dataset.skill;
+                    this.game.craftItem(skill, recipeId, 1);
+                    this.hideModal();
+                });
+            });
+        }
+        
+        // Enhanced modal for spells using runes
+        showSpellsModal(itemId) {
+            const spells = GAME_DATA.SPELLS?.filter(spell => spell.runeCost > 0) || [];
+            if (spells.length === 0) return;
+            
+            const spellCards = spells.map(spell => {
+                const availableRunes = this.game.state.player.runes + this.game.getTotalRuneItemCount();
+                const canCast = availableRunes >= spell.runeCost;
+                
+                return `
+                    <div class="spell-card glass-card p-3 rounded-md ${canCast ? 'cursor-pointer hover:bg-purple-900' : 'opacity-50'}">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-semibold text-purple-300">${spell.name}</h4>
+                                <p class="text-xs text-gray-400">${spell.description}</p>
+                            </div>
+                            ${canCast ? `<button class="cast-spell-btn epic-action-btn" data-spell-id="${spell.id}">
+                                <i class="fas fa-magic"></i> Cast
+                            </button>` : '<span class="text-red-400 text-xs">Not enough runes</span>'}
+                        </div>
+                        <div class="mt-2 text-xs text-purple-400">
+                            Cost: ${spell.runeCost} runes • Duration: ${Math.floor(spell.durationMs/60000)}m
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            const content = `
+                <div class="spells-modal">
+                    <h3 class="text-lg font-bold mb-4">Available Spells</h3>
+                    <p class="text-sm text-gray-400 mb-4">You have ${this.game.state.player.runes + this.game.getTotalRuneItemCount()} runes available</p>
+                    <div class="space-y-2">${spellCards}</div>
+                </div>
+            `;
+            
+            this.showModal('Spellbook', content);
+            
+            // Add spell casting listeners
+            document.querySelectorAll('.cast-spell-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const spellId = btn.dataset.spellId;
+                    this.game.castSpell(spellId);
+                    this.hideModal();
+                });
+            });
         }
 
         showModal(title, content) {
